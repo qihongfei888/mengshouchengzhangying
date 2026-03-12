@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>童心宠伴</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    @font-face {
+      font-family: 'ZCOOL KuaiLe';
+      src: local('ZCOOL KuaiLe'), local('站酷快乐体');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Ma Shan Zheng';
+      src: local('Ma Shan Zheng'), local('马善政楷体');
+      font-display: swap;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&display=swap" rel="stylesheet" onerror="this.remove()">
+  <!-- Supabase SDK（可选，不影响系统运行） -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.remove()"></script>
+  <script>
+    // Supabase 配置（可选，系统不依赖此功能）
+    let supabase = null;
+    try {
+      if (typeof createClient !== 'undefined') {
+        const supabaseUrl = 'https://sgqufjoxmlbhkqeclzcv.supabase.co';
+        const supabaseKey = 'sb_publishable_33LohNk9h7dXFM_6_jGx5g_ICHzTgfG';
+        supabase = createClient(supabaseUrl, supabaseKey);
+      }
+    } catch (e) {
+      console.log('Supabase初始化失败，继续使用本地存储');
+    }
+  </script>
+</head>
+<body>
+  <!-- 内联图标（确保任意电脑均能正常显示，不依赖 emoji/网络） -->
+  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <symbol id="icon-paw" viewBox="0 0 24 24"><path fill="currentColor" d="M8.35 3C9.53 2.83 10.78 4.12 11.14 5.9c.36 1.78-.26 3.48-1.34 3.86-1.08.38-2.48-.96-2.84-2.74-.36-1.78.26-3.48 1.34-3.86zm7.3 0c1.08.38 1.7 2.08 1.34 3.86-.36 1.78-1.76 3.12-2.84 2.74-1.08-.38-1.7-2.08-1.34-3.86.36-1.78 1.76-3.12 2.84-2.74zM4.5 8.5C3 9 2 11 2 13c0 2 1 4 2.5 4s2.5-2 2.5-4c0-2-1-4-2.5-4.5zm15 0c-1.5.5-2.5 2.5-2.5 4.5 0 2 1 4 2.5 4s2.5-2 2.5-4c0-2-1-4-2.5-4.5zM12 9c-2 0-4 2-4 5 0 4 1.5 8 4 8s4-4 4-8c0-3-2-5-4-5z"/></symbol>
+    <symbol id="icon-home" viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></symbol>
+    <symbol id="icon-pet" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C9.24 2 7 4.24 7 7c0 1.5.68 2.85 1.76 3.76L6 14h2.5l2-3.5 2 3.5H15l-2.76-3.24C13.32 9.85 14 8.5 14 7c0-2.76-2.24-5-5-5zm0 1.5c1.93 0 3.5 1.57 3.5 3.5S13.93 11 12 11s-3.5-1.57-3.5-3.5S10.07 3.5 12 3.5zM6 16v4h12v-4H6z"/></symbol>
+    <symbol id="icon-trophy" viewBox="0 0 24 24"><path fill="currentColor" d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1zm-7 4c-1.65 0-3-1.35-3-3V4h6v5c0 1.65-1.35 3-3 3z"/></symbol>
+    <symbol id="icon-cart" viewBox="0 0 24 24"><path fill="currentColor" d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></symbol>
+    <symbol id="icon-logout" viewBox="0 0 24 24"><path fill="currentColor" d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></symbol>
+    <symbol id="icon-upload" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></symbol>
+  </svg>
+  <!-- 登录页：用户登录，数据按用户隔离 -->
+  <div id="login-page" class="login-page">
+    <div class="login-box">
+      <h1 class="login-title"><svg class="title-icon" aria-hidden="true"><use href="#icon-paw"/></svg> 童心宠伴</h1>
+      <p class="login-subtitle">请登录或注册账号</p>
+      <div class="login-tabs">
+        <button type="button" class="login-tab active" data-tab="login">登录</button>
+        <button type="button" class="login-tab" data-tab="register">注册</button>
+      </div>
+      <form id="login-form" class="login-form">
+        <div class="form-group">
+          <label>用户名（手机号或邮箱）</label>
+          <input type="text" id="loginUsername" class="login-input" placeholder="请输入手机号或邮箱">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="loginPassword" class="login-input" placeholder="请输入密码" autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">登录</button>
+      </form>
+      <form id="register-form" class="login-form" style="display:none">
+        <div class="form-group">
+          <label>用户名（手机号或邮箱）</label>
+          <input type="text" id="registerUsername" class="login-input" placeholder="请输入手机号或邮箱">
+        </div>
+        <div class="form-group">
+          <label>设置密码</label>
+          <input type="password" id="registerPassword" class="login-input" placeholder="请设置登录密码（至少8位，包含大小写字母和数字）" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>确认密码</label>
+          <input type="password" id="registerPasswordConfirm" class="login-input" placeholder="再次输入密码" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>授权码</label>
+          <input type="text" id="registerLicenseKey" class="login-input" placeholder="请输入授权码（格式：XXXX-XXXX-XXXX-XXXX）" autocomplete="off">
+          <p class="form-hint">授权码请联系管理员获取</p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">注册并登录</button>
+      </form>
+
+      <div class="login-backup-area">
+        <p class="login-backup-hint">迁移到新电脑？请先在原电脑「系统设置」中导出备份，在此处导入</p>
+        <button type="button" class="btn btn-outline btn-block" onclick="document.getElementById('importBackupFile').click()"><svg class="btn-icon" aria-hidden="true"><use href="#icon-download"/></svg> 导入备份</button>
+        <input type="file" id="importBackupFile" accept=".json" style="display:none">
+      </div>
+    </div>
+  </div>
+  
+  <!-- 管理员后台 -->
+  <div id="admin-panel" class="admin-panel" style="display:none">
+    <div class="admin-header">
+      <h2>🔐 管理员后台</h2>
+      <button type="button" class="btn btn-secondary" onclick="app.logoutAdmin()">退出管理</button>
+    </div>
+    <div class="admin-content">
+      <div class="admin-section">
+        <h3>🎫 授权码管理</h3>
+        <div class="license-controls">
+            <button type="button" class="btn btn-primary" onclick="app.generateNewLicense()">➕ 生成新授权码</button>
+            <button type="button" class="btn btn-secondary" onclick="app.batchGenerateLicenses()">📋 批量生成授权码</button>
+            <button type="button" class="btn btn-secondary" onclick="app.exportLicenses()">📥 导出授权码</button>
+          </div>
+        <div id="licensesList" class="licenses-list"></div>
+      </div>
+      <div class="admin-section">
+        <h3>👥 用户管理</h3>
+        <div id="adminUsersList" class="admin-users-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" class="app-container" style="display:none">
+    <!-- 小广播站 -->
+    <div class="broadcast-station">
+      <div class="broadcast-icon">📢</div>
+      <div class="broadcast-content">
+        <div class="broadcast-scroll" id="broadcastScroll">
+          <span class="broadcast-item">欢迎来到童心宠伴！🎉</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 顶部导航 -->
+    <header class="main-header">
+      <h1 class="system-title" id="systemTitle"><svg class="title-icon" aria-hidden="true"><use href="#icon-paw"/></svg> <span id="systemTitleText">童心宠伴</span></h1>
+      <span class="current-class-name" id="currentClassName"></span>
+      <nav class="main-nav">
+        <button class="nav-btn active" data-page="dashboard"><svg class="nav-icon" aria-hidden="true"><use href="#icon-home"/></svg> 首页</button>
+        <button class="nav-btn" data-page="students"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 学生管理</button>
+        <button class="nav-btn" data-page="groups"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 小组管理</button>
+        <button class="nav-btn" data-page="pets"><svg class="nav-icon" aria-hidden="true"><use href="#icon-pet"/></svg> 领养宠物</button>
+        <button class="nav-btn" data-page="honor"><svg class="nav-icon" aria-hidden="true"><use href="#icon-trophy"/></svg> 光荣榜</button>
+        <button class="nav-btn" data-page="store"><svg class="nav-icon" aria-hidden="true"><use href="#icon-cart"/></svg> 勋章商店</button>
+        <button class="nav-btn" data-page="settings"><svg class="nav-icon" aria-hidden="true"><use href="#icon-settings"/></svg> 系统设置</button>
+        <button type="button" id="adminButton" class="nav-btn" style="display:none" onclick="app.openAdminPanel()"><svg class="nav-icon" aria-hidden="true"><use href="#icon-lock"/></svg> 管理后台</button>
+        <button type="button" class="nav-btn nav-btn-logout" onclick="app.logout()"><svg class="nav-icon" aria-hidden="true"><use href="#icon-logout"/></svg> 退出 / 切换班级</button>
+      </nav>
+    </header>
+
+    <main class="main-content">
+      <!-- 首页 -->
+      <section id="page-dashboard" class="page active">
+        <div class="dashboard-welcome">
+          <h2>🐾 欢迎使用童心宠伴</h2>
+          <p>✨ 学生可通过打卡获得积分，喂养宠物成长，收集徽章兑换奖品！</p>
+        </div>
+        <div class="quick-stats">
+          <div class="stat-card stat-card-cute">
+            <span class="stat-icon">👦</span>
+            <span class="stat-num" id="statStudents">0</span>
+            <span class="stat-label">学生总数</span>
+          </div>
+          <div class="stat-card stat-card-cute">
+            <span class="stat-icon">🐱</span>
+            <span class="stat-num" id="statPets">0</span>
+            <span class="stat-label">已领养宠物</span>
+          </div>
+          <div class="stat-card stat-card-cute">
+            <span class="stat-icon">🏅</span>
+            <span class="stat-num" id="statBadges">0</span>
+            <span class="stat-label">已发放徽章</span>
+          </div>
+        </div>
+        <div class="dashboard-actions">
+          <button class="btn btn-primary btn-cute" onclick="app.showPage('students')">👥 管理学生</button>
+          <button class="btn btn-secondary btn-cute" onclick="app.showPage('pets')">🐣 领养宠物</button>
+          <button class="btn btn-secondary btn-cute" onclick="app.showPage('honor')">🏆 查看光荣榜</button>
+        </div>
+      </section>
+
+      <!-- 学生管理 -->
+      <section id="page-students" class="page">
+        <div class="page-header">
+          <h2>👥 学生管理</h2>
+          <div class="page-actions">
+            <input type="text" id="studentSearch" class="search-input" placeholder="🔍 搜索学生姓名或学号...">
+            <button class="btn btn-primary" onclick="app.openAddStudentModal()">➕ 添加学生</button>
+            <button class="btn btn-secondary" onclick="app.importStudents()">导入学生</button>
+            <input type="file" id="importFile" accept=".csv,.xlsx,.xls" style="display:none">
+            <button class="btn btn-secondary" onclick="app.batchScoreModal()">批量加分/减分</button>
+            <button class="btn btn-secondary" onclick="app.batchFeedModal()">批量喂养</button>
+            <button class="btn btn-secondary" onclick="app.randomRollCall()">🎲 随机点名</button>
+            <button class="btn btn-outline" onclick="app.exportToExcel()">导出Excel</button>
+          </div>
+        </div>
+        <div id="studentList" class="student-grid"></div>
+      </section>
+
+      <!-- 小组管理 -->
+      <section id="page-groups" class="page">
+        <div class="page-header">
+          <h2>👥 小组管理</h2>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="app.openAddGroupModal()">➕ 添加小组</button>
+            <button class="btn btn-secondary" onclick="app.openRandomGroupModal()">🎲 随机分组</button>
+            <button class="btn btn-secondary" onclick="app.openGroupLeaderboard()">🏆 小组排行榜</button>
+            <button class="btn btn-outline" onclick="app.exportGroupsToExcel()">导出数据</button>
+          </div>
+        </div>
+        <div class="groups-layout">
+          <div class="groups-main">
+            <div class="groups-tabs">
+              <button class="groups-tab active" data-tab="groups">小组列表</button>
+              <button class="groups-tab" data-tab="ungrouped">未分组学生</button>
+            </div>
+            <div id="groupsContent" class="groups-content">
+              <div id="groupsList" class="groups-grid"></div>
+            </div>
+            <div id="ungroupedContent" class="groups-content" style="display:none">
+              <div id="ungroupedStudentsList" class="ungrouped-students-list"></div>
+            </div>
+          </div>
+          <div class="groups-sidebar">
+            <h3>📊 小组统计</h3>
+            <div class="group-stats">
+              <div class="group-stat-card">
+                <span class="group-stat-num" id="groupStatTotal">0</span>
+                <span class="group-stat-label">小组总数</span>
+              </div>
+              <div class="group-stat-card">
+                <span class="group-stat-num" id="groupStatMembers">0</span>
+                <span class="group-stat-label">已分组学生</span>
+              </div>
+              <div class="group-stat-card">
+                <span class="group-stat-num" id="groupStatUngrouped">0</span>
+                <span class="group-stat-label">未分组学生</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 领养宠物 -->
+      <section id="page-pets" class="page">
+        <div class="page-header">
+          <h2>🐣 领养宠物</h2>
+          <p class="hint">选择一名学生后，可为其领养宠物，支持上传自定义卡通动物照片</p>
+        </div>
+        <div class="pet-adopt-flow">
+          <div class="student-select-area">
+            <label>选择学生：</label>
+            <input type="text" id="petStudentSearch" class="search-input" placeholder="搜索学生...">
+            <div id="petStudentList" class="clickable-student-list"></div>
+          </div>
+          <div id="petAdoptArea" class="pet-adopt-area">
+            <p class="placeholder-text" id="petPlaceholder">请先选择学生</p>
+            <div id="petAdoptContent" style="display:none">
+              <div id="currentStudentPetInfo"></div>
+              <div id="petChooseSection"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 光荣榜 -->
+      <section id="page-honor" class="page">
+        <div class="page-header">
+          <h2>🏆 光荣榜</h2>
+          <p>按徽章数量排名</p>
+        </div>
+        <div class="honor-layout">
+          <div class="honor-main">
+            <div id="honorList" class="honor-grid"></div>
+          </div>
+          <div class="honor-sidebar">
+            <h3>📊 学生信息</h3>
+            <div class="honor-sidebar-columns">
+              <div class="honor-sidebar-column" id="honorColumn1">
+                <h4>优秀学生</h4>
+                <div class="honor-column-list"></div>
+              </div>
+              <div class="honor-sidebar-column" id="honorColumn2">
+                <h4>进步之星</h4>
+                <div class="honor-column-list"></div>
+              </div>
+              <div class="honor-sidebar-column" id="honorColumn3">
+                <h4>活跃学生</h4>
+                <div class="honor-column-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 勋章商店 -->
+      <section id="page-store" class="page">
+        <div class="page-header">
+          <h2>🛒 勋章商店</h2>
+          <p>学生可用徽章兑换商品</p>
+        </div>
+        <div class="store-tabs">
+          <button class="store-tab active" data-tab="goods">商品列表</button>
+          <button class="store-tab" data-tab="accessories">宠物装扮</button>
+          <button class="store-tab" data-tab="lottery">勋章转盘抽奖</button>
+        </div>
+        <div id="storeGoods" class="store-goods-grid"></div>
+        <div id="storeAccessories" class="store-goods-grid" style="display:none"></div>
+        <div id="storeLottery" class="lottery-section" style="display:none">
+          <div class="lottery-layout">
+            <div class="lottery-student-select">
+              <h4>👤 选择抽奖学生</h4>
+              <div id="lotteryStudentList" class="lottery-student-list"></div>
+            </div>
+            <div class="lottery-wheel-container">
+              <div id="lotteryWheel" class="lottery-wheel"></div>
+              <button class="btn btn-primary lottery-spin-btn" id="lotterySpinBtn">转动抽奖</button>
+              <p class="lottery-hint">消耗 1 枚徽章可抽奖一次，奖品由教师设置</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 系统设置 -->
+      <section id="page-settings" class="page page-settings-cute">
+        <div class="page-header">
+          <h2>✨ 系统设置</h2>
+          <p class="page-header-hint">在这里调整班级和宠物规则，让系统更符合你的班级哦～</p>
+        </div>
+        <div class="settings-grid">
+          <div class="settings-card settings-card-cute">
+            <h3>📋 基本设置</h3>
+            <div class="setting-item">
+              <label>系统名称</label>
+              <input type="text" id="settingSystemName" placeholder="童心宠伴">
+            </div>
+            <div class="setting-item">
+              <label>选择班级</label>
+              <select id="settingClassSelect" onchange="app.switchClass(this.value)">
+                <option value="">-- 选择班级 --</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label>班级名称</label>
+              <input type="text" id="settingClassName" placeholder="如：一年级1班">
+            </div>
+            <div class="setting-item">
+              <button class="btn btn-small btn-cute" onclick="app.createNewClass()">➕ 创建新班级</button>
+              <button class="btn btn-small btn-cute" onclick="app.deleteClass()">🗑️ 删除当前班级</button>
+            </div>
+            <div class="setting-item">
+              <label>主题颜色</label>
+              <select id="settingTheme" onchange="app.applyTheme(this.value)">
+                <option value="coral">珊瑚粉</option>
+                <option value="mint">薄荷绿</option>
+                <option value="sky">天空蓝</option>
+                <option value="lavender">薰衣草紫</option>
+                <option value="peach">蜜桃橙</option>
+                <option value="forest">森林绿</option>
+                <option value="sunset">日落黄</option>
+                <option value="rose">玫瑰红</option>
+                <option value="ocean">海洋蓝</option>
+                <option value="grape">葡萄紫</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存</button>
+          </div>
+          <div class="settings-card settings-card-cute">
+            <h3>🐾 宠物成长</h3>
+            <div class="setting-item">
+              <label>每阶段所需积分</label>
+              <input type="number" id="settingStagePoints" min="1" value="20">
+            </div>
+            <div class="setting-item">
+              <label>成长阶段数</label>
+              <input type="number" id="settingStages" min="5" max="20" value="10">
+            </div>
+            <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存</button>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>➕ 加分项（可编辑分数）</h3>
+            <div id="plusItemsList" class="score-items-list"></div>
+            <button class="btn btn-small btn-cute" onclick="app.addScoreItemModal('plus')">➕ 添加加分项</button>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>➖ 扣分项（可编辑分数）</h3>
+            <div id="minusItemsList" class="score-items-list"></div>
+            <button class="btn btn-small btn-cute" onclick="app.addScoreItemModal('minus')">➕ 添加扣分项</button>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>🎁 奖品管理</h3>
+            <div id="prizeList" class="prize-list"></div>
+            <button class="btn btn-secondary btn-cute" onclick="app.addPrizeModal()">🎁 添加奖品</button>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>🎡 转盘奖品（抽奖用）</h3>
+            <div id="lotteryPrizeList" class="prize-list"></div>
+            <button class="btn btn-secondary btn-cute" onclick="app.addLotteryPrizeModal()">🎡 添加转盘奖品</button>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>👦 学生管理</h3>
+            <p class="setting-hint">管理班级学生，可以删除添加错误的学生</p>
+            <div class="student-manage-filter">
+              <select id="studentManageSelect">
+                <option value="">请选择要删除的学生</option>
+              </select>
+              <button type="button" class="btn btn-danger btn-small" onclick="app.deleteStudentFromSettings()">🗑️ 删除学生</button>
+            </div>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>📊 学生积分记录</h3>
+            <p class="setting-hint">查看所有学生的加分/减分历史记录和时间</p>
+            <div class="score-history-filter">
+              <select id="scoreHistoryStudentFilter" onchange="app.renderScoreHistory()">
+                <option value="">全部学生</option>
+              </select>
+              <select id="scoreHistoryTypeFilter" onchange="app.renderScoreHistory()">
+                <option value="">全部类型</option>
+                <option value="plus">加分</option>
+                <option value="minus">减分</option>
+              </select>
+              <button type="button" class="btn btn-secondary btn-small" onclick="app.exportScoreHistoryToExcel()">📥 导出Excel</button>
+            </div>
+            <div id="scoreHistoryList" class="score-history-list">
+              <p class="placeholder-text">加载中...</p>
+            </div>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>🏅 勋章发放</h3>
+            <p class="setting-hint">直接为特别优秀的学生发放勋章</p>
+            <div class="badge-award-section">
+              <div class="setting-item">
+                <label>选择学生</label>
+                <select id="badgeAwardStudentSelect"></select>
+              </div>
+              <div class="setting-item">
+                <label>发放数量</label>
+                <input type="number" id="badgeAwardCount" min="1" max="10" value="1">
+              </div>
+              <div class="setting-item">
+                <label>发放原因</label>
+                <input type="text" id="badgeAwardReason" placeholder="例如：表现优秀、进步明显等">
+              </div>
+              <button type="button" class="btn btn-primary btn-cute" onclick="app.awardBadge()">🏅 发放勋章</button>
+            </div>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>📢 广播设置</h3>
+            <p class="setting-hint">自定义小广播站显示内容和滚动设置</p>
+            <div class="broadcast-settings">
+              <div class="setting-item">
+                <label>广播内容（每行一条）</label>
+                <textarea id="broadcastContent" rows="4" placeholder="欢迎来到童心宠伴！学生加分减分会自动显示在这里~"></textarea>
+              </div>
+              <div class="setting-item checkbox-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="broadcastShowScore" checked>
+                  <span class="checkbox-text">显示学生加分/减分滚动通知</span>
+                </label>
+              </div>
+              <div class="setting-item checkbox-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="broadcastAutoScroll" checked>
+                  <span class="checkbox-text">自动滚动广播</span>
+                </label>
+              </div>
+              <button type="button" class="btn btn-secondary btn-cute" onclick="app.saveBroadcastSettings()">💾 保存广播设置</button>
+            </div>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>🎀 宠物装扮管理</h3>
+            <p class="setting-hint">设置宠物装扮和玩具，学生可以用积分兑换</p>
+            <div id="accessoriesList" class="accessories-list"></div>
+            <button type="button" class="btn btn-primary btn-cute" onclick="app.openAccessoryModal()">➕ 添加装扮</button>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>💾 数据备份与迁移</h3>
+            <p class="setting-hint">换电脑或重装系统前，请导出备份；在新电脑上打开本系统后，在登录页点击「导入备份」选择该文件即可恢复，确保每台电脑显示一致。</p>
+            <div id="backupStatus" class="backup-status"></div>
+            <div class="export-buttons">
+              <button type="button" class="btn btn-primary btn-cute" onclick="app.exportAllData()"><svg class="btn-icon" aria-hidden="true"><use href="#icon-upload"/></svg> 导出全部数据（备份）</button>
+              <button type="button" class="btn btn-secondary btn-cute" onclick="app.exportCurrentClassData()">📋 导出当前班级数据</button>
+              <button type="button" class="btn btn-secondary btn-cute" onclick="app.exportStudentsToExcel()">📊 导出学生名单(Excel)</button>
+            </div>
+            <div class="import-section" style="margin-top: 20px; padding-top: 20px; border-top: 2px dashed var(--border);">
+              <h4>📥 导入数据</h4>
+              <p class="setting-hint">支持导入备份文件(.json)或学生名单(.xlsx/.csv)</p>
+              <input type="file" id="importDataFile" accept=".json,.xlsx,.csv" style="display: none;" onchange="app.handleImportData(event)">
+              <button type="button" class="btn btn-primary btn-cute" onclick="document.getElementById('importDataFile').click()">📥 选择文件导入</button>
+            </div>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>📱 设备管理</h3>
+            <p class="setting-hint">查看和管理已绑定的设备，防止账号被分享滥用</p>
+            <div id="devicesList" class="devices-list"></div>
+            <button type="button" class="btn btn-primary btn-cute" onclick="app.refreshDevices()">🔄 刷新设备列表</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 添加/编辑装扮弹窗 -->
+  <div id="accessoryModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeAccessoryModal()">&times;</button>
+      <h3 id="accessoryModalTitle">添加装扮</h3>
+      <input type="hidden" id="accessoryEditId">
+      <div class="form-group">
+        <label>装扮名称</label>
+        <input type="text" id="accessoryName" placeholder="装扮名称">
+      </div>
+      <div class="form-group">
+        <label>所需积分</label>
+        <input type="number" id="accessoryPoints" min="1" value="10">
+      </div>
+      <div class="form-group">
+        <label>装扮图标</label>
+        <input type="text" id="accessoryIcon" placeholder="输入emoji或图标">
+        <p class="upload-hint">例如：🎀、👑、⚡、🌈 等</p>
+      </div>
+      <button class="btn btn-primary" onclick="app.saveAccessory()">保存</button>
+    </div>
+  </div>
+
+  <!-- 学生卡片弹窗：加分/减分/喂食 -->
+  <div id="studentModal" class="modal">
+    <div class="modal-content student-modal-content">
+      <button class="modal-close" onclick="app.closeStudentModal()">&times;</button>
+      <div id="studentModalBody"></div>
+    </div>
+  </div>
+
+  <!-- 批量加分减分弹窗 -->
+  <div id="batchScoreModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeBatchScoreModal()">&times;</button>
+      <h3>批量加分/减分</h3>
+      <div class="batch-type">
+        <label><input type="radio" name="batchType" value="plus" checked> 加分</label>
+        <label><input type="radio" name="batchType" value="minus"> 减分</label>
+      </div>
+      <div class="form-group">
+        <label>选择项目</label>
+        <select id="batchScoreItem"></select>
+      </div>
+      <div class="form-group">
+        <label>选择学生（可多选）</label>
+        <div class="batch-select-actions">
+          <button type="button" class="btn btn-small" onclick="app.batchSelectAll('batchStudentCheckboxes')">全选</button>
+          <button type="button" class="btn btn-small" onclick="app.batchInvertSelection('batchStudentCheckboxes')">反选</button>
+        </div>
+        <div id="batchStudentCheckboxes" class="checkbox-list checkbox-list-horizontal"></div>
+      </div>
+      <button class="btn btn-primary" onclick="app.doBatchScore()">确认</button>
+    </div>
+  </div>
+
+  <!-- 批量喂养弹窗 -->
+  <div id="batchFeedModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeBatchFeedModal()">&times;</button>
+      <h3>批量喂养</h3>
+      <div class="form-group">
+        <label>选择学生</label>
+        <div class="batch-select-actions">
+          <button type="button" class="btn btn-small" onclick="app.batchSelectAll('batchFeedStudentCheckboxes')">全选</button>
+          <button type="button" class="btn btn-small" onclick="app.batchInvertSelection('batchFeedStudentCheckboxes')">反选</button>
+        </div>
+        <div id="batchFeedStudentCheckboxes" class="checkbox-list checkbox-list-horizontal"></div>
+      </div>
+      <div class="form-group">
+        <label>每只宠物喂养积分</label>
+        <input type="number" id="batchFeedPoints" min="1" value="1">
+      </div>
+      <button class="btn btn-primary" onclick="app.doBatchFeed()">确认喂养</button>
+    </div>
+  </div>
+
+  <!-- 添加/编辑奖品弹窗 -->
+  <div id="prizeModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closePrizeModal()">&times;</button>
+      <h3 id="prizeModalTitle">添加奖品</h3>
+      <input type="hidden" id="prizeEditId">
+      <div class="form-group">
+        <label>奖品名称</label>
+        <input type="text" id="prizeName" placeholder="奖品名称">
+      </div>
+      <div class="form-group">
+        <label>所需徽章数</label>
+        <input type="number" id="prizeBadges" min="1" value="1">
+      </div>
+      <div class="form-group">
+        <label>奖品图片（可选）</label>
+        <input type="file" id="prizeImageInput" accept="image/*" onchange="app.handlePrizeImageSelect(event)">
+        <p class="upload-hint">支持 jpg、png 格式，最大 5MB</p>
+        <div id="prizeImagePreview" class="upload-preview"></div>
+      </div>
+      <button class="btn btn-primary" onclick="app.savePrize()">保存</button>
+    </div>
+  </div>
+
+  <!-- 添加加分/扣分项弹窗 -->
+  <div id="scoreItemModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeScoreItemModal()">&times;</button>
+      <h3 id="scoreItemModalTitle">添加项目</h3>
+      <input type="hidden" id="scoreItemType">
+      <input type="hidden" id="scoreItemEditIndex">
+      <div class="form-group">
+        <label>项目名称</label>
+        <input type="text" id="scoreItemName" placeholder="如：早读打卡">
+      </div>
+      <div class="form-group">
+        <label>分数（可正可负）</label>
+        <input type="number" id="scoreItemPoints" value="1">
+      </div>
+      <button class="btn btn-primary" onclick="app.saveScoreItem()">保存</button>
+    </div>
+  </div>
+
+  <!-- 撤回弹窗 -->
+  <!-- 添加学生弹窗 -->
+  <div id="addStudentModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeAddStudentModal()">&times;</button>
+      <h3>➕ 添加学生</h3>
+      <div class="form-group">
+        <label>学号 <span class="required">*</span></label>
+        <input type="text" id="addStudentId" class="login-input" placeholder="请输入学号">
+      </div>
+      <div class="form-group">
+        <label>姓名 <span class="required">*</span></label>
+        <input type="text" id="addStudentName" class="login-input" placeholder="请输入姓名">
+      </div>
+      <div class="form-group">
+        <label>头像（可选）</label>
+        <div id="addStudentAvatarOptions" class="score-btns"></div>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" onclick="app.saveAddStudent()">保存</button>
+    </div>
+  </div>
+
+  <div id="withdrawModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeWithdrawModal()">&times;</button>
+      <h3>撤回记录</h3>
+      <p>选择要撤回的积分记录（最近10条）</p>
+      <div id="withdrawList" class="withdraw-list"></div>
+    </div>
+  </div>
+
+  <!-- 兑换弹窗 -->
+  <div id="exchangeModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeExchangeModal()">&times;</button>
+      <h3 id="exchangeModalTitle">兑换商品</h3>
+      <p id="exchangePrizeInfo"></p>
+      <div class="form-group">
+        <label>选择学生</label>
+        <select id="exchangeStudentSelect" class="login-input"></select>
+      </div>
+      <button class="btn btn-primary" onclick="app.confirmExchange()">确认兑换</button>
+    </div>
+  </div>
+
+  <!-- 添加小组弹窗 -->
+  <div id="addGroupModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeModal('addGroupModal')">&times;</button>
+      <h3>➕ 添加小组</h3>
+      <div class="form-group">
+        <label>小组名称 <span class="required">*</span></label>
+        <input type="text" id="groupName" class="login-input" placeholder="请输入小组名称">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="app.addGroup()">保存</button>
+    </div>
+  </div>
+
+  <!-- 编辑小组弹窗 -->
+  <div id="editGroupModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeModal('editGroupModal')">&times;</button>
+      <h3>✏️ 编辑小组</h3>
+      <input type="hidden" id="editGroupId">
+      <div class="form-group">
+        <label>小组名称 <span class="required">*</span></label>
+        <input type="text" id="editGroupName" class="login-input" placeholder="请输入小组名称">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="app.editGroup()">保存</button>
+    </div>
+  </div>
+
+  <!-- 随机分组弹窗 -->
+  <div id="randomGroupModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeModal('randomGroupModal')">&times;</button>
+      <h3>🎲 随机分组</h3>
+      <div class="form-group">
+        <label>小组数量</label>
+        <input type="number" id="randomGroupCount" class="login-input" min="1" max="20" placeholder="请输入小组数量">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="app.randomGroup()">开始分组</button>
+    </div>
+  </div>
+
+  <!-- 小组详情弹窗 -->
+  <div id="groupDetailModal" class="modal">
+    <div class="modal-content modal-content-large">
+      <button class="modal-close" onclick="app.closeModal('groupDetailModal')">&times;</button>
+      <h3>📋 小组详情</h3>
+      <div class="group-detail-section">
+        <h4>📊 小组信息</h4>
+        <div class="group-info-grid">
+          <div class="group-info-item">
+            <span class="group-info-label">小组名称</span>
+            <span class="group-info-value" id="detailGroupName">-</span>
+          </div>
+          <div class="group-info-item">
+            <span class="group-info-label">创建时间</span>
+            <span class="group-info-value" id="detailGroupCreated">-</span>
+          </div>
+          <div class="group-info-item">
+            <span class="group-info-label">成员数量</span>
+            <span class="group-info-value" id="detailGroupMembers">-</span>
+          </div>
+          <div class="group-info-item">
+            <span class="group-info-label">小组组长</span>
+            <span class="group-info-value" id="detailGroupLeader">-</span>
+          </div>
+          <div class="group-info-item">
+            <span class="group-info-label">小组积分</span>
+            <span class="group-info-value" id="detailGroupPoints">-</span>
+          </div>
+        </div>
+      </div>
+      <div class="group-detail-section">
+        <h4>👥 成员列表</h4>
+        <div id="groupMembersList" class="group-members-list"></div>
+      </div>
+      <div class="group-detail-section">
+        <h4>📊 积分记录</h4>
+        <div id="groupPointHistoryList" class="group-point-history-list"></div>
+      </div>
+      <div class="group-detail-section">
+        <h4>🎯 操作</h4>
+        <div class="group-detail-actions">
+          <button class="btn btn-primary" onclick="app.openGroupPointModal(document.getElementById('detailGroupId').value)">积分操作</button>
+          <button class="btn btn-secondary" onclick="app.closeModal('groupDetailModal'); app.openEditGroupModal(document.getElementById('detailGroupId').value)">编辑小组</button>
+          <button class="btn btn-danger" onclick="app.closeModal('groupDetailModal'); app.deleteGroup(document.getElementById('detailGroupId').value)">删除小组</button>
+        </div>
+      </div>
+      <input type="hidden" id="detailGroupId" value="">
+    </div>
+  </div>
+
+  <!-- 小组积分操作弹窗 -->
+  <div id="groupPointModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeModal('groupPointModal')">&times;</button>
+      <h3>🎯 小组积分操作</h3>
+      <input type="hidden" id="pointGroupId" value="">
+      <div class="form-group">
+        <label>小组名称</label>
+        <div id="pointGroupName" style="padding: 10px; background: var(--bg); border-radius: 8px; font-weight: bold;">-</div>
+      </div>
+      <div class="form-group">
+        <label>当前积分</label>
+        <div id="pointGroupCurrent" style="padding: 10px; background: var(--bg); border-radius: 8px; font-size: 1.5rem; font-weight: bold; color: var(--primary);">0</div>
+      </div>
+      <div class="form-group">
+        <label>积分变化（正数加分，负数扣分）</label>
+        <input type="number" id="pointDelta" class="login-input" placeholder="例如：5 或 -3">
+      </div>
+      <div class="form-group">
+        <label>原因</label>
+        <input type="text" id="pointReason" class="login-input" placeholder="请输入积分变化原因">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="app.addGroupPoint()">确认</button>
+    </div>
+  </div>
+
+  <!-- 小组排行榜弹窗 -->
+  <div id="groupLeaderboardModal" class="modal">
+    <div class="modal-content modal-content-large">
+      <button class="modal-close" onclick="app.closeModal('groupLeaderboardModal')">&times;</button>
+      <h3>🏆 小组排行榜</h3>
+      <div id="leaderboardList" class="group-leaderboard-list"></div>
+    </div>
+  </div>
+
+  <!-- 添加学生到小组弹窗 -->
+  <div id="addStudentToGroupModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeModal('addStudentToGroupModal')">&times;</button>
+      <h3>➕ 添加学生到小组</h3>
+      <input type="hidden" id="studentToGroupId" value="">
+      <div class="form-group">
+        <label>学生</label>
+        <div id="studentToGroupName" style="padding: 10px; background: var(--bg); border-radius: 8px; font-weight: bold;">-</div>
+      </div>
+      <div class="form-group">
+        <label>选择小组</label>
+        <select id="selectGroupToAdd" class="login-input">
+          <option value="">请选择小组</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="app.addStudentToGroup()">确认添加</button>
+    </div>
+  </div>
+
+  <!-- 特效容器 -->
+  <div id="effectContainer" class="effect-container"></div>
+
+  <script src="xlsx.full.min.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
