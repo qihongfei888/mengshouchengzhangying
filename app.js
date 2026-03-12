@@ -703,6 +703,10 @@
         const userData = getUserData();
         const now = new Date().toISOString();
         
+        console.log('准备同步到云端，用户ID:', this.currentUserId);
+        console.log('本地数据:', userData);
+        console.log('同步时间:', now);
+        
         // 更新数据的最后修改时间
         userData.lastModified = now;
         
@@ -719,13 +723,18 @@
         
         // 2. 然后进行云同步（作为备份）
         if (typeof supabase !== 'undefined' && supabase) {
+          console.log('开始上传到Supabase...');
+          
+          const upsertData = {
+            id: this.currentUserId,
+            data: userData,
+            updated_at: now
+          };
+          console.log('上传数据:', upsertData);
+          
           const { error } = await supabase
             .from('users')
-            .upsert({
-              id: this.currentUserId,
-              data: userData,
-              updated_at: now
-            });
+            .upsert(upsertData);
           
           if (error) {
             console.error('Supabase同步失败:', error);
@@ -734,6 +743,8 @@
             // 同步成功后更新本地数据的lastModified
             setUserData(userData);
           }
+        } else {
+          console.log('Supabase未初始化，跳过云端同步');
         }
       } catch (e) {
         console.error('云同步失败:', e);
@@ -758,68 +769,90 @@
       try {
         // 1. 优先从云存储同步（确保多端数据一致）
         if (typeof supabase !== 'undefined' && supabase) {
+          console.log('开始从Supabase同步数据，用户ID:', this.currentUserId);
+          
           const { data, error } = await supabase
             .from('users')
             .select('data, updated_at')
             .eq('id', this.currentUserId)
             .single();
           
+          console.log('Supabase返回数据:', { data, error });
+          
           if (error) {
             console.error('Supabase同步失败:', error);
-          } else if (data && data.data) {
-            const localData = getUserData();
-            const localTimestamp = localData.lastModified || '1970-01-01T00:00:00.000Z';
-            const cloudTimestamp = data.updated_at || '1970-01-01T00:00:00.000Z';
+          } else if (data) {
+            console.log('云端数据内容:', data.data);
+            console.log('云端更新时间:', data.updated_at);
             
-            console.log(`时间戳比较 - 本地: ${localTimestamp}, 云端: ${cloudTimestamp}`);
-            
-            // 比较时间戳，选择较新的数据
-            if (cloudTimestamp > localTimestamp) {
-              // 更新本地数据
-              const updatedData = {
-                ...data.data,
-                lastModified: cloudTimestamp
-              };
-              setUserData(updatedData);
+            if (data.data) {
+              const localData = getUserData();
+              const localTimestamp = localData.lastModified || '1970-01-01T00:00:00.000Z';
+              const cloudTimestamp = data.updated_at || '1970-01-01T00:00:00.000Z';
               
-              // 同时更新本地备份
-              try {
-                localStorage.setItem(`class_pet_local_${this.currentUserId}`, JSON.stringify({
-                  data: updatedData,
-                  timestamp: cloudTimestamp
-                }));
-              } catch (e) {
-                console.error('本地备份失败:', e);
+              console.log(`时间戳比较 - 本地: ${localTimestamp}, 云端: ${cloudTimestamp}`);
+              console.log(`本地数据:`, localData);
+              console.log(`云端数据:`, data.data);
+              
+              // 比较时间戳，选择较新的数据
+              if (cloudTimestamp > localTimestamp) {
+                console.log('云端数据更新，准备更新本地数据');
+                // 更新本地数据
+                const updatedData = {
+                  ...data.data,
+                  lastModified: cloudTimestamp
+                };
+                setUserData(updatedData);
+                
+                // 同时更新本地备份
+                try {
+                  localStorage.setItem(`class_pet_local_${this.currentUserId}`, JSON.stringify({
+                    data: updatedData,
+                    timestamp: cloudTimestamp
+                  }));
+                } catch (e) {
+                  console.error('本地备份失败:', e);
+                }
+                
+                console.log('从Supabase云存储同步成功，数据已更新');
+                syncSuccess = true;
+                // 标记数据已加载，避免init中重复加载
+                this.dataLoaded = true;
+                // 立即加载更新后的数据到内存
+                this.loadUserData();
+                // 重新渲染界面以显示新数据
+                this.renderDashboard();
+                this.renderStudents();
+                this.renderHonor();
+                this.renderStore();
+                console.log('界面已重新渲染');
+              } else {
+                console.log('本地数据更新或相同，跳过同步');
+                console.log(`本地时间戳: ${localTimestamp} >= 云端时间戳: ${cloudTimestamp}`);
+                // 即使本地数据更新，也要确保云端有数据
+                if (this.dataChanged) {
+                  console.log('本地数据有变更，同步到云端');
+                  await this.syncToCloud();
+                }
               }
-              
-              console.log('从Supabase云存储同步成功，数据已更新');
-              syncSuccess = true;
-              // 标记数据已加载，避免init中重复加载
-              this.dataLoaded = true;
-              // 立即加载更新后的数据到内存
-              this.loadUserData();
-              // 重新渲染界面以显示新数据
-              this.renderDashboard();
-              this.renderStudents();
-              this.renderHonor();
-              this.renderStore();
-              console.log('界面已重新渲染');
             } else {
-              console.log('本地数据已是最新，无需同步');
-              // 即使本地数据更新，也要确保云端有数据
-              if (this.dataChanged) {
-                console.log('本地数据有变更，同步到云端');
+              console.log('云端data字段为空，上传本地数据');
+              // 云端没有数据，上传本地数据
+              const localData = getUserData();
+              if (Object.keys(localData).length > 0) {
                 await this.syncToCloud();
               }
             }
           } else {
+            console.log('云端没有记录，上传本地数据');
             // 云端没有数据，上传本地数据
-            console.log('云端没有数据，上传本地数据');
             const localData = getUserData();
             if (Object.keys(localData).length > 0) {
               await this.syncToCloud();
             }
           }
+        } else {
+          console.log('Supabase未初始化');
         }
         
         // 2. 云存储没有数据或同步失败，尝试从本地备份加载
