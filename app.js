@@ -249,6 +249,15 @@
       githubToken: null, // GitHub Personal Access Token
       githubRepo: 'qihongfei888/xintongxin', // GitHub仓库
       githubBranch: 'main',
+      // R2计费控制
+      r2BillingControl: {
+        enabled: true, // 是否启用计费控制
+        monthlyLimit: 1000000, // 每月请求限制（100万次内免费）
+        currentMonthCalls: 0, // 当月已使用次数
+        lastResetMonth: null, // 上次重置月份
+        autoCutoff: true, // 接近限制时自动截断
+        cutoffThreshold: 0.9 // 达到90%时截断
+      },
       r2Config: {
         accountId: '',
         bucketName: '',
@@ -828,6 +837,12 @@
     
     // 启用自动同步 - 大幅减少云端操作
     enableAutoSync() {
+      // 如果已经启用，先禁用之前的定时器，避免重复创建
+      if (this.autoSyncInterval) {
+        clearInterval(this.autoSyncInterval);
+        this.autoSyncInterval = null;
+      }
+      
       // 每2小时检查一次是否需要同步
       this.autoSyncInterval = setInterval(async () => {
         // 只有当网络可用且有数据变更时才同步
@@ -857,6 +872,16 @@
     
     // 启用实时同步
     enableRealtimeSync() {
+      // 如果已经启用，先移除之前的事件监听，避免重复绑定
+      if (this.onlineHandler) {
+        window.removeEventListener('online', this.onlineHandler);
+        this.onlineHandler = null;
+      }
+      if (this.visibilityHandler) {
+        document.removeEventListener('visibilitychange', this.visibilityHandler);
+        this.visibilityHandler = null;
+      }
+      
       // 监听网络状态变化
       this.onlineHandler = () => {
         console.log('网络已连接，开始同步数据');
@@ -950,6 +975,9 @@
             console.error('重置API计数器失败:', e);
           }
         }, 60 * 60 * 1000);
+        
+        // 启动照片队列处理器
+        this.startPhotoQueueProcessor();
         
         console.log('应用初始化完成');
       } catch (e) {
@@ -1135,6 +1163,8 @@
       this.loadBadgeAwardStudents();
       this.renderBackupStatus();
       this.renderAccessoriesList();
+      // 检查是否为管理员，显示照片存储配置
+      this.checkAndShowPhotoStorageConfig();
     }
     },
 
@@ -3241,6 +3271,12 @@
 
     // 实时自动同步数据 - 使用统一的同步机制
     enableAutoSyncRealtime() {
+      // 如果已经启用，先禁用之前的定时器，避免重复创建
+      if (this.realtimeSyncInterval) {
+        clearInterval(this.realtimeSyncInterval);
+        this.realtimeSyncInterval = null;
+      }
+      
       // 监听所有数据变化
       this.originalData = {
         students: JSON.stringify(this.students),
@@ -3295,13 +3331,21 @@
         // 加载GitHub Token
         this.loadGithubToken();
         
+        // 加载R2计费设置
+        this.loadR2BillingSettings();
+        
+        // 检查月度计数器
+        this.checkAndResetMonthlyCounter();
+        
         // 检查是否需要切换到R2
         this.checkStorageProvider();
         
         // 更新界面显示
         this.updatePhotoStorageStatus();
+        this.updateR2BillingStatus();
         
         console.log(`照片存储提供商: ${this.photoStorage.currentProvider}, GitHub API调用: ${this.photoStorage.githubApiCalls}/${this.photoStorage.githubApiLimit}`);
+        console.log(`R2计费控制: ${this.photoStorage.r2BillingControl.enabled ? '已启用' : '已禁用'}, 当月使用: ${this.photoStorage.r2BillingControl.currentMonthCalls}/${this.photoStorage.r2BillingControl.monthlyLimit}`);
       } catch (e) {
         console.error('初始化照片存储失败:', e);
       }
@@ -3309,11 +3353,79 @@
     
     // 检查存储提供商
     checkStorageProvider() {
+      // 首先检查R2计费控制
+      if (this.shouldBlockR2()) {
+        // R2被截断，只能使用GitHub
+        if (this.photoStorage.githubApiCalls >= this.photoStorage.githubApiLimit) {
+          console.warn('GitHub额度已用完，R2计费控制已启用，暂停照片上传');
+          return;
+        }
+        this.photoStorage.currentProvider = 'github';
+        return;
+      }
+      
       if (this.photoStorage.githubApiCalls >= this.photoStorage.githubApiLimit) {
         if (this.photoStorage.currentProvider !== 'r2') {
           this.photoStorage.currentProvider = 'r2';
           console.log('GitHub API限制已达到，切换到R2存储');
         }
+      }
+    },
+    
+    // 检查是否应该阻止R2使用（计费控制）
+    shouldBlockR2() {
+      const control = this.photoStorage.r2BillingControl;
+      if (!control.enabled || !control.autoCutoff) {
+        return false;
+      }
+      
+      // 检查是否需要重置月度计数
+      this.checkAndResetMonthlyCounter();
+      
+      // 检查是否达到截断阈值
+      const usageRatio = control.currentMonthCalls / control.monthlyLimit;
+      if (usageRatio >= control.cutoffThreshold) {
+        console.warn(`R2使用接近限制: ${control.currentMonthCalls}/${control.monthlyLimit} (${(usageRatio * 100).toFixed(1)}%)，已自动截断`);
+        return true;
+      }
+      
+      return false;
+    },
+    
+    // 检查并重置月度计数器
+    checkAndResetMonthlyCounter() {
+      const control = this.photoStorage.r2BillingControl;
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${now.getMonth() + 1}`;
+      
+      if (control.lastResetMonth !== currentMonth) {
+        // 新月度，重置计数器
+        control.currentMonthCalls = 0;
+        control.lastResetMonth = currentMonth;
+        localStorage.setItem('r2_last_reset_month', currentMonth);
+        localStorage.setItem('r2_monthly_calls', '0');
+        console.log(`R2月度计数器已重置: ${currentMonth}`);
+      } else {
+        // 从localStorage读取当前计数
+        const savedCalls = localStorage.getItem('r2_monthly_calls');
+        if (savedCalls) {
+          control.currentMonthCalls = parseInt(savedCalls, 10) || 0;
+        }
+      }
+    },
+    
+    // 增加R2调用计数
+    incrementR2Calls(count = 1) {
+      this.checkAndResetMonthlyCounter();
+      this.photoStorage.r2BillingControl.currentMonthCalls += count;
+      localStorage.setItem('r2_monthly_calls', this.photoStorage.r2BillingControl.currentMonthCalls.toString());
+      
+      // 检查是否接近限制
+      const control = this.photoStorage.r2BillingControl;
+      const usageRatio = control.currentMonthCalls / control.monthlyLimit;
+      
+      if (usageRatio >= control.cutoffThreshold) {
+        console.warn(`R2使用接近限制: ${control.currentMonthCalls}/${control.monthlyLimit} (${(usageRatio * 100).toFixed(1)}%)`);
       }
     },
     
@@ -3399,8 +3511,25 @@
       }
     },
     
-    // 智能上传照片（自动选择存储提供商）
+    // 智能上传照片（自动选择存储提供商，带计费控制）
     async uploadPhoto(file, filename) {
+      // 检查R2计费控制
+      if (this.shouldBlockR2()) {
+        // R2被截断，只能使用GitHub
+        if (this.photoStorage.githubApiCalls >= this.photoStorage.githubApiLimit) {
+          console.warn('GitHub额度已用完，R2计费控制已启用，照片将暂存本地队列');
+          // 将照片加入待上传队列
+          this.addToPhotoQueue(file, filename);
+          return {
+            success: false,
+            error: '存储额度暂时用完，照片已加入队列，将在额度恢复后自动上传',
+            queued: true
+          };
+        }
+        // 强制使用GitHub
+        this.photoStorage.currentProvider = 'github';
+      }
+      
       // 检查当前提供商
       this.checkStorageProvider();
       
@@ -3410,17 +3539,125 @@
         // 尝试使用GitHub
         result = await this.uploadPhotoToGitHub(file, filename);
         
-        // 如果GitHub失败且是因为API限制，切换到R2
+        // 如果GitHub失败且是因为API限制，尝试R2（如果未被截断）
         if (!result.success && result.error.includes('限制')) {
-          console.log('GitHub API限制，尝试R2...');
-          result = await this.uploadPhotoToR2(file, filename);
+          if (!this.shouldBlockR2()) {
+            console.log('GitHub API限制，尝试R2...');
+            result = await this.uploadPhotoToR2(file, filename);
+            if (result.success) {
+              // 记录R2调用
+              this.incrementR2Calls();
+            }
+          } else {
+            console.warn('GitHub和R2都不可用，照片加入队列');
+            this.addToPhotoQueue(file, filename);
+            result = {
+              success: false,
+              error: '存储额度暂时用完，照片已加入队列',
+              queued: true
+            };
+          }
         }
       } else {
         // 使用R2
         result = await this.uploadPhotoToR2(file, filename);
+        if (result.success) {
+          // 记录R2调用
+          this.incrementR2Calls();
+        }
       }
       
       return result;
+    },
+    
+    // 照片上传队列（用于额度用完时暂存）
+    photoUploadQueue: [],
+    
+    // 添加照片到上传队列
+    addToPhotoQueue(file, filename) {
+      const queueItem = {
+        file: file,
+        filename: filename,
+        timestamp: Date.now(),
+        retryCount: 0
+      };
+      this.photoUploadQueue.push(queueItem);
+      
+      // 保存队列到localStorage
+      this.savePhotoQueue();
+      
+      console.log(`照片已加入上传队列，当前队列: ${this.photoUploadQueue.length}张`);
+    },
+    
+    // 保存照片队列到localStorage
+    savePhotoQueue() {
+      try {
+        // 由于File对象无法序列化，只保存元数据
+        const queueMetadata = this.photoUploadQueue.map(item => ({
+          filename: item.filename,
+          timestamp: item.timestamp,
+          retryCount: item.retryCount
+        }));
+        localStorage.setItem('photo_upload_queue_meta', JSON.stringify(queueMetadata));
+      } catch (e) {
+        console.error('保存照片队列失败:', e);
+      }
+    },
+    
+    // 尝试处理上传队列（在额度恢复时调用）
+    async processPhotoQueue() {
+      if (this.photoUploadQueue.length === 0) return;
+      
+      console.log(`开始处理照片上传队列，共${this.photoUploadQueue.length}张`);
+      
+      const processedItems = [];
+      
+      for (let i = 0; i < this.photoUploadQueue.length; i++) {
+        const item = this.photoUploadQueue[i];
+        
+        // 检查是否还有额度
+        if (this.photoStorage.githubApiCalls >= this.photoStorage.githubApiLimit && this.shouldBlockR2()) {
+          console.log('额度仍不足，暂停处理队列');
+          break;
+        }
+        
+        try {
+          const result = await this.uploadPhoto(item.file, item.filename);
+          if (result.success) {
+            processedItems.push(i);
+            console.log(`队列照片上传成功: ${item.filename}`);
+          } else if (item.retryCount < 3) {
+            // 失败但可重试
+            item.retryCount++;
+            console.log(`队列照片上传失败，已重试${item.retryCount}次: ${item.filename}`);
+          } else {
+            // 超过重试次数，放弃
+            processedItems.push(i);
+            console.error(`队列照片超过重试次数，放弃上传: ${item.filename}`);
+          }
+        } catch (e) {
+          console.error(`处理队列照片失败: ${item.filename}`, e);
+        }
+      }
+      
+      // 移除已处理的项目
+      this.photoUploadQueue = this.photoUploadQueue.filter((_, index) => !processedItems.includes(index));
+      this.savePhotoQueue();
+      
+      console.log(`照片队列处理完成，剩余${this.photoUploadQueue.length}张`);
+    },
+    
+    // 启动队列处理定时器（每小时检查一次）
+    startPhotoQueueProcessor() {
+      // 每小时尝试处理队列
+      setInterval(() => {
+        this.processPhotoQueue();
+      }, 60 * 60 * 1000);
+      
+      // 立即尝试处理一次
+      setTimeout(() => {
+        this.processPhotoQueue();
+      }, 5000);
     },
     
     // 文件转base64
@@ -3452,14 +3689,116 @@
           this.photoStorage.currentProvider = 'github';
           console.log('GitHub API计数已重置，切换回GitHub存储');
         }
+        
+        // 重置后尝试处理队列
+        this.processPhotoQueue();
       }
       
       // 更新界面显示
       this.updatePhotoStorageStatus();
+      this.updateR2BillingStatus();
+    },
+    
+    // 保存R2计费设置
+    saveR2BillingSettings() {
+      // 检查是否为管理员
+      if (!this.isCurrentUserAdmin()) {
+        alert('只有管理员才能修改计费设置');
+        return;
+      }
+      
+      try {
+        const enabled = document.getElementById('r2BillingControlEnabled').checked;
+        const autoCutoff = document.getElementById('r2AutoCutoff').checked;
+        const monthlyLimit = parseInt(document.getElementById('r2MonthlyLimit').value, 10) || 1000000;
+        const cutoffThreshold = (parseInt(document.getElementById('r2CutoffThreshold').value, 10) || 90) / 100;
+        
+        this.photoStorage.r2BillingControl.enabled = enabled;
+        this.photoStorage.r2BillingControl.autoCutoff = autoCutoff;
+        this.photoStorage.r2BillingControl.monthlyLimit = monthlyLimit;
+        this.photoStorage.r2BillingControl.cutoffThreshold = cutoffThreshold;
+        
+        // 保存到localStorage
+        localStorage.setItem('r2_billing_settings', JSON.stringify({
+          enabled,
+          autoCutoff,
+          monthlyLimit,
+          cutoffThreshold
+        }));
+        
+        alert('R2计费设置已保存');
+        this.updateR2BillingStatus();
+      } catch (e) {
+        console.error('保存R2计费设置失败:', e);
+        alert('保存失败: ' + e.message);
+      }
+    },
+    
+    // 加载R2计费设置
+    loadR2BillingSettings() {
+      try {
+        const saved = localStorage.getItem('r2_billing_settings');
+        if (saved) {
+          const settings = JSON.parse(saved);
+          this.photoStorage.r2BillingControl.enabled = settings.enabled !== false;
+          this.photoStorage.r2BillingControl.autoCutoff = settings.autoCutoff !== false;
+          this.photoStorage.r2BillingControl.monthlyLimit = settings.monthlyLimit || 1000000;
+          this.photoStorage.r2BillingControl.cutoffThreshold = settings.cutoffThreshold || 0.9;
+          
+          // 更新界面
+          const enabledEl = document.getElementById('r2BillingControlEnabled');
+          const autoCutoffEl = document.getElementById('r2AutoCutoff');
+          const monthlyLimitEl = document.getElementById('r2MonthlyLimit');
+          const cutoffThresholdEl = document.getElementById('r2CutoffThreshold');
+          
+          if (enabledEl) enabledEl.checked = this.photoStorage.r2BillingControl.enabled;
+          if (autoCutoffEl) autoCutoffEl.checked = this.photoStorage.r2BillingControl.autoCutoff;
+          if (monthlyLimitEl) monthlyLimitEl.value = this.photoStorage.r2BillingControl.monthlyLimit;
+          if (cutoffThresholdEl) cutoffThresholdEl.value = Math.round(this.photoStorage.r2BillingControl.cutoffThreshold * 100);
+        }
+      } catch (e) {
+        console.error('加载R2计费设置失败:', e);
+      }
+    },
+    
+    // 更新R2计费状态显示
+    updateR2BillingStatus() {
+      const statusEl = document.getElementById('r2BillingStatus');
+      const queueStatusEl = document.getElementById('photoQueueStatus');
+      
+      if (statusEl) {
+        const control = this.photoStorage.r2BillingControl;
+        const usage = control.currentMonthCalls;
+        const limit = control.monthlyLimit;
+        const percentage = limit > 0 ? ((usage / limit) * 100).toFixed(1) : 0;
+        
+        let statusText = `当月使用: ${usage.toLocaleString()}/${limit.toLocaleString()} (${percentage}%)`;
+        
+        if (this.shouldBlockR2()) {
+          statusText += ' - <span style="color: #e74c3c; font-weight: bold;">已截断</span>';
+        } else if (parseFloat(percentage) >= control.cutoffThreshold * 100) {
+          statusText += ' - <span style="color: #f39c12;">接近限制</span>';
+        } else {
+          statusText += ' - <span style="color: #27ae60;">正常</span>';
+        }
+        
+        statusEl.innerHTML = statusText;
+      }
+      
+      if (queueStatusEl) {
+        const queueLength = this.photoUploadQueue.length;
+        queueStatusEl.textContent = `待上传: ${queueLength}张`;
+      }
     },
     
     // 手动重置计数器（用户点击按钮）
     resetGithubCounter() {
+      // 检查是否为管理员
+      if (!this.isCurrentUserAdmin()) {
+        alert('只有管理员才能重置计数器');
+        return;
+      }
+      
       this.photoStorage.githubApiCalls = 0;
       localStorage.setItem('github_api_calls', '0');
       localStorage.setItem('github_api_last_reset', Date.now().toString());
@@ -3477,6 +3816,12 @@
     saveGithubToken() {
       const tokenInput = document.getElementById('githubTokenInput');
       if (!tokenInput) return;
+      
+      // 检查是否为管理员
+      if (!this.isCurrentUserAdmin()) {
+        alert('只有管理员才能配置照片存储');
+        return;
+      }
       
       const token = tokenInput.value.trim();
       if (!token) {
@@ -3512,6 +3857,12 @@
     
     // 测试GitHub连接
     async testGithubConnection() {
+      // 检查是否为管理员
+      if (!this.isCurrentUserAdmin()) {
+        alert('只有管理员才能测试连接');
+        return;
+      }
+      
       if (!this.photoStorage.githubToken) {
         alert('请先保存GitHub Token');
         return;
@@ -3533,6 +3884,48 @@
         }
       } catch (e) {
         alert(`连接错误: ${e.message}`);
+      }
+    },
+    
+    // 检查是否为管理员并显示照片存储配置
+    checkAndShowPhotoStorageConfig() {
+      try {
+        // 检查当前用户是否为管理员
+        const isAdmin = this.isCurrentUserAdmin();
+        const photoStorageConfig = document.getElementById('photoStorageConfig');
+        
+        if (photoStorageConfig) {
+          if (isAdmin) {
+            // 是管理员，显示配置
+            photoStorageConfig.style.display = 'block';
+            console.log('当前用户是管理员，显示照片存储配置');
+          } else {
+            // 不是管理员，隐藏配置
+            photoStorageConfig.style.display = 'none';
+            console.log('当前用户不是管理员，隐藏照片存储配置');
+          }
+        }
+      } catch (e) {
+        console.error('检查管理员权限失败:', e);
+      }
+    },
+    
+    // 检查当前用户是否为管理员
+    isCurrentUserAdmin() {
+      try {
+        // 检查当前登录的用户名是否在管理员列表中
+        if (!this.currentUsername) return false;
+        
+        // 使用已有的ADMIN_ACCOUNTS数组检查
+        const adminAccounts = [
+          { username: '18844162799' },
+          { username: '18645803876' }
+        ];
+        
+        return adminAccounts.some(admin => admin.username === this.currentUsername);
+      } catch (e) {
+        console.error('检查管理员身份失败:', e);
+        return false;
       }
     },
     
@@ -3616,13 +4009,27 @@
 
     // 自动导出备份功能
     enableAutoBackup() {
+      // 如果已经启用，先禁用之前的定时器，避免重复创建
+      if (this.autoBackupInterval) {
+        clearInterval(this.autoBackupInterval);
+        this.autoBackupInterval = null;
+      }
+      
       // 每小时自动导出一次备份到localStorage
       this.autoBackupInterval = setInterval(() => {
-        this.autoSaveBackup();
+        try {
+          this.autoSaveBackup();
+        } catch (e) {
+          console.error('自动备份失败:', e);
+        }
       }, 60 * 60 * 1000); // 1小时
       
       // 立即执行一次备份
-      this.autoSaveBackup();
+      try {
+        this.autoSaveBackup();
+      } catch (e) {
+        console.error('初始备份失败:', e);
+      }
       console.log('自动备份已启用');
     },
 
