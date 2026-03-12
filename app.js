@@ -817,27 +817,24 @@
         
         // 3. 进行云同步
         console.log('开始上传到Supabase...');
-          
-          const upsertData = {
-            id: this.currentUserId,
-            data: userData,
-            updated_at: now
-          };
-          console.log('上传数据:', upsertData);
-          
-          const { error } = await supabase
-            .from('users')
-            .upsert(upsertData);
-          
-          if (error) {
-            console.error('Supabase同步失败:', error);
-          } else {
-            console.log('数据已同步到Supabase云存储');
-            // 同步成功后更新本地数据的lastModified
-            setUserData(userData);
-          }
+        
+        const upsertData = {
+          id: this.currentUserId,
+          data: userData,
+          updated_at: now
+        };
+        console.log('上传数据:', upsertData);
+        
+        const { error } = await supabase
+          .from('users')
+          .upsert(upsertData);
+        
+        if (error) {
+          console.error('Supabase同步失败:', error);
         } else {
-          console.log('Supabase未初始化，跳过云端同步');
+          console.log('数据已同步到Supabase云存储');
+          // 同步成功后更新本地数据的lastModified
+          setUserData(userData);
         }
       } catch (e) {
         console.error('云同步失败:', e);
