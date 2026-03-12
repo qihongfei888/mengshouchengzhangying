@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>童心宠伴</title>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
   <style>
     @font-face {
       font-family: 'ZCOOL KuaiLe';
@@ -547,7 +547,30 @@
             </div>
           </div>
           <div class="settings-card settings-card-cute full-width">
-            <h3>📱 设备管理</h3>
+            <h3>� 存储状态</h3>
+            <p class="setting-hint">查看本地存储使用情况，支持大容量数据存储</p>
+            <div id="storageStatus" class="storage-status">
+              <div class="storage-item">
+                <span class="storage-label">存储引擎:</span>
+                <span id="storageEngine" class="storage-value">检测中...</span>
+              </div>
+              <div class="storage-item">
+                <span class="storage-label">已使用:</span>
+                <span id="storageUsed" class="storage-value">计算中...</span>
+              </div>
+              <div class="storage-item">
+                <span class="storage-label">可用空间:</span>
+                <span id="storageQuota" class="storage-value">计算中...</span>
+              </div>
+              <div class="storage-item">
+                <span class="storage-label">使用率:</span>
+                <span id="storagePercent" class="storage-value">计算中...</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-cute" onclick="app.refreshStorageStatus()">🔄 刷新存储状态</button>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>�� 设备管理</h3>
             <p class="setting-hint">查看和管理已绑定的设备，防止账号被分享滥用</p>
             <div id="devicesList" class="devices-list"></div>
             <button type="button" class="btn btn-primary btn-cute" onclick="app.refreshDevices()">🔄 刷新设备列表</button>
@@ -871,6 +894,7 @@
   <div id="effectContainer" class="effect-container"></div>
 
   <script src="xlsx.full.min.js"></script>
+  <script src="db.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>

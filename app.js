@@ -271,23 +271,70 @@
       memoryStorage[USER_LIST_KEY] = list;
     }
   }
-  function getUserData() {
-    if (!app.currentUserId) return {};
-    try {
-      const v = localStorage.getItem(USER_DATA_PREFIX + app.currentUserId);
-      return v ? JSON.parse(v) : {};
-    } catch (e) {
-      // localStorage 不可用时使用内存存储
-      return memoryStorage[USER_DATA_PREFIX + app.currentUserId] || {};
+  var useIndexedDB = typeof IndexedDBManager !== 'undefined' && IndexedDBManager.isSupported();
+  var indexedDBReady = false;
+  
+  async function initIndexedDB() {
+    if (useIndexedDB && !indexedDBReady) {
+      try {
+        await IndexedDBManager.init();
+        indexedDBReady = true;
+        var migrated = await IndexedDBManager.migrateFromLocalStorage();
+        if (migrated > 0) {
+          console.log('已从 localStorage 迁移 ' + migrated + ' 条数据到 IndexedDB');
+        }
+      } catch (e) {
+        console.error('IndexedDB 初始化失败，使用 localStorage:', e);
+        useIndexedDB = false;
+      }
     }
   }
+  
+  function getUserData() {
+    if (!app.currentUserId) return {};
+    var key = USER_DATA_PREFIX + app.currentUserId;
+    if (useIndexedDB && indexedDBReady) {
+      var cachedData = memoryStorage[key];
+      if (cachedData) return cachedData;
+    }
+    try {
+      var v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : {};
+    } catch (e) {
+      return memoryStorage[key] || {};
+    }
+  }
+  
+  async function getUserDataAsync() {
+    if (!app.currentUserId) return {};
+    var key = USER_DATA_PREFIX + app.currentUserId;
+    if (useIndexedDB && indexedDBReady) {
+      try {
+        var data = await IndexedDBManager.getItem(key);
+        if (data) {
+          memoryStorage[key] = data;
+          return data;
+        }
+      } catch (e) {
+        console.error('IndexedDB 读取失败:', e);
+      }
+    }
+    return getUserData();
+  }
+  
   function setUserData(data) {
     if (!app.currentUserId) return;
+    var key = USER_DATA_PREFIX + app.currentUserId;
+    memoryStorage[key] = data;
     try {
-      localStorage.setItem(USER_DATA_PREFIX + app.currentUserId, JSON.stringify(data));
+      localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
-      // localStorage 不可用时使用内存存储
-      memoryStorage[USER_DATA_PREFIX + app.currentUserId] = data;
+      console.warn('localStorage 写入失败:', e);
+    }
+    if (useIndexedDB && indexedDBReady) {
+      IndexedDBManager.setItem(key, data).catch(function(e) {
+        console.error('IndexedDB 写入失败:', e);
+      });
     }
   }
   function getStorage(key, defaultValue) {
@@ -1360,8 +1407,8 @@
       this.loadBadgeAwardStudents();
       this.renderBackupStatus();
       this.renderAccessoriesList();
-      // 检查是否为管理员，显示照片存储配置
       this.checkAndShowPhotoStorageConfig();
+      this.refreshStorageStatus();
     }
     },
 
@@ -4183,6 +4230,47 @@
         statusEl.textContent = `当前: ${provider} | API调用: ${calls}/${limit}`;
       }
     },
+    
+    async refreshStorageStatus() {
+      const engineEl = document.getElementById('storageEngine');
+      const usedEl = document.getElementById('storageUsed');
+      const quotaEl = document.getElementById('storageQuota');
+      const percentEl = document.getElementById('storagePercent');
+      
+      if (engineEl) {
+        if (typeof IndexedDBManager !== 'undefined' && IndexedDBManager.isSupported()) {
+          engineEl.textContent = 'IndexedDB (大容量)';
+          engineEl.style.color = '#22c55e';
+        } else {
+          engineEl.textContent = 'localStorage (5-10MB)';
+          engineEl.style.color = '#f59e0b';
+        }
+      }
+      
+      if (typeof IndexedDBManager !== 'undefined') {
+        try {
+          const usage = await IndexedDBManager.getStorageUsage();
+          if (usage && usedEl && quotaEl && percentEl) {
+            usedEl.textContent = usage.usageMB + ' MB';
+            quotaEl.textContent = usage.quotaMB + ' MB';
+            percentEl.textContent = usage.percentUsed + '%';
+            
+            if (parseFloat(usage.percentUsed) > 80) {
+              percentEl.style.color = '#ef4444';
+            } else if (parseFloat(usage.percentUsed) > 50) {
+              percentEl.style.color = '#f59e0b';
+            } else {
+              percentEl.style.color = '#22c55e';
+            }
+          }
+        } catch (e) {
+          console.error('获取存储状态失败:', e);
+          if (usedEl) usedEl.textContent = '无法获取';
+          if (quotaEl) quotaEl.textContent = '无法获取';
+          if (percentEl) percentEl.textContent = '无法获取';
+        }
+      }
+    },
 
     // 检查设备授权状态
     checkDeviceAuthorization() {
@@ -6150,6 +6238,9 @@
   }
 
   async function bootstrap() {
+    if (useIndexedDB) {
+      await initIndexedDB();
+    }
     try {
       const savedUser = localStorage.getItem(CURRENT_USER_KEY);
       if (savedUser) {
@@ -6158,7 +6249,6 @@
           app.currentUserId = user.id;
           app.currentUsername = user.username;
           
-          // 有网时才尝试从云端同步
           if (navigator.onLine) {
             try {
               console.log('自动登录时从云端同步数据...');
