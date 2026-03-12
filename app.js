@@ -1,4 +1,54 @@
 (function () {
+  // 动态加载 Supabase SDK
+  function loadSupabaseSDK() {
+    return new Promise((resolve) => {
+      // 如果已经存在，直接返回
+      if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        console.log('✅ Supabase SDK 已存在');
+        resolve(true);
+        return;
+      }
+      
+      // 动态加载脚本
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+      script.onload = function() {
+        console.log('✅ Supabase SDK 加载成功');
+        resolve(true);
+      };
+      script.onerror = function() {
+        console.error('❌ Supabase SDK 加载失败');
+        resolve(false);
+      };
+      document.head.appendChild(script);
+    });
+  }
+  
+  // 初始化 Supabase
+  async function initSupabase() {
+    const loaded = await loadSupabaseSDK();
+    if (loaded && typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+      try {
+        const supabaseUrl = 'https://cuipqszkjsxixmbrvwdg.supabase.co';
+        const supabaseKey = 'sb_publishable_kV8fI-YCfPQy2m2akpOdXg_JXrRurE9';
+        window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        console.log('✅ Supabase 初始化成功');
+        return true;
+      } catch (e) {
+        console.error('❌ Supabase 初始化失败:', e);
+        return false;
+      }
+    }
+    return false;
+  }
+  
+  // 页面加载完成后初始化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSupabase);
+  } else {
+    initSupabase();
+  }
+  
   const STORAGE_KEYS = {
     students: 'class_pet_students',
     systemName: 'class_pet_system_name',
