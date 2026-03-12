@@ -2017,6 +2017,7 @@ body::before {
   /* 基础样式 */
   body {
     font-size: 14px;
+    padding-bottom: 80px;
   }
   
   /* 登录页面 */
@@ -2026,41 +2027,68 @@ body::before {
     padding: 20px;
   }
   
-  /* 导航栏 */
-  .nav-container {
-    width: 100%;
+  /* 导航栏 - 固定在底部 */
+  .main-header {
     position: fixed;
     bottom: 0;
     top: auto;
     left: 0;
-    z-index: 50;
+    right: 0;
+    width: 100%;
+    z-index: 1000;
+    margin-bottom: 0;
+    border-radius: 28px 28px 0 0;
+    padding: 10px 8px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
   }
-  .nav-buttons {
-    flex-direction: row;
+  .system-title {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+  .main-nav {
+    flex-wrap: nowrap;
     overflow-x: auto;
-    padding: 5px 10px;
     gap: 5px;
+    padding: 0 5px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .main-nav::-webkit-scrollbar {
+    display: none;
   }
   .nav-btn {
-    flex: 1;
-    min-width: 60px;
-    padding: 8px 5px;
-    font-size: 0.7rem;
+    flex: 0 0 auto;
+    min-width: 55px;
+    padding: 8px 6px;
+    font-size: 0.65rem;
+    white-space: nowrap;
   }
   .nav-icon {
     width: 16px;
     height: 16px;
     margin-bottom: 2px;
+    margin-right: 0;
   }
   .nav-btn-logout {
+    display: flex;
+    min-width: 50px;
+    background: rgba(255,107,107,0.25);
+    color: #ff6b6b;
+    border-color: rgba(255,107,107,0.4);
+  }
+  .nav-btn-logout:hover {
+    background: rgba(255,107,107,0.35);
+  }
+  .current-class-name {
     display: none;
   }
   
   /* 主内容 */
   .main-content {
     margin-left: 0;
-    margin-bottom: 70px;
+    margin-bottom: 100px;
     padding: 10px;
+    padding-bottom: 120px;
   }
   
   /* 小广播站 */
