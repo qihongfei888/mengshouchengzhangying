@@ -235,6 +235,27 @@
     groups: [],
     groupPointHistory: [],
     lastSyncTime: null,
+    dataChanged: false,
+    syncing: false,
+    syncTimeout: null,
+    pendingChanges: 0,
+    lastSyncAttempt: 0,
+    
+    // 照片存储管理
+    photoStorage: {
+      githubApiCalls: 0,
+      githubApiLimit: 5000,
+      currentProvider: 'github', // 'github' 或 'r2'
+      githubToken: null, // GitHub Personal Access Token
+      githubRepo: 'qihongfei888/xintongxin', // GitHub仓库
+      githubBranch: 'main',
+      r2Config: {
+        accountId: '',
+        bucketName: '',
+        accessKeyId: '',
+        secretAccessKey: ''
+      }
+    },
 
     showLoginPage() {
       document.getElementById('login-page').style.display = 'flex';
@@ -246,65 +267,153 @@
       document.getElementById('login-form').style.display = 'block';
       document.getElementById('register-form').style.display = 'none';
     },
-    login(username, password) {
-      // 检查登录尝试次数
-      if (!checkLoginAttempts(username)) {
-        alert('登录尝试次数过多，请10分钟后再试');
-        return false;
-      }
-      
-      const users = getUserList();
-      const user = users.find(u => u.username === username && u.password === password);
-      if (user) {
-        // 记录成功登录
-        recordLoginAttempt(username, true);
-        
-        // 生成设备指纹
-        const deviceId = generateDeviceFingerprint();
-        
-        // 检查设备是否已绑定
-        if (!user.devices) {
-          user.devices = [];
-        }
-        if (!user.maxDevices) {
-          user.maxDevices = 5;
+    async login(username, password) {
+      try {
+        // 检查登录尝试次数
+        if (!checkLoginAttempts(username)) {
+          alert('登录尝试次数过多，请10分钟后再试');
+          return false;
         }
         
-        const existingDevice = user.devices.find(d => d.id === deviceId);
-        
-        if (existingDevice) {
-          // 设备已绑定，更新最后登录时间
-          existingDevice.lastLogin = new Date().toISOString();
-        } else {
-          // 设备未绑定，检查是否超过设备限制
-          if (user.devices.length >= user.maxDevices) {
-            alert('设备数量已达上限，请联系管理员或解绑其他设备');
-            return false;
+        const users = getUserList();
+        const user = users.find(u => u.username === username && u.password === password);
+        if (user) {
+          // 记录成功登录
+          recordLoginAttempt(username, true);
+          
+          // 生成设备指纹
+          const deviceId = generateDeviceFingerprint();
+          
+          // 检查设备是否已绑定
+          if (!user.devices) {
+            user.devices = [];
+          }
+          if (!user.maxDevices) {
+            user.maxDevices = 5;
           }
           
-          // 添加新设备
-          user.devices.push({
+          const existingDevice = user.devices.find(d => d.id === deviceId);
+          
+          if (existingDevice) {
+            // 设备已绑定，更新最后登录时间
+            existingDevice.lastLogin = new Date().toISOString();
+          } else {
+            // 设备未绑定，检查是否超过设备限制
+            if (user.devices.length >= user.maxDevices) {
+              alert('设备数量已达上限，请联系管理员或解绑其他设备');
+              return false;
+            }
+            
+            // 添加新设备
+            user.devices.push({
+              id: deviceId,
+              name: navigator.userAgent || 'Unknown Device',
+              lastLogin: new Date().toISOString()
+            });
+          }
+          
+          // 保存用户数据
+          setUserList(users);
+          
+          this.currentUserId = user.id;
+          this.currentUsername = user.username;
+          localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({ 
+            id: user.id, 
+            username: user.username,
+            deviceId: deviceId 
+          }));
+          
+          // 优先从云端同步数据（确保多端数据一致）
+          try {
+            console.log('登录时从云端同步数据...');
+            const syncResult = await this.syncFromCloud();
+            if (syncResult) {
+              console.log('从云端同步成功，使用云端数据');
+            } else {
+              console.log('云端数据较旧或没有数据，使用本地数据');
+            }
+          } catch (e) {
+            console.error('云端同步失败，使用本地数据:', e);
+          }
+          
+          // 加载用户数据（无论同步成功与否都加载）
+          this.loadUserData();
+          
+          // 显示应用界面（不再调用syncData，避免重复同步）
+          this.showApp();
+          
+          // 启用实时同步和自动同步
+          this.enableRealtimeSync();
+          this.enableAutoSync();
+          
+          return true;
+        }
+        
+        // 记录失败的登录尝试
+        recordLoginAttempt(username, false);
+        return false;
+      } catch (e) {
+        console.error('登录失败:', e);
+        alert('登录失败，请重试');
+        return false;
+      }
+    },
+    async register(username, password, licenseKey) {
+      try {
+        // 检查密码强度
+        const strength = checkPasswordStrength(password);
+        if (strength < 3) {
+          alert('密码强度不足，请使用至少8位包含大小写字母和数字的密码');
+          return false;
+        }
+        
+        // 验证授权码
+        if (!licenseKey) {
+          alert('请输入授权码');
+          return false;
+        }
+        
+        const deviceId = generateDeviceFingerprint();
+        const licenseValidation = validateLicense(licenseKey, deviceId);
+        
+        if (!licenseValidation.valid) {
+          alert(licenseValidation.message);
+          return false;
+        }
+        
+        const users = getUserList();
+        if (users.some(u => u.username === username)) {
+          return false; // 用户名已存在
+        }
+        
+        const newUser = {
+          id: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+          username: username,
+          password: password,
+          createdAt: new Date().toISOString(),
+          devices: [{
             id: deviceId,
             name: navigator.userAgent || 'Unknown Device',
             lastLogin: new Date().toISOString()
-          });
-        }
-        
-        // 保存用户数据
+          }],
+          maxDevices: 5, // 限制最多5个设备
+          lastLogin: new Date().toISOString(),
+          licenseKey: licenseKey // 记录使用的授权码
+        };
+        users.push(newUser);
         setUserList(users);
         
-        this.currentUserId = user.id;
-        this.currentUsername = user.username;
+        // 激活授权码
+        activateLicense(licenseKey, deviceId, newUser.id);
+        
+        this.currentUserId = newUser.id;
+        this.currentUsername = newUser.username;
         localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({ 
-          id: user.id, 
-          username: user.username,
+          id: newUser.id, 
+          username: newUser.username,
           deviceId: deviceId 
         }));
-        
-        // 尝试从云存储同步数据
-        this.syncFromCloud();
-        
-        this.loadUserData();
+        this.initUserData();
         this.showApp();
         
         // 启用实时同步和自动同步
@@ -312,74 +421,11 @@
         this.enableAutoSync();
         
         return true;
-      }
-      
-      // 记录失败的登录尝试
-      recordLoginAttempt(username, false);
-      return false;
-    },
-    register(username, password, licenseKey) {
-      // 检查密码强度
-      const strength = checkPasswordStrength(password);
-      if (strength < 3) {
-        alert('密码强度不足，请使用至少8位包含大小写字母和数字的密码');
+      } catch (e) {
+        console.error('注册失败:', e);
+        alert('注册失败，请重试');
         return false;
       }
-      
-      // 验证授权码
-      if (!licenseKey) {
-        alert('请输入授权码');
-        return false;
-      }
-      
-      const deviceId = generateDeviceFingerprint();
-      const licenseValidation = validateLicense(licenseKey, deviceId);
-      
-      if (!licenseValidation.valid) {
-        alert(licenseValidation.message);
-        return false;
-      }
-      
-      const users = getUserList();
-      if (users.some(u => u.username === username)) {
-        return false; // 用户名已存在
-      }
-      
-      const newUser = {
-        id: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        username: username,
-        password: password,
-        createdAt: new Date().toISOString(),
-        devices: [{
-          id: deviceId,
-          name: navigator.userAgent || 'Unknown Device',
-          lastLogin: new Date().toISOString()
-        }],
-        maxDevices: 5, // 限制最多5个设备
-        lastLogin: new Date().toISOString(),
-        licenseKey: licenseKey // 记录使用的授权码
-      };
-      users.push(newUser);
-      setUserList(users);
-      
-      // 激活授权码
-      activateLicense(licenseKey, deviceId, newUser.id);
-      
-      this.currentUserId = newUser.id;
-      this.currentUsername = newUser.username;
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({ 
-        id: newUser.id, 
-        username: newUser.username,
-        deviceId: deviceId 
-      }));
-      this.initUserData();
-      this.showApp();
-      
-      // 启用实时同步和自动同步
-      this.enableRealtimeSync();
-      this.enableAutoSync();
-      
-      return true;
     },
     initUserData() {
       const defaultData = {
@@ -392,189 +438,413 @@
       this.loadUserData();
     },
     loadUserData() {
-      const data = getUserData();
-      
-      // 确保数据结构正确
-      if (!data.classes) {
-        data.classes = [];
-        data.currentClassId = null;
-        setUserData(data);
-      }
-      
-      // 加载班级列表
-      this.classes = data.classes || [];
-      this.currentClassId = data.currentClassId || null;
-      
-      // 加载当前班级数据
-      const currentClass = this.classes.find(c => c.id === this.currentClassId);
-      if (currentClass) {
-        this.students = currentClass.students || [];
-        this.groups = currentClass.groups || [];
-        this.groupPointHistory = currentClass.groupPointHistory || [];
-        this.currentClassName = currentClass.name || '';
+      try {
+        const data = getUserData();
         
-        // 加载班级设置
-        document.getElementById('settingStagePoints').value = currentClass.stagePoints || 20;
-        document.getElementById('settingStages').value = currentClass.totalStages || 10;
-        document.getElementById('broadcastContent').value = (currentClass.broadcastMessages || ['欢迎来到童心宠伴！🎉']).join('\n');
-      } else {
-        // 没有选择班级时的默认值
+        // 确保数据结构正确
+        if (!data.classes) {
+          data.classes = [];
+          data.currentClassId = null;
+          setUserData(data);
+        }
+        
+        // 加载班级列表
+        this.classes = data.classes || [];
+        this.currentClassId = data.currentClassId || null;
+        
+        // 加载当前班级数据
+        const currentClass = this.classes.find(c => c.id === this.currentClassId);
+        if (currentClass) {
+          this.students = currentClass.students || [];
+          this.groups = currentClass.groups || [];
+          this.groupPointHistory = currentClass.groupPointHistory || [];
+          this.currentClassName = currentClass.name || '';
+          
+          // 加载班级设置
+          const stagePointsEl = document.getElementById('settingStagePoints');
+          const stagesEl = document.getElementById('settingStages');
+          const broadcastEl = document.getElementById('broadcastContent');
+          
+          if (stagePointsEl) stagePointsEl.value = currentClass.stagePoints || 20;
+          if (stagesEl) stagesEl.value = currentClass.totalStages || 10;
+          if (broadcastEl) broadcastEl.value = (currentClass.broadcastMessages || ['欢迎来到童心宠伴！🎉']).join('\n');
+        } else {
+          // 没有选择班级时的默认值
+          this.students = [];
+          this.groups = [];
+          this.groupPointHistory = [];
+          this.currentClassName = '';
+          
+          const stagePointsEl = document.getElementById('settingStagePoints');
+          const stagesEl = document.getElementById('settingStages');
+          const broadcastEl = document.getElementById('broadcastContent');
+          
+          if (stagePointsEl) stagePointsEl.value = 20;
+          if (stagesEl) stagesEl.value = 10;
+          if (broadcastEl) broadcastEl.value = '欢迎来到童心宠伴！🎉';
+        }
+        
+        // 加载全局设置
+        const systemTitleEl = document.getElementById('systemTitleText');
+        const classNameEl = document.getElementById('currentClassName');
+        const settingSystemNameEl = document.getElementById('settingSystemName');
+        const settingClassNameEl = document.getElementById('settingClassName');
+        const settingThemeEl = document.getElementById('settingTheme');
+        
+        if (systemTitleEl) systemTitleEl.textContent = data.systemName || '童心宠伴';
+        if (classNameEl) classNameEl.textContent = this.currentClassName ? `| ${this.currentClassName}` : '';
+        if (settingSystemNameEl) settingSystemNameEl.value = data.systemName || '童心宠伴';
+        if (settingClassNameEl) settingClassNameEl.value = this.currentClassName || '';
+        if (settingThemeEl) settingThemeEl.value = data.theme || 'coral';
+        
+        this.applyTheme(data.theme || 'coral');
+        this.updateClassSelect();
+      } catch (e) {
+        console.error('加载用户数据失败:', e);
+        // 使用默认数据
         this.students = [];
         this.groups = [];
         this.groupPointHistory = [];
         this.currentClassName = '';
-        
-        document.getElementById('settingStagePoints').value = 20;
-        document.getElementById('settingStages').value = 10;
-        document.getElementById('broadcastContent').value = '欢迎来到童心宠伴！🎉';
       }
-      
-      // 加载全局设置
-      document.getElementById('systemTitleText').textContent = data.systemName || '童心宠伴';
-      document.getElementById('currentClassName').textContent = this.currentClassName ? `| ${this.currentClassName}` : '';
-      document.getElementById('settingSystemName').value = data.systemName || '童心宠伴';
-      document.getElementById('settingClassName').value = this.currentClassName || '';
-      document.getElementById('settingTheme').value = data.theme || 'coral';
-      
-      this.applyTheme(data.theme || 'coral');
-      this.updateClassSelect();
     },
     
     showApp() {
-      document.getElementById('login-page').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      this.init();
-      this.syncData();
-      // 渲染设备列表
-      this.renderDevicesList();
+      try {
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        this.init();
+        // 不再调用syncData，避免重复同步
+        // 渲染设备列表
+        this.renderDevicesList();
+      } catch (e) {
+        console.error('显示应用失败:', e);
+        alert('应用加载失败，请刷新页面重试');
+      }
     },
     saveUserData() {
-      const data = getUserData();
-      
-      // 确保数据结构正确
-      if (!data.classes) {
-        data.classes = [];
-        data.currentClassId = null;
-      }
-      
-      // 更新全局设置
-      data.systemName = document.getElementById('settingSystemName').value || '童心宠伴';
-      data.theme = document.getElementById('settingTheme').value || 'coral';
-      
-      // 获取班级名称
-      const className = document.getElementById('settingClassName').value.trim();
-      
-      // 如果有班级，更新班级数据
-      if (this.currentClassId) {
-        const currentClass = data.classes.find(c => c.id === this.currentClassId);
-        if (currentClass) {
-          currentClass.name = className;
-          currentClass.students = this.students;
-          currentClass.groups = this.groups;
-          currentClass.groupPointHistory = this.groupPointHistory;
-          currentClass.stagePoints = parseInt(document.getElementById('settingStagePoints').value) || 20;
-          currentClass.totalStages = parseInt(document.getElementById('settingStages').value) || 10;
-          currentClass.plusItems = this.getPlusItems();
-          currentClass.minusItems = this.getMinusItems();
-          currentClass.prizes = this.getPrizes();
-          currentClass.lotteryPrizes = this.getLotteryPrizes();
-          currentClass.broadcastMessages = document.getElementById('broadcastContent').value.split('\n');
-          currentClass.petCategoryPhotos = this.getPetCategoryPhotos();
-          this.currentClassName = className;
+      try {
+        const data = getUserData();
+        
+        // 确保数据结构正确
+        if (!data.classes) {
+          data.classes = [];
+          data.currentClassId = null;
         }
+        
+        // 更新全局设置
+        const systemNameEl = document.getElementById('settingSystemName');
+        const themeEl = document.getElementById('settingTheme');
+        
+        data.systemName = systemNameEl ? systemNameEl.value || '童心宠伴' : '童心宠伴';
+        data.theme = themeEl ? themeEl.value || 'coral' : 'coral';
+        
+        // 获取班级名称
+        const classNameEl = document.getElementById('settingClassName');
+        const className = classNameEl ? classNameEl.value.trim() : '';
+        
+        // 如果有班级，更新班级数据
+        if (this.currentClassId) {
+          const currentClass = data.classes.find(c => c.id === this.currentClassId);
+          if (currentClass) {
+            currentClass.name = className;
+            currentClass.students = this.students;
+            currentClass.groups = this.groups;
+            currentClass.groupPointHistory = this.groupPointHistory;
+            
+            const stagePointsEl = document.getElementById('settingStagePoints');
+            const stagesEl = document.getElementById('settingStages');
+            const broadcastEl = document.getElementById('broadcastContent');
+            
+            currentClass.stagePoints = stagePointsEl ? parseInt(stagePointsEl.value) || 20 : 20;
+            currentClass.totalStages = stagesEl ? parseInt(stagesEl.value) || 10 : 10;
+            currentClass.plusItems = this.getPlusItems();
+            currentClass.minusItems = this.getMinusItems();
+            currentClass.prizes = this.getPrizes();
+            currentClass.lotteryPrizes = this.getLotteryPrizes();
+            currentClass.broadcastMessages = broadcastEl ? broadcastEl.value.split('\n') : ['欢迎来到童心宠伴！🎉'];
+            currentClass.petCategoryPhotos = this.getPetCategoryPhotos();
+            this.currentClassName = className;
+          }
+        }
+        
+        data.lastModified = new Date().toISOString();
+        setUserData(data);
+        
+        // 设置数据变更标志
+        this.dataChanged = true;
+        this.pendingChanges++;
+        
+        // 使用批量同步机制
+        this.scheduleSync();
+      } catch (e) {
+        console.error('保存用户数据失败:', e);
       }
-      
-      data.lastModified = new Date().toISOString();
-      setUserData(data);
-    },
-    logout() {
-      // 禁用实时同步
-      this.disableRealtimeSync();
-      // 禁用自动同步
-      this.disableAutoSync();
-      try { localStorage.removeItem(CURRENT_USER_KEY); } catch (e) {}
-      this.currentUserId = null;
-      this.currentUsername = '';
-      this.currentClassName = '';
-      this.showLoginPage();
     },
     
-    // 数据同步方法
-    syncData() {
-      if (!this.currentUserId) return;
+    // 批量同步机制
+    scheduleSync() {
+      // 清除之前的定时器
+      if (this.syncTimeout) {
+        clearTimeout(this.syncTimeout);
+      }
       
-      try {
-        // 1. 首先保存本地数据
-        this.saveUserData();
-        
-        // 2. 尝试云同步（如果网络可用）
+      // 累积多个变更后一次性同步（延迟5秒）
+      this.syncTimeout = setTimeout(() => {
+        if (this.dataChanged && navigator.onLine) {
+          this.syncData();
+          this.pendingChanges = 0;
+        }
+      }, 5000);
+      
+      // 如果累积了10个变更，立即同步
+      if (this.pendingChanges >= 10) {
+        clearTimeout(this.syncTimeout);
         if (navigator.onLine) {
+          this.syncData();
+          this.pendingChanges = 0;
+        }
+      }
+    },
+    logout() {
+      try {
+        // 退出前同步数据到云端
+        if (this.currentUserId && navigator.onLine && this.dataChanged) {
+          console.log('退出前同步数据到云端...');
           this.syncToCloud();
         }
         
-        this.lastSyncTime = new Date().toISOString();
-        console.log('数据同步完成');
+        // 禁用实时同步
+        this.disableRealtimeSync();
+        // 禁用自动同步
+        this.disableAutoSync();
+        
+        // 清理同步状态
+        this.syncing = false;
+        this.dataChanged = false;
+        this.pendingChanges = 0;
+        if (this.syncTimeout) {
+          clearTimeout(this.syncTimeout);
+          this.syncTimeout = null;
+        }
+        
+        // 移除本地存储的用户信息
+        try { localStorage.removeItem(CURRENT_USER_KEY); } catch (e) {}
+        
+        // 重置用户状态
+        this.currentUserId = null;
+        this.currentUsername = '';
+        this.currentClassName = '';
+        
+        // 显示登录页面
+        this.showLoginPage();
+        console.log('退出登录完成');
       } catch (e) {
-        console.error('同步失败:', e);
+        console.error('退出登录失败:', e);
+        // 即使出错也尝试显示登录页面
+        this.showLoginPage();
+      }
+    },
+    
+    // 数据同步方法 - 大幅减少云端操作
+    async syncData() {
+      if (!this.currentUserId) return;
+      
+      // 1. 首先保存本地数据（优先本地存储）
+      this.saveUserData();
+      
+      // 2. 仅在特定条件下才进行云同步
+      const now = Date.now();
+      const timeSinceLastSync = now - this.lastSyncAttempt;
+      
+      // 条件：距离上次同步超过2小时 或 累积了50个变更 或 用户主动退出
+      const shouldSyncToCloud = 
+        navigator.onLine && 
+        this.dataChanged && 
+        (timeSinceLastSync >= 2 * 60 * 60 * 1000 || this.pendingChanges >= 50);
+      
+      if (shouldSyncToCloud) {
+        console.log('满足云端同步条件，开始同步...');
+        this.lastSyncAttempt = now;
+        
+        try {
+          await this.syncToCloud();
+          this.dataChanged = false;
+          this.pendingChanges = 0;
+          this.lastSyncTime = new Date().toISOString();
+          console.log('云端同步完成');
+        } catch (e) {
+          console.error('云端同步失败:', e);
+        }
+      } else {
+        console.log('仅保存到本地，跳过云端同步');
       }
     },
     
     // 同步到云存储
-    syncToCloud() {
-      // 这里可以实现云存储逻辑，例如使用Supabase或其他云服务
-      // 目前使用localStorage作为云存储的替代方案
+    async syncToCloud() {
+      // 防止重复同步
+      if (this.syncing) {
+        console.log('正在同步中，跳过重复同步');
+        return;
+      }
+      
+      this.syncing = true;
+      
       try {
         const userData = getUserData();
-        // 模拟云存储：将数据存储到localStorage的另一个键中
-        const cloudStorageKey = `class_pet_cloud_${this.currentUserId}`;
-        localStorage.setItem(cloudStorageKey, JSON.stringify({
-          data: userData,
-          timestamp: new Date().toISOString()
-        }));
-        console.log('数据已同步到云存储');
+        
+        // 1. 优先使用本地存储
+        try {
+          localStorage.setItem(`class_pet_local_${this.currentUserId}`, JSON.stringify({
+            data: userData,
+            timestamp: new Date().toISOString()
+          }));
+          console.log('数据已存储到本地');
+        } catch (localError) {
+          console.error('本地存储失败:', localError);
+        }
+        
+        // 2. 然后进行云同步（作为备份）
+        if (typeof supabase !== 'undefined' && supabase) {
+          const { error } = await supabase
+            .from('users')
+            .upsert({
+              id: this.currentUserId,
+              data: userData,
+              updated_at: new Date().toISOString()
+            });
+          
+          if (error) {
+            console.error('Supabase同步失败:', error);
+          } else {
+            console.log('数据已同步到Supabase云存储');
+          }
+        }
       } catch (e) {
         console.error('云同步失败:', e);
+      } finally {
+        this.syncing = false;
       }
     },
     
     // 从云存储同步
-    syncFromCloud() {
+    async syncFromCloud() {
       if (!this.currentUserId) return false;
       
+      // 防止重复同步
+      if (this.syncing) {
+        console.log('正在同步中，跳过重复同步');
+        return false;
+      }
+      
+      this.syncing = true;
+      let syncSuccess = false;
+      
       try {
-        const cloudStorageKey = `class_pet_cloud_${this.currentUserId}`;
-        const cloudData = localStorage.getItem(cloudStorageKey);
-        
-        if (cloudData) {
-          const parsedData = JSON.parse(cloudData);
-          const localData = getUserData();
-          const localTimestamp = localData.lastModified || '1970-01-01T00:00:00.000Z';
+        // 1. 优先从云存储同步（确保多端数据一致）
+        if (typeof supabase !== 'undefined' && supabase) {
+          const { data, error } = await supabase
+            .from('users')
+            .select('data, updated_at')
+            .eq('id', this.currentUserId)
+            .single();
           
-          // 比较时间戳，选择较新的数据
-          if (parsedData.timestamp > localTimestamp) {
-            // 更新本地数据
-            const updatedData = {
-              ...parsedData.data,
-              lastModified: parsedData.timestamp
-            };
-            setUserData(updatedData);
-            this.loadUserData();
-            console.log('从云存储同步成功');
-            return true;
+          if (error) {
+            console.error('Supabase同步失败:', error);
+          } else if (data && data.data) {
+            const localData = getUserData();
+            const localTimestamp = localData.lastModified || '1970-01-01T00:00:00.000Z';
+            const cloudTimestamp = data.updated_at || '1970-01-01T00:00:00.000Z';
+            
+            // 比较时间戳，选择较新的数据
+            if (cloudTimestamp > localTimestamp) {
+              // 更新本地数据
+              const updatedData = {
+                ...data.data,
+                lastModified: cloudTimestamp
+              };
+              setUserData(updatedData);
+              
+              // 同时更新本地备份
+              try {
+                localStorage.setItem(`class_pet_local_${this.currentUserId}`, JSON.stringify({
+                  data: updatedData,
+                  timestamp: cloudTimestamp
+                }));
+              } catch (e) {
+                console.error('本地备份失败:', e);
+              }
+              
+              // 加载更新后的数据到界面
+              this.loadUserData();
+              
+              console.log('从Supabase云存储同步成功，数据已更新');
+              syncSuccess = true;
+            } else {
+              console.log('本地数据已是最新，无需同步');
+            }
+          }
+        }
+        
+        // 2. 云存储没有数据或同步失败，尝试从本地备份加载
+        if (!syncSuccess) {
+          try {
+            const localStorageKey = `class_pet_local_${this.currentUserId}`;
+            const localData = localStorage.getItem(localStorageKey);
+            
+            if (localData) {
+              const parsedData = JSON.parse(localData);
+              const currentData = getUserData();
+              const currentTimestamp = currentData.lastModified || '1970-01-01T00:00:00.000Z';
+              
+              // 比较时间戳，选择较新的数据
+              if (parsedData.timestamp > currentTimestamp) {
+                // 更新本地数据
+                const updatedData = {
+                  ...parsedData.data,
+                  lastModified: parsedData.timestamp
+                };
+                setUserData(updatedData);
+                
+                // 加载更新后的数据到界面
+                this.loadUserData();
+                
+                console.log('从本地备份加载成功，数据已更新');
+                syncSuccess = true;
+              }
+            }
+          } catch (localError) {
+            console.error('从本地备份加载失败:', localError);
           }
         }
       } catch (e) {
         console.error('从云存储同步失败:', e);
+      } finally {
+        this.syncing = false;
       }
-      return false;
+      return syncSuccess;
     },
     
-    // 启用自动同步
+    // 启用自动同步 - 大幅减少云端操作
     enableAutoSync() {
-      // 每5分钟自动同步一次
-      this.autoSyncInterval = setInterval(() => {
-        this.syncData();
-      }, 5 * 60 * 1000);
+      // 每2小时检查一次是否需要同步
+      this.autoSyncInterval = setInterval(async () => {
+        // 只有当网络可用且有数据变更时才同步
+        if (navigator.onLine && this.dataChanged) {
+          const now = Date.now();
+          const timeSinceLastSync = now - this.lastSyncAttempt;
+          
+          // 只有距离上次同步超过2小时，或者累积了50个变更，才进行云端同步
+          if (timeSinceLastSync >= 2 * 60 * 60 * 1000 || this.pendingChanges >= 50) {
+            console.log('自动同步：满足条件，开始云端同步');
+            await this.syncData();
+          } else {
+            console.log('自动同步：条件不满足，仅保存本地');
+            this.saveUserData();
+          }
+        }
+      }, 2 * 60 * 60 * 1000); // 每2小时检查一次
     },
     
     // 禁用自动同步
@@ -588,10 +858,36 @@
     // 启用实时同步
     enableRealtimeSync() {
       // 监听网络状态变化
-      window.addEventListener('online', () => {
+      this.onlineHandler = () => {
         console.log('网络已连接，开始同步数据');
         this.syncData();
-      });
+      };
+      window.addEventListener('online', this.onlineHandler);
+      
+      // 监听页面可见性变化（用户切换回页面时检查同步）
+      this.visibilityHandler = () => {
+        if (document.visibilityState === 'visible') {
+          console.log('页面可见，检查是否需要同步');
+          const now = Date.now();
+          const timeSinceLastSync = now - this.lastSyncAttempt;
+          
+          // 只有距离上次同步超过30分钟才检查云端更新
+          if (timeSinceLastSync >= 30 * 60 * 1000) {
+            setTimeout(() => {
+              this.syncFromCloud().then(syncResult => {
+                if (syncResult) {
+                  this.renderStudents();
+                  this.renderGroups();
+                  console.log('页面可见时同步完成，界面已刷新');
+                }
+              });
+            }, 2000);
+          } else {
+            console.log('距离上次同步不足30分钟，跳过云端检查');
+          }
+        }
+      };
+      document.addEventListener('visibilitychange', this.visibilityHandler);
       
       // 监听数据变化
       this.observeDataChanges();
@@ -600,6 +896,14 @@
     // 禁用实时同步
     disableRealtimeSync() {
       // 清理事件监听器
+      if (this.onlineHandler) {
+        window.removeEventListener('online', this.onlineHandler);
+        this.onlineHandler = null;
+      }
+      if (this.visibilityHandler) {
+        document.removeEventListener('visibilitychange', this.visibilityHandler);
+        this.visibilityHandler = null;
+      }
     },
     
     // 观察数据变化
@@ -608,30 +912,44 @@
       // 例如使用Proxy或其他方式监听数据变化
     },
 
-
     init() {
-      // 加载用户数据和当前班级数据
-      this.loadUserData();
-      
-      // 渲染各项设置
-      this.renderPlusItems();
-      this.renderMinusItems();
-      this.renderPrizes();
-      this.renderLotteryPrizes();
-      
-      // 绑定事件和显示页面
-      this.bindNav();
-      this.bindSearch();
-      this.bindStoreTabs();
-      this.loadBroadcastSettings();
-      this.loadBroadcastMessages();
-      this.showPage('dashboard');
-      this.renderDashboard();
-      this.renderStudents();
-      this.renderHonor();
-      this.renderStore();
-      // 立即保存数据到本地备份
-      this.saveData();
+      try {
+        // 加载用户数据和当前班级数据
+        this.loadUserData();
+        
+        // 渲染各项设置
+        this.renderPlusItems();
+        this.renderMinusItems();
+        this.renderPrizes();
+        this.renderLotteryPrizes();
+        
+        // 绑定事件和显示页面
+        this.bindNav();
+        this.bindSearch();
+        this.bindStoreTabs();
+        this.loadBroadcastSettings();
+        this.loadBroadcastMessages();
+        this.showPage('dashboard');
+        this.renderDashboard();
+        this.renderStudents();
+        this.renderHonor();
+        this.renderStore();
+        
+        // 启用实时同步（本地）
+        this.enableAutoSyncRealtime();
+        
+        // 初始化照片存储
+        this.initPhotoStorage();
+        
+        // 每小时重置GitHub API计数
+        setInterval(() => {
+          this.resetGithubApiCounter();
+        }, 60 * 60 * 1000);
+        
+        console.log('应用初始化完成');
+      } catch (e) {
+        console.error('应用初始化失败:', e);
+      }
     },
 
     getStagePoints() {
@@ -2916,42 +3234,308 @@
       this.saveUserData();
     },
 
-    // 实时自动同步数据
-    enableAutoSync() {
+    // 实时自动同步数据 - 使用统一的同步机制
+    enableAutoSyncRealtime() {
       // 监听所有数据变化
       this.originalData = {
         students: JSON.stringify(this.students),
         groups: JSON.stringify(this.groups),
         groupPointHistory: JSON.stringify(this.groupPointHistory)
       };
-      this.autoSyncInterval = setInterval(() => {
-        const currentData = {
-          students: JSON.stringify(this.students),
-          groups: JSON.stringify(this.groups),
-          groupPointHistory: JSON.stringify(this.groupPointHistory)
-        };
-        
-        // 检查任何数据是否有变化
-        let hasChanges = false;
-        for (let key in currentData) {
-          if (currentData[key] !== this.originalData[key]) {
-            hasChanges = true;
-            this.originalData[key] = currentData[key];
+      this.realtimeSyncInterval = setInterval(() => {
+        try {
+          const currentData = {
+            students: JSON.stringify(this.students),
+            groups: JSON.stringify(this.groups),
+            groupPointHistory: JSON.stringify(this.groupPointHistory)
+          };
+          
+          // 检查任何数据是否有变化
+          let hasChanges = false;
+          for (let key in currentData) {
+            if (currentData[key] !== this.originalData[key]) {
+              hasChanges = true;
+              this.originalData[key] = currentData[key];
+            }
           }
+          
+          if (hasChanges) {
+            this.saveData();
+            console.log('数据自动同步到本地');
+          }
+          
+          // 定期检查设备授权状态
+          this.checkDeviceAuthorization();
+        } catch (e) {
+          console.error('实时同步检查失败:', e);
         }
-        
-        if (hasChanges) {
-          this.saveData();
-          console.log('数据自动同步');
-        }
-        
-        // 定期检查设备授权状态
-        this.checkDeviceAuthorization();
       }, 5000); // 每5秒检查一次
-      console.log('自动同步已启用');
+      console.log('实时自动同步已启用');
       
       // 启用自动导出备份功能
       this.enableAutoBackup();
+    },
+
+    // ==================== 照片存储管理 ====================
+    
+    // 初始化照片存储
+    initPhotoStorage() {
+      // 从localStorage读取API调用计数
+      const savedCount = localStorage.getItem('github_api_calls');
+      if (savedCount) {
+        this.photoStorage.githubApiCalls = parseInt(savedCount, 10) || 0;
+      }
+      
+      // 加载GitHub Token
+      this.loadGithubToken();
+      
+      // 检查是否需要切换到R2
+      this.checkStorageProvider();
+      
+      // 更新界面显示
+      this.updatePhotoStorageStatus();
+      
+      console.log(`照片存储提供商: ${this.photoStorage.currentProvider}, GitHub API调用: ${this.photoStorage.githubApiCalls}/${this.photoStorage.githubApiLimit}`);
+    },
+    
+    // 检查存储提供商
+    checkStorageProvider() {
+      if (this.photoStorage.githubApiCalls >= this.photoStorage.githubApiLimit) {
+        if (this.photoStorage.currentProvider !== 'r2') {
+          this.photoStorage.currentProvider = 'r2';
+          console.log('GitHub API限制已达到，切换到R2存储');
+        }
+      }
+    },
+    
+    // 增加GitHub API调用计数
+    incrementGithubApiCalls() {
+      this.photoStorage.githubApiCalls++;
+      localStorage.setItem('github_api_calls', this.photoStorage.githubApiCalls);
+      
+      // 检查是否需要切换
+      this.checkStorageProvider();
+      
+      // 如果接近限制，显示警告
+      if (this.photoStorage.githubApiCalls >= this.photoStorage.githubApiLimit - 100) {
+        console.warn(`GitHub API调用接近限制: ${this.photoStorage.githubApiCalls}/${this.photoStorage.githubApiLimit}`);
+      }
+    },
+    
+    // 上传照片到GitHub
+    async uploadPhotoToGitHub(file, filename) {
+      try {
+        // 检查API限制
+        if (this.photoStorage.githubApiCalls >= this.photoStorage.githubApiLimit) {
+          throw new Error('GitHub API限制已达到');
+        }
+        
+        // 读取文件为base64
+        const base64Content = await this.fileToBase64(file);
+        
+        // 构建API请求
+        const path = `photos/${Date.now()}_${filename}`;
+        const url = `https://api.github.com/repos/${this.photoStorage.githubRepo}/contents/${path}`;
+        
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `token ${this.photoStorage.githubToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: `Upload photo: ${filename}`,
+            content: base64Content,
+            branch: this.photoStorage.githubBranch
+          })
+        });
+        
+        // 增加API调用计数
+        this.incrementGithubApiCalls();
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'GitHub上传失败');
+        }
+        
+        const data = await response.json();
+        console.log('照片上传到GitHub成功:', data.content.download_url);
+        
+        return {
+          success: true,
+          url: data.content.download_url,
+          provider: 'github'
+        };
+      } catch (e) {
+        console.error('GitHub上传失败:', e);
+        return { success: false, error: e.message };
+      }
+    },
+    
+    // 上传照片到R2
+    async uploadPhotoToR2(file, filename) {
+      try {
+        // 这里使用现有的R2上传逻辑
+        // 如果没有配置R2，返回错误
+        if (!this.photoStorage.r2Config.accessKeyId) {
+          throw new Error('R2未配置');
+        }
+        
+        // TODO: 实现R2上传逻辑
+        // 暂时返回错误，提示用户配置R2
+        throw new Error('R2上传功能需要配置');
+      } catch (e) {
+        console.error('R2上传失败:', e);
+        return { success: false, error: e.message };
+      }
+    },
+    
+    // 智能上传照片（自动选择存储提供商）
+    async uploadPhoto(file, filename) {
+      // 检查当前提供商
+      this.checkStorageProvider();
+      
+      let result;
+      
+      if (this.photoStorage.currentProvider === 'github') {
+        // 尝试使用GitHub
+        result = await this.uploadPhotoToGitHub(file, filename);
+        
+        // 如果GitHub失败且是因为API限制，切换到R2
+        if (!result.success && result.error.includes('限制')) {
+          console.log('GitHub API限制，尝试R2...');
+          result = await this.uploadPhotoToR2(file, filename);
+        }
+      } else {
+        // 使用R2
+        result = await this.uploadPhotoToR2(file, filename);
+      }
+      
+      return result;
+    },
+    
+    // 文件转base64
+    fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          // 移除data:image/jpeg;base64,前缀
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+      });
+    },
+    
+    // 重置GitHub API计数（每小时重置一次）
+    resetGithubApiCounter() {
+      const lastReset = localStorage.getItem('github_api_last_reset');
+      const now = Date.now();
+      
+      if (!lastReset || (now - parseInt(lastReset, 10)) >= 60 * 60 * 1000) {
+        this.photoStorage.githubApiCalls = 0;
+        localStorage.setItem('github_api_calls', '0');
+        localStorage.setItem('github_api_last_reset', now.toString());
+        
+        // 如果之前切换到R2，现在可以切回GitHub
+        if (this.photoStorage.currentProvider === 'r2') {
+          this.photoStorage.currentProvider = 'github';
+          console.log('GitHub API计数已重置，切换回GitHub存储');
+        }
+      }
+      
+      // 更新界面显示
+      this.updatePhotoStorageStatus();
+    },
+    
+    // 手动重置计数器（用户点击按钮）
+    resetGithubCounter() {
+      this.photoStorage.githubApiCalls = 0;
+      localStorage.setItem('github_api_calls', '0');
+      localStorage.setItem('github_api_last_reset', Date.now().toString());
+      
+      // 如果之前切换到R2，现在可以切回GitHub
+      if (this.photoStorage.currentProvider === 'r2') {
+        this.photoStorage.currentProvider = 'github';
+      }
+      
+      this.updatePhotoStorageStatus();
+      alert('GitHub API计数器已重置');
+    },
+    
+    // 保存GitHub Token
+    saveGithubToken() {
+      const tokenInput = document.getElementById('githubTokenInput');
+      if (!tokenInput) return;
+      
+      const token = tokenInput.value.trim();
+      if (!token) {
+        alert('请输入GitHub Token');
+        return;
+      }
+      
+      // 保存到localStorage（加密存储）
+      localStorage.setItem('github_token', btoa(token));
+      this.photoStorage.githubToken = token;
+      
+      alert('GitHub Token已保存');
+      this.updatePhotoStorageStatus();
+    },
+    
+    // 加载GitHub Token
+    loadGithubToken() {
+      const savedToken = localStorage.getItem('github_token');
+      if (savedToken) {
+        try {
+          this.photoStorage.githubToken = atob(savedToken);
+          
+          // 更新输入框
+          const tokenInput = document.getElementById('githubTokenInput');
+          if (tokenInput) {
+            tokenInput.value = this.photoStorage.githubToken;
+          }
+        } catch (e) {
+          console.error('加载GitHub Token失败:', e);
+        }
+      }
+    },
+    
+    // 测试GitHub连接
+    async testGithubConnection() {
+      if (!this.photoStorage.githubToken) {
+        alert('请先保存GitHub Token');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`https://api.github.com/repos/${this.photoStorage.githubRepo}`, {
+          headers: {
+            'Authorization': `token ${this.photoStorage.githubToken}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          alert(`连接成功！\n仓库: ${data.full_name}\n默认分支: ${data.default_branch}`);
+        } else {
+          const error = await response.json();
+          alert(`连接失败: ${error.message}`);
+        }
+      } catch (e) {
+        alert(`连接错误: ${e.message}`);
+      }
+    },
+    
+    // 更新照片存储状态显示
+    updatePhotoStorageStatus() {
+      const statusEl = document.getElementById('photoStorageStatus');
+      if (statusEl) {
+        const provider = this.photoStorage.currentProvider === 'github' ? 'GitHub' : 'R2';
+        const calls = this.photoStorage.githubApiCalls;
+        const limit = this.photoStorage.githubApiLimit;
+        statusEl.textContent = `当前: ${provider} | API调用: ${calls}/${limit}`;
+      }
     },
 
     // 检查设备授权状态
@@ -2989,10 +3573,18 @@
 
     // 禁用自动同步
     disableAutoSync() {
+      // 禁用云端同步定时器
       if (this.autoSyncInterval) {
         clearInterval(this.autoSyncInterval);
         this.autoSyncInterval = null;
-        console.log('自动同步已禁用');
+        console.log('云端自动同步已禁用');
+      }
+      
+      // 禁用实时同步定时器
+      if (this.realtimeSyncInterval) {
+        clearInterval(this.realtimeSyncInterval);
+        this.realtimeSyncInterval = null;
+        console.log('实时自动同步已禁用');
       }
       
       // 禁用自动导出备份功能

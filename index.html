@@ -21,12 +21,12 @@
   <!-- Supabase SDK（可选，不影响系统运行） -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.remove()"></script>
   <script>
-    // Supabase 配置（可选，系统不依赖此功能）
+    // Supabase 配置
     let supabase = null;
     try {
       if (typeof createClient !== 'undefined') {
-        const supabaseUrl = 'https://sgqufjoxmlbhkqeclzcv.supabase.co';
-        const supabaseKey = 'sb_publishable_33LohNk9h7dXFM_6_jGx5g_ICHzTgfG';
+        const supabaseUrl = 'https://cuipqszkjsxixmbrvwdg.supabase.co';
+        const supabaseKey = 'sb_publishable_kV8fI-YCfPQy2m2akpOdXg_JXrRurE9';
         supabase = createClient(supabaseUrl, supabaseKey);
       }
     } catch (e) {
@@ -365,6 +365,7 @@
             </div>
             <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存</button>
           </div>
+
           <div class="settings-card settings-card-cute">
             <h3>🐾 宠物成长</h3>
             <div class="setting-item">
@@ -376,6 +377,29 @@
               <input type="number" id="settingStages" min="5" max="20" value="10">
             </div>
             <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存</button>
+          </div>
+          <div class="settings-card settings-card-cute">
+            <h3>📸 照片存储配置</h3>
+            <div class="setting-item">
+              <label>GitHub Token</label>
+              <input type="password" id="githubTokenInput" placeholder="输入GitHub Personal Access Token">
+              <small style="color: #999; display: block; margin-top: 5px;">
+                <a href="https://github.com/settings/tokens" target="_blank">获取Token</a> (需要repo权限)
+              </small>
+            </div>
+            <div class="setting-item">
+              <button class="btn btn-small btn-cute" onclick="app.saveGithubToken()">💾 保存Token</button>
+              <button class="btn btn-small btn-cute" onclick="app.testGithubConnection()">🧪 测试连接</button>
+            </div>
+            <div class="setting-item">
+              <label>存储状态</label>
+              <div id="photoStorageStatus" style="font-size: 14px; color: #666;">
+                当前: GitHub | API调用: 0/5000
+              </div>
+            </div>
+            <div class="setting-item">
+              <button class="btn btn-small btn-cute" onclick="app.resetGithubCounter()">🔄 重置计数器</button>
+            </div>
           </div>
           <div class="settings-card settings-card-cute full-width">
             <h3>➕ 加分项（可编辑分数）</h3>
