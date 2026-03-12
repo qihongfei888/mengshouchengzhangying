@@ -1,4 +1,6 @@
 (function () {
+  console.log('🚀 应用启动中...');
+  
   // 动态加载 Supabase SDK - 尝试多个CDN
   function loadSupabaseSDK() {
     return new Promise((resolve) => {
@@ -27,7 +29,7 @@
         
         const script = document.createElement('script');
         script.src = cdns[currentIndex];
-        console.log(`⏳ 尝试加载CDN ${currentIndex + 1}/${cdns.length}: ${cdns[currentIndex]}`);
+        console.log(`⏳ 尝试加载CDN ${currentIndex + 1}/${cdns.length}`);
         
         script.onload = function() {
           console.log(`✅ Supabase SDK 从CDN ${currentIndex + 1}加载成功`);
@@ -48,7 +50,8 @@
   }
   
   // 初始化 Supabase
-  async function initSupabase() {
+  window.initSupabaseClient = async function() {
+    console.log('🔄 开始初始化Supabase...');
     const loaded = await loadSupabaseSDK();
     if (loaded && typeof window.supabase !== 'undefined' && window.supabase.createClient) {
       try {
@@ -62,15 +65,12 @@
         return false;
       }
     }
+    console.log('⚠️ Supabase SDK未加载');
     return false;
   }
   
-  // 页面加载完成后初始化
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSupabase);
-  } else {
-    initSupabase();
-  }
+  // 立即开始初始化
+  window.initSupabaseClient();
   
   const STORAGE_KEYS = {
     students: 'class_pet_students',
@@ -762,6 +762,19 @@
       }
     },
     
+    // 等待Supabase初始化完成
+    async waitForSupabase(timeout = 10000) {
+      const startTime = Date.now();
+      while (Date.now() - startTime < timeout) {
+        if (typeof window.supabase !== 'undefined' && window.supabase.from) {
+          return true;
+        }
+        // 等待100ms后重试
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return false;
+    },
+    
     // 同步到云存储
     async syncToCloud() {
       // 防止重复同步
@@ -777,7 +790,6 @@
         const now = new Date().toISOString();
         
         console.log('准备同步到云端，用户ID:', this.currentUserId);
-        console.log('本地数据:', userData);
         console.log('同步时间:', now);
         
         // 更新数据的最后修改时间
@@ -794,9 +806,17 @@
           console.error('本地存储失败:', localError);
         }
         
-        // 2. 然后进行云同步（作为备份）
-        if (typeof supabase !== 'undefined' && supabase) {
-          console.log('开始上传到Supabase...');
+        // 2. 等待Supabase初始化完成
+        console.log('等待Supabase初始化...');
+        const supabaseReady = await this.waitForSupabase();
+        
+        if (!supabaseReady) {
+          console.log('Supabase未能在超时时间内初始化，跳过云端同步');
+          return;
+        }
+        
+        // 3. 进行云同步
+        console.log('开始上传到Supabase...');
           
           const upsertData = {
             id: this.currentUserId,
