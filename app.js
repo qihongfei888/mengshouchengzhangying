@@ -240,6 +240,7 @@
     syncTimeout: null,
     pendingChanges: 0,
     lastSyncAttempt: 0,
+    dataLoaded: false, // 标记数据是否已加载
     
     // 照片存储管理
     photoStorage: {
@@ -333,23 +334,20 @@
           }));
           
           // 优先从云端同步数据（确保多端数据一致）
+          let syncSuccess = false;
           try {
             console.log('登录时从云端同步数据...');
-            const syncResult = await this.syncFromCloud();
-            if (syncResult) {
+            syncSuccess = await this.syncFromCloud();
+            if (syncSuccess) {
               console.log('从云端同步成功，使用云端数据');
-              // 同步成功后立即加载用户数据
-              this.loadUserData();
             } else {
               console.log('云端数据较旧或没有数据，使用本地数据');
-              this.loadUserData();
             }
           } catch (e) {
             console.error('云端同步失败，使用本地数据:', e);
-            this.loadUserData();
           }
           
-          // 显示应用界面
+          // 显示应用界面（init中会调用loadUserData加载最新数据）
           this.showApp();
           
           // 启用实时同步和自动同步（减少频次）
@@ -796,6 +794,8 @@
               
               console.log('从Supabase云存储同步成功，数据已更新');
               syncSuccess = true;
+              // 标记数据已加载，避免init中重复加载
+              this.dataLoaded = true;
             } else {
               console.log('本地数据已是最新，无需同步');
               // 即使本地数据更新，也要确保云端有数据
@@ -954,8 +954,15 @@
 
     init() {
       try {
-        // 加载用户数据和当前班级数据
-        this.loadUserData();
+        // 检查是否已经加载过数据（避免重复加载覆盖同步的数据）
+        if (!this.dataLoaded) {
+          // 加载用户数据和当前班级数据
+          this.loadUserData();
+          this.dataLoaded = true;
+          console.log('首次加载用户数据');
+        } else {
+          console.log('数据已加载，跳过重复加载');
+        }
         
         // 渲染各项设置
         this.renderPlusItems();
@@ -3375,14 +3382,26 @@
           console.warn('GitHub额度已用完，R2计费控制已启用，暂停照片上传');
           return;
         }
-        this.photoStorage.currentProvider = 'github';
+        // 强制使用GitHub
+        if (this.photoStorage.currentProvider !== 'github') {
+          this.photoStorage.currentProvider = 'github';
+          console.log('R2被截断，切换回GitHub存储');
+        }
         return;
       }
       
+      // 检查GitHub额度
       if (this.photoStorage.githubApiCalls >= this.photoStorage.githubApiLimit) {
+        // GitHub额度用完，切换到R2
         if (this.photoStorage.currentProvider !== 'r2') {
           this.photoStorage.currentProvider = 'r2';
           console.log('GitHub API限制已达到，切换到R2存储');
+        }
+      } else {
+        // GitHub额度恢复，切换回GitHub
+        if (this.photoStorage.currentProvider !== 'github') {
+          this.photoStorage.currentProvider = 'github';
+          console.log('GitHub API额度恢复，切换回GitHub存储');
         }
       }
     },
@@ -5920,7 +5939,7 @@
     location.reload();
   }
 
-  function bootstrap() {
+  async function bootstrap() {
     try {
       const savedUser = localStorage.getItem(CURRENT_USER_KEY);
       if (savedUser) {
@@ -5928,7 +5947,24 @@
         if (user.id && user.username) {
           app.currentUserId = user.id;
           app.currentUsername = user.username;
-          app.loadUserData();
+          
+          // 优先从云端同步数据（确保多端数据一致）
+          try {
+            console.log('自动登录时从云端同步数据...');
+            const syncResult = await app.syncFromCloud();
+            if (syncResult) {
+              console.log('从云端同步成功，使用云端数据');
+            } else {
+              console.log('云端数据较旧或没有数据，使用本地数据');
+              app.loadUserData();
+              app.dataLoaded = true;
+            }
+          } catch (e) {
+            console.error('云端同步失败，使用本地数据:', e);
+            app.loadUserData();
+            app.dataLoaded = true;
+          }
+          
           app.showApp();
           app.enableRealtimeSync();
           app.enableAutoSync();
@@ -5941,7 +5977,7 @@
     app.showLoginPage();
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
     var importBackupEl = document.getElementById('importBackupFile');
     if (importBackupEl) {
       importBackupEl.addEventListener('change', function (e) {
@@ -5960,7 +5996,7 @@
         reader.readAsText(file, 'UTF-8');
       });
     }
-    bootstrap();
+    await bootstrap();
     document.querySelectorAll('.login-tab').forEach(function (tabEl) {
       tabEl.addEventListener('click', function (e) {
         var t = e.currentTarget.dataset.tab;
