@@ -859,7 +859,18 @@
           
           console.log('Supabase返回数据:', { data, error });
           
-          if (error) {
+          // 处理 PGRST116 错误（数据为空）
+          if (error && error.code === 'PGRST116') {
+            console.log('云端没有数据记录，准备上传本地数据');
+            const localData = getUserData();
+            if (Object.keys(localData).length > 0 && localData.students && localData.students.length > 0) {
+              console.log('本地有数据，上传到云端');
+              await this.syncToCloud();
+              syncSuccess = true;
+            } else {
+              console.log('本地也没有数据，跳过同步');
+            }
+          } else if (error) {
             console.error('Supabase同步失败:', error);
           } else if (data) {
             console.log('云端数据内容:', data.data);
