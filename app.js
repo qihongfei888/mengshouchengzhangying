@@ -508,16 +508,11 @@
         if (navigator.onLine) {
           try {
             console.log('注册前从云端同步授权码...');
-            // 临时设置一个管理员用户ID来同步授权码
-            const tempUserId = 'admin_sync';
-            const originalUserId = this.currentUserId;
-            this.currentUserId = tempUserId;
-            
-            // 尝试从云端同步
-            await this.syncFromCloud();
-            
-            // 恢复原来的用户ID
-            this.currentUserId = originalUserId;
+            // 直接同步授权码，不需要用户ID
+            const licensesData = await this.syncLicensesFromCloud();
+            if (licensesData) {
+              console.log('授权码同步成功，数量:', licensesData.length);
+            }
           } catch (e) {
             console.error('同步授权码失败:', e);
             // 同步失败不影响注册流程
@@ -556,6 +551,22 @@
         
         // 激活授权码
         activateLicense(licenseKey, deviceId, newUser.id);
+        
+        // 实时同步授权码状态到云端
+        if (navigator.onLine) {
+          try {
+            console.log('激活授权码后实时同步到云端...');
+            // 先设置用户ID
+            this.currentUserId = newUser.id;
+            this.currentUsername = newUser.username;
+            
+            // 同步到云端
+            await this.syncToCloud();
+            console.log('授权码状态已同步到云端');
+          } catch (e) {
+            console.error('同步授权码状态到云端失败:', e);
+          }
+        }
         
         this.currentUserId = newUser.id;
         this.currentUsername = newUser.username;
@@ -920,6 +931,42 @@
       } finally {
         this.syncing = false;
       }
+    },
+    
+    // 从云存储同步授权码（无需用户ID）
+    async syncLicensesFromCloud() {
+      if (!navigator.onLine) {
+        console.log('无网络连接，跳过云端同步');
+        return null;
+      }
+      
+      try {
+        if (typeof supabase !== 'undefined' && supabase) {
+          console.log('开始从Supabase同步授权码...');
+          
+          // 查询所有用户的授权码，按更新时间排序，取最新的
+          const { data, error } = await supabase
+            .from('users')
+            .select('licenses, updated_at')
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          
+          console.log('Supabase返回授权码数据:', { data, error });
+          
+          if (error) {
+            console.error('Supabase同步失败:', error);
+            return null;
+          } else if (data && data.length > 0 && data[0].licenses) {
+            console.log('同步云端授权码，数量:', data[0].licenses.length);
+            setLicenses(data[0].licenses);
+            return data[0].licenses;
+          }
+        }
+      } catch (e) {
+        console.error('同步授权码失败:', e);
+      }
+      
+      return null;
     },
     
     // 从云存储同步
@@ -5184,7 +5231,7 @@
     },
     
     // 生成新授权码
-    generateNewLicense() {
+    async generateNewLicense() {
       const newLicense = {
         key: generateLicenseKey(),
         createdAt: new Date().toISOString(),
@@ -5196,12 +5243,23 @@
       licenses.push(newLicense);
       setLicenses(licenses);
       
+      // 实时同步到云端
+      if (navigator.onLine) {
+        try {
+          console.log('生成授权码后实时同步到云端...');
+          await this.syncToCloud();
+          console.log('授权码已同步到云端');
+        } catch (e) {
+          console.error('同步授权码到云端失败:', e);
+        }
+      }
+      
       this.renderLicensesList();
       alert(`新授权码已生成：${newLicense.key}`);
     },
     
     // 批量生成授权码
-    batchGenerateLicenses() {
+    async batchGenerateLicenses() {
       const count = prompt('请输入要生成的授权码数量：', '10');
       const num = parseInt(count);
       
@@ -5225,6 +5283,18 @@
       }
       
       setLicenses(licenses);
+      
+      // 实时同步到云端
+      if (navigator.onLine) {
+        try {
+          console.log('批量生成授权码后实时同步到云端...');
+          await this.syncToCloud();
+          console.log('授权码已同步到云端');
+        } catch (e) {
+          console.error('同步授权码到云端失败:', e);
+        }
+      }
+      
       this.renderLicensesList();
       
       // 生成授权码列表文本
