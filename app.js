@@ -48,6 +48,9 @@
   function initBmob() {
     try {
       if (typeof Bmob !== 'undefined') {
+        // 检查Bmob版本
+        console.log('Bmob SDK版本:', Bmob.version || '未知');
+        // 初始化Bmob
         Bmob.initialize("055bbfab769cf4ca035e9a97bdd2a015", "8f55b66963acf2810512a244e17d7b79");
         console.log('✅ Bmob 初始化成功');
         return true;
@@ -2436,6 +2439,11 @@
             console.log('数据已同步到Bmob云存储');
           } catch (bmobError) {
             console.error('Bmob同步失败:', bmobError);
+            console.error('错误详情:', {
+              code: bmobError.code,
+              message: bmobError.message,
+              stack: bmobError.stack
+            });
             // Bmob同步失败不影响本地存储
           }
         } else {
@@ -2637,6 +2645,11 @@
             }
           } catch (bmobError) {
             console.error('Bmob同步失败:', bmobError);
+            console.error('错误详情:', {
+              code: bmobError.code,
+              message: bmobError.message,
+              stack: bmobError.stack
+            });
             // Bmob同步失败不影响本地存储
           }
         } else {
