@@ -375,8 +375,18 @@
     }
     try {
       var v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : {};
+      if (v) return JSON.parse(v);
+      // 如果当前用户有ID但没有数据，尝试从默认键中读取
+      if (app.currentUserId) {
+        var defaultV = localStorage.getItem('class_pet_default_user');
+        if (defaultV) return JSON.parse(defaultV);
+      }
+      return {};
     } catch (e) {
+      // 如果当前用户有ID但没有数据，尝试从内存中的默认键读取
+      if (app.currentUserId && memoryStorage['class_pet_default_user']) {
+        return memoryStorage['class_pet_default_user'];
+      }
       return memoryStorage[key] || {};
     }
   }
@@ -434,6 +444,10 @@
     memoryStorage[key] = data;
     try {
       localStorage.setItem(key, JSON.stringify(data));
+      // 同时更新默认键，确保数据不会丢失
+      if (app.currentUserId) {
+        localStorage.setItem('class_pet_default_user', JSON.stringify(data));
+      }
     } catch (e) {
       console.warn('localStorage 写入失败:', e);
     }
@@ -441,6 +455,12 @@
       IndexedDBManager.setItem(key, data).catch(function(e) {
         console.error('IndexedDB 写入失败:', e);
       });
+      // 同时更新默认键，确保数据不会丢失
+      if (app.currentUserId) {
+        IndexedDBManager.setItem('class_pet_default_user', data).catch(function(e) {
+          console.error('IndexedDB 写入默认键失败:', e);
+        });
+      }
     }
   }
   function getStorage(key, defaultValue) {
@@ -1667,6 +1687,7 @@
         return true;
       } catch (e) {
         console.error('备份失败:', e);
+        // 备份失败不影响主功能，继续执行
         return false;
       }
     },
@@ -1930,7 +1951,8 @@
         
         // 5. 优先使用本地存储
         try {
-          localStorage.setItem(`class_pet_local_${this.currentUserId}`, JSON.stringify({
+          const backupKey = this.currentUserId ? `class_pet_local_${this.currentUserId}` : 'class_pet_local_default';
+          localStorage.setItem(backupKey, JSON.stringify({
             data: compressedData,
             timestamp: now
           }));
@@ -1955,8 +1977,9 @@
         };
         
         // 上传用户数据到云端
+        const userId = this.currentUserId || 'default_user';
         const query = Bmob.Query('UserData');
-        const results = await query.equalTo('userId', this.currentUserId).find();
+        const results = await query.equalTo('userId', userId).find();
         
         if (results.length > 0) {
           // 更新现有数据
@@ -1968,7 +1991,7 @@
         } else {
           // 创建新数据
           const userDataRecord = Bmob.Query('UserData');
-          userDataRecord.set('userId', this.currentUserId);
+          userDataRecord.set('userId', userId);
           userDataRecord.set('data', userDataWithLicenses);
           userDataRecord.set('updatedAt', now);
           userDataRecord.set('last_sync', now);
@@ -2039,8 +2062,6 @@
     
     // 从云存储同步
     async syncFromCloud() {
-      if (!this.currentUserId) return false;
-      
       // 无网时不进行云同步
       if (!navigator.onLine) {
         console.log('无网络连接，跳过云端同步');
@@ -2060,10 +2081,20 @@
         // 1. 优先从云存储同步（确保多端数据一致）
         console.log('开始从Bmob同步数据，用户ID:', this.currentUserId);
         
-        // 从Bmob查询用户数据
-        const query = Bmob.Query('UserData');
-        query.equalTo('userId', this.currentUserId);
-        const results = await query.find();
+        let results = [];
+        
+        if (this.currentUserId) {
+          // 从Bmob查询用户数据
+          const query = Bmob.Query('UserData');
+          query.equalTo('userId', this.currentUserId);
+          results = await query.find();
+        } else {
+          // 没有用户ID时，查询最近更新的数据
+          const query = Bmob.Query('UserData');
+          query.order('updatedAt', { descending: true });
+          query.limit(1);
+          results = await query.find();
+        }
         
         console.log('Bmob返回数据:', results);
         
@@ -2118,7 +2149,8 @@
             
             // 同时更新本地备份
             try {
-              localStorage.setItem(`class_pet_local_${this.currentUserId}`, JSON.stringify({
+              const backupKey = this.currentUserId ? `class_pet_local_${this.currentUserId}` : 'class_pet_local_default';
+              localStorage.setItem(backupKey, JSON.stringify({
                 data: updatedData,
                 timestamp: cloudTimestamp
               }));
@@ -2157,8 +2189,8 @@
         // 2. 云存储没有数据或同步失败，尝试从本地备份加载
         if (!syncSuccess) {
           try {
-            const localStorageKey = `class_pet_local_${this.currentUserId}`;
-            const localData = localStorage.getItem(localStorageKey);
+            const backupKey = this.currentUserId ? `class_pet_local_${this.currentUserId}` : 'class_pet_local_default';
+            const localData = localStorage.getItem(backupKey);
             
             if (localData) {
               const parsedData = JSON.parse(localData);
