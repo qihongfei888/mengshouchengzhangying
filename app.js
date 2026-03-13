@@ -319,6 +319,37 @@
     }
   }
   
+  function getUserDataForUser(userId) {
+    if (!userId) return {};
+    var key = USER_DATA_PREFIX + userId;
+    if (useIndexedDB && indexedDBReady) {
+      var cachedData = memoryStorage[key];
+      if (cachedData) return cachedData;
+    }
+    try {
+      var v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : {};
+    } catch (e) {
+      return memoryStorage[key] || {};
+    }
+  }
+  
+  function setUserDataForUser(userId, data) {
+    if (!userId || !data) return;
+    var key = USER_DATA_PREFIX + userId;
+    memoryStorage[key] = data;
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+      console.warn('localStorage 写入失败:', e);
+    }
+    if (useIndexedDB && indexedDBReady) {
+      IndexedDBManager.setItem(key, data).catch(function(e) {
+        console.error('IndexedDB 写入失败:', e);
+      });
+    }
+  }
+  
   async function getUserDataAsync() {
     if (!app.currentUserId) return {};
     var key = USER_DATA_PREFIX + app.currentUserId;
@@ -1164,6 +1195,191 @@
         console.error('同步用户列表到云端失败:', e);
         return false;
       }
+    },
+    
+    // 批量上传所有本地用户数据到云端
+    async uploadAllLocalUsersToCloud() {
+      if (!navigator.onLine) {
+        console.log('无网络连接，跳过批量上传');
+        return { success: false, message: '无网络连接' };
+      }
+      
+      try {
+        const supabaseReady = await this.waitForSupabase();
+        if (!supabaseReady) {
+          return { success: false, message: 'Supabase未初始化' };
+        }
+        
+        console.log('开始批量上传所有本地用户数据到云端...');
+        
+        // 1. 获取本地所有用户列表
+        const localUsers = getUserList();
+        if (localUsers.length === 0) {
+          return { success: true, message: '本地没有用户数据' };
+        }
+        
+        console.log(`找到 ${localUsers.length} 个本地用户`);
+        
+        // 2. 上传用户列表
+        const userListSuccess = await this.syncUserListToCloud();
+        if (!userListSuccess) {
+          return { success: false, message: '用户列表上传失败' };
+        }
+        
+        // 3. 上传每个用户的详细数据
+        let successCount = 0;
+        let failCount = 0;
+        const now = new Date().toISOString();
+        
+        for (const user of localUsers) {
+          try {
+            // 获取用户数据
+            const userData = getUserDataForUser(user.id);
+            
+            if (!userData || Object.keys(userData).length === 0) {
+              console.log(`用户 ${user.username} 没有数据，跳过`);
+              continue;
+            }
+            
+            // 上传用户数据到云端
+            const { error } = await supabase
+              .from('users')
+              .upsert({
+                id: user.id,
+                username: user.username,
+                password: user.password,
+                data: userData,
+                updated_at: now,
+                last_sync: now
+              });
+            
+            if (error) {
+              console.error(`上传用户 ${user.username} 数据失败:`, error);
+              failCount++;
+            } else {
+              console.log(`用户 ${user.username} 数据上传成功`);
+              successCount++;
+            }
+            
+            // 添加延迟，避免API请求过于频繁
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+          } catch (e) {
+            console.error(`处理用户 ${user.username} 时出错:`, e);
+            failCount++;
+          }
+        }
+        
+        console.log(`批量上传完成：成功 ${successCount} 个，失败 ${failCount} 个`);
+        
+        return {
+          success: true,
+          message: `批量上传完成：成功 ${successCount} 个，失败 ${failCount} 个`,
+          successCount,
+          failCount
+        };
+        
+      } catch (e) {
+        console.error('批量上传所有用户数据失败:', e);
+        return { success: false, message: '批量上传失败：' + e.message };
+      }
+    },
+    
+    // 从云端下载所有用户数据到本地
+    async downloadAllCloudUsersToLocal() {
+      if (!navigator.onLine) {
+        console.log('无网络连接，跳过批量下载');
+        return { success: false, message: '无网络连接' };
+      }
+      
+      try {
+        const supabaseReady = await this.waitForSupabase();
+        if (!supabaseReady) {
+          return { success: false, message: 'Supabase未初始化' };
+        }
+        
+        console.log('开始从云端下载所有用户数据...');
+        
+        // 1. 从云端获取所有用户数据
+        const { data: cloudUsers, error } = await supabase
+          .from('users')
+          .select('*')
+          .neq('id', 'user_list_global');
+        
+        if (error) {
+          console.error('从云端获取用户数据失败:', error);
+          return { success: false, message: '获取云端用户数据失败' };
+        }
+        
+        if (!cloudUsers || cloudUsers.length === 0) {
+          return { success: true, message: '云端没有用户数据' };
+        }
+        
+        console.log(`从云端获取到 ${cloudUsers.length} 个用户`);
+        
+        // 2. 合并用户列表
+        const localUsers = getUserList();
+        const mergedUsers = [...localUsers];
+        let addedCount = 0;
+        let updatedCount = 0;
+        
+        for (const cloudUser of cloudUsers) {
+          const existingIndex = mergedUsers.findIndex(u => u.id === cloudUser.id);
+          
+          if (existingIndex >= 0) {
+            mergedUsers[existingIndex] = {
+              ...mergedUsers[existingIndex],
+              username: cloudUser.username,
+              password: cloudUser.password,
+              lastSync: cloudUser.last_sync
+            };
+            updatedCount++;
+          } else {
+            mergedUsers.push({
+              id: cloudUser.id,
+              username: cloudUser.username,
+              password: cloudUser.password,
+              createdAt: cloudUser.created_at,
+              lastSync: cloudUser.last_sync
+            });
+            addedCount++;
+          }
+          
+          if (cloudUser.data) {
+            setUserDataForUser(cloudUser.id, cloudUser.data);
+          }
+        }
+        
+        setUserList(mergedUsers);
+        
+        console.log(`批量下载完成：新增 ${addedCount} 个，更新 ${updatedCount} 个`);
+        
+        return {
+          success: true,
+          message: `批量下载完成：新增 ${addedCount} 个，更新 ${updatedCount} 个`,
+          addedCount,
+          updatedCount
+        };
+        
+      } catch (e) {
+        console.error('批量下载所有用户数据失败:', e);
+        return { success: false, message: '批量下载失败：' + e.message };
+      }
+    },
+    
+    // 同步所有用户数据（双向同步）
+    async syncAllUsersData() {
+      console.log('开始同步所有用户数据...');
+      
+      const uploadResult = await this.uploadAllLocalUsersToCloud();
+      const downloadResult = await this.downloadAllCloudUsersToLocal();
+      
+      console.log('所有用户数据同步完成');
+      
+      return {
+        upload: uploadResult,
+        download: downloadResult
+      };
     },
     
     // 备份云端数据
@@ -2196,6 +2412,7 @@
       this.renderAccessoriesList();
       this.checkAndShowPhotoStorageConfig();
       this.refreshStorageStatus();
+      this.renderBatchSyncButton();
     }
     },
 
@@ -5318,6 +5535,99 @@
         console.error('渲染备份状态失败:', error);
         statusEl.innerHTML = '<p class="backup-info">无法获取备份状态</p>';
       }
+    },
+    
+    // 渲染批量同步按钮（仅管理员可见）
+    renderBatchSyncButton() {
+      const settingsEl = document.getElementById('backupStatus');
+      if (!settingsEl) return;
+      
+      // 检查是否为管理员
+      const isAdmin = this.isCurrentUserAdmin();
+      if (!isAdmin) return;
+      
+      // 检查按钮是否已存在
+      const existingBtn = document.getElementById('batchSyncBtn');
+      if (existingBtn) return;
+      
+      // 添加批量同步按钮
+      const btnContainer = document.createElement('div');
+      btnContainer.style.marginTop = '15px';
+      btnContainer.style.padding = '10px';
+      btnContainer.style.background = '#f5f5f5';
+      btnContainer.style.borderRadius = '8px';
+      btnContainer.innerHTML = `
+        <h4 style="margin: 0 0 10px 0;">批量数据同步（管理员）</h4>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+          将本地所有用户数据上传到云端，解决多平台数据不同步问题
+        </p>
+        <button id="batchSyncBtn" class="btn" style="background: #1890ff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+          一键同步所有用户数据
+        </button>
+        <button id="downloadCloudBtn" class="btn" style="background: #52c41a; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+          从云端下载数据
+        </button>
+        <div id="batchSyncStatus" style="margin-top: 10px; font-size: 12px;"></div>
+      `;
+      
+      settingsEl.parentNode.appendChild(btnContainer);
+      
+      // 绑定一键同步按钮事件
+      document.getElementById('batchSyncBtn').addEventListener('click', async () => {
+        if (!navigator.onLine) {
+          alert('请检查网络连接');
+          return;
+        }
+        
+        const statusEl = document.getElementById('batchSyncStatus');
+        statusEl.innerHTML = '<span style="color: #1890ff;">正在上传本地数据到云端，请稍候...</span>';
+        document.getElementById('batchSyncBtn').disabled = true;
+        
+        try {
+          const result = await this.uploadAllLocalUsersToCloud();
+          if (result.success) {
+            statusEl.innerHTML = `<span style="color: #52c41a;">✅ ${result.message}</span>`;
+            // 同步完成后自动从云端下载最新数据
+            setTimeout(async () => {
+              await this.downloadAllCloudUsersToLocal();
+              statusEl.innerHTML += '<br><span style="color: #52c41a;">✅ 云端数据已同步到本地</span>';
+            }, 1000);
+          } else {
+            statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ ${result.message}</span>`;
+          }
+        } catch (e) {
+          statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ 同步失败：${e.message}</span>`;
+        }
+        
+        document.getElementById('batchSyncBtn').disabled = false;
+      });
+      
+      // 绑定从云端下载按钮事件
+      document.getElementById('downloadCloudBtn').addEventListener('click', async () => {
+        if (!navigator.onLine) {
+          alert('请检查网络连接');
+          return;
+        }
+        
+        const statusEl = document.getElementById('batchSyncStatus');
+        statusEl.innerHTML = '<span style="color: #1890ff;">正在从云端下载数据，请稍候...</span>';
+        document.getElementById('downloadCloudBtn').disabled = true;
+        
+        try {
+          const result = await this.downloadAllCloudUsersToLocal();
+          if (result.success) {
+            statusEl.innerHTML = `<span style="color: #52c41a;">✅ ${result.message}</span>`;
+          } else {
+            statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ ${result.message}</span>`;
+          }
+        } catch (e) {
+          statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ 下载失败：${e.message}</span>`;
+        }
+        
+        document.getElementById('downloadCloudBtn').disabled = false;
+      });
+      
+      console.log('已添加批量同步按钮（仅管理员可见）');
     },
     
     saveStudents() { 
