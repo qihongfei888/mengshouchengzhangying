@@ -2166,48 +2166,48 @@
         // 1. 首先保存本地数据（优先本地存储）
         await this.saveUserDataInternal();
       
-      // 2. 仅在特定条件下才进行云同步
-      const now = Date.now();
-      const timeSinceLastSync = now - this.lastSyncAttempt;
-      
-      // 优化同步条件：根据用户要求调整
-      // 同步频率：2分钟一次，变更阈值：5次
-      const shouldSyncToCloud = 
-        navigator.onLine && 
-        this.dataChanged && 
-        (timeSinceLastSync >= 2 * 60 * 1000 || this.pendingChanges >= 5); // 2分钟同步一次，5次变更触发
-      
-      if (shouldSyncToCloud) {
-        console.log('满足云端同步条件，开始同步...');
-        this.lastSyncAttempt = now;
+        // 2. 仅在特定条件下才进行云同步
+        const now = Date.now();
+        const timeSinceLastSync = now - this.lastSyncAttempt;
         
-        // 同步失败重试机制 - 优化重试策略
-        let retryCount = 0;
-        const maxRetries = 2; // 减少重试次数，避免过多API请求
-        const retryDelay = 3000; // 增加重试间隔
+        // 优化同步条件：根据用户要求调整
+        // 同步频率：2分钟一次，变更阈值：5次
+        const shouldSyncToCloud = 
+          navigator.onLine && 
+          this.dataChanged && 
+          (timeSinceLastSync >= 2 * 60 * 1000 || this.pendingChanges >= 5); // 2分钟同步一次，5次变更触发
         
-        while (retryCount < maxRetries) {
-          try {
-            await this.syncToCloud();
-            this.dataChanged = false;
-            this.pendingChanges = 0;
-            this.lastSyncTime = new Date().toISOString();
-            console.log('云端同步完成');
-            break;
-          } catch (e) {
-            retryCount++;
-            console.error(`云端同步失败 (${retryCount}/${maxRetries}):`, e);
-            if (retryCount < maxRetries) {
-              console.log(`等待 ${retryDelay}ms 后重试...`);
-              await new Promise(resolve => setTimeout(resolve, retryDelay));
-            } else {
-              console.error('云端同步多次失败，放弃重试，数据已保存到本地');
+        if (shouldSyncToCloud) {
+          console.log('满足云端同步条件，开始同步...');
+          this.lastSyncAttempt = now;
+          
+          // 同步失败重试机制 - 优化重试策略
+          let retryCount = 0;
+          const maxRetries = 2; // 减少重试次数，避免过多API请求
+          const retryDelay = 3000; // 增加重试间隔
+          
+          while (retryCount < maxRetries) {
+            try {
+              await this.syncToCloud();
+              this.dataChanged = false;
+              this.pendingChanges = 0;
+              this.lastSyncTime = new Date().toISOString();
+              console.log('云端同步完成');
+              break;
+            } catch (e) {
+              retryCount++;
+              console.error(`云端同步失败 (${retryCount}/${maxRetries}):`, e);
+              if (retryCount < maxRetries) {
+                console.log(`等待 ${retryDelay}ms 后重试...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+              } else {
+                console.error('云端同步多次失败，放弃重试，数据已保存到本地');
+              }
             }
           }
+        } else {
+          console.log('仅保存到本地，跳过云端同步');
         }
-      } else {
-        console.log('仅保存到本地，跳过云端同步');
-      }
       } finally {
         // 释放同步锁
         this.isSyncingData = false;
