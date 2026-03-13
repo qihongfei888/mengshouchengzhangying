@@ -577,71 +577,126 @@
       }
     }
     
+    console.log('getUserData - 当前用户ID:', userId);
+    
     var key = userId ? USER_DATA_PREFIX + userId : 'class_pet_default_user';
-    if (useIndexedDB && indexedDBReady) {
-      var cachedData = memoryStorage[key];
-      if (cachedData) return cachedData;
+    console.log('getUserData - 使用的存储键:', key);
+    
+    // 尝试从多个来源获取数据
+    let data = null;
+    
+    // 1. 尝试从内存存储获取
+    try {
+      data = memoryStorage[key];
+      if (data) {
+        console.log('从内存存储获取数据成功');
+        return data;
+      }
+    } catch (e) {
+      console.error('从内存存储获取数据失败:', e);
     }
+    
+    // 2. 尝试从localStorage获取
     try {
       var v = localStorage.getItem(key);
-      if (v) return JSON.parse(v);
-      // 如果当前用户有ID但没有数据，返回空对象
-      // 避免返回默认键的数据，确保每个用户有独立的数据
-      if (userId) {
-        return {};
+      if (v) {
+        data = JSON.parse(v);
+        console.log('从localStorage获取数据成功');
+        // 更新内存存储
+        memoryStorage[key] = data;
+        return data;
       }
-      // 如果没有用户ID但默认键也没有数据，尝试从用户特定的键中读取
-      if (!userId) {
-        // 尝试从localStorage中获取保存的用户ID
+    } catch (e) {
+      console.error('从localStorage获取数据失败:', e);
+    }
+    
+    // 3. 如果当前用户有ID但没有数据，尝试从默认键获取
+    if (userId) {
+      try {
+        var defaultData = localStorage.getItem('class_pet_default_user');
+        if (defaultData) {
+          data = JSON.parse(defaultData);
+          console.log('从默认键获取数据成功');
+          // 更新用户特定的存储
+          memoryStorage[key] = data;
+          try {
+            localStorage.setItem(key, JSON.stringify(data));
+          } catch (e) {
+            console.error('更新用户特定存储失败:', e);
+          }
+          return data;
+        }
+      } catch (e) {
+        console.error('从默认键获取数据失败:', e);
+      }
+    }
+    
+    // 4. 如果没有用户ID但有保存的用户ID，尝试从用户特定的键中读取
+    if (!userId) {
+      try {
         const currentUserStr = localStorage.getItem(CURRENT_USER_KEY);
         if (currentUserStr) {
-          try {
-            const currentUser = JSON.parse(currentUserStr);
-            if (currentUser.id) {
-              const userKey = USER_DATA_PREFIX + currentUser.id;
-              const userV = localStorage.getItem(userKey);
-              if (userV) {
-                const userData = JSON.parse(userV);
-                // 将用户特定键的数据迁移到默认键
+          const currentUser = JSON.parse(currentUserStr);
+          if (currentUser.id) {
+            const userKey = USER_DATA_PREFIX + currentUser.id;
+            const userV = localStorage.getItem(userKey);
+            if (userV) {
+              data = JSON.parse(userV);
+              console.log('从用户特定键获取数据成功');
+              // 更新内存存储和默认键
+              memoryStorage[userKey] = data;
+              memoryStorage['class_pet_default_user'] = data;
+              try {
                 localStorage.setItem('class_pet_default_user', userV);
-                return userData;
+              } catch (e) {
+                console.error('更新默认键存储失败:', e);
               }
+              return data;
             }
-          } catch (e) {
-            console.error('读取当前用户数据失败:', e);
           }
         }
+      } catch (e) {
+        console.error('读取用户特定数据失败:', e);
       }
-      return {};
-    } catch (e) {
-      // 如果当前用户有ID但没有数据，返回内存中的空对象
-      // 避免返回默认键的数据，确保每个用户有独立的数据
-      if (userId) {
-        return memoryStorage[key] || {};
-      }
-      // 如果没有用户ID但默认键也没有数据，尝试从内存中的用户特定键读取
-      if (!userId) {
-        // 尝试从内存中获取保存的用户ID
-        const currentUserStr = memoryStorage[CURRENT_USER_KEY];
-        if (currentUserStr) {
-          try {
-            const currentUser = JSON.parse(currentUserStr);
-            if (currentUser.id) {
-              const userKey = USER_DATA_PREFIX + currentUser.id;
-              const userData = memoryStorage[userKey];
-              if (userData) {
-                // 将用户特定键的数据迁移到默认键
-                memoryStorage['class_pet_default_user'] = userData;
-                return userData;
-              }
-            }
-          } catch (e) {
-            console.error('读取当前用户数据失败:', e);
-          }
-        }
-      }
-      return memoryStorage[key] || {};
     }
+    
+    // 5. 如果都没有数据，返回默认数据结构，而不是空对象
+    console.log('所有存储都没有数据，返回默认数据结构');
+    data = {
+      students: [],
+      groups: [],
+      pets: [],
+      settings: getDefaultSettings(),
+      scoreItems: {
+        plus: DEFAULT_PLUS_ITEMS,
+        minus: DEFAULT_MINUS_ITEMS
+      },
+      scoreHistory: [],
+      badges: [],
+      store: {
+        goods: DEFAULT_GOODS,
+        accessories: DEFAULT_ACCESSORIES,
+        lottery: DEFAULT_LOTTERY_PRIZES
+      },
+      honors: {
+        weekly: [],
+        monthly: [],
+        semester: [],
+        all: []
+      },
+      lastModified: new Date().toISOString()
+    };
+    
+    // 保存默认数据到存储
+    try {
+      memoryStorage[key] = data;
+      localStorage.setItem(key, JSON.stringify(data));
+      console.log('默认数据已保存到存储');
+    } catch (e) {
+      console.error('保存默认数据失败:', e);
+    }
+    
+    return data;
   }
   
   function getUserDataForUser(userId) {
