@@ -50,8 +50,13 @@
       if (typeof Bmob !== 'undefined') {
         // 检查Bmob版本
         console.log('Bmob SDK版本:', Bmob.version || '未知');
-        // 初始化Bmob
-        Bmob.initialize("055bbfab769cf4ca035e9a97bdd2a015", "8f55b66963acf2810512a244e17d7b79");
+        // 初始化Bmob - 使用API安全码（2.0以上版本需要）
+        // 注意：这里使用的是示例密钥，实际使用时需要替换为真实的API安全码
+        // 对于Bmob SDK 2.0+，使用对象格式初始化
+        Bmob.initialize({
+          appKey: "055bbfab769cf4ca035e9a97bdd2a015",
+          secretKey: "8f55b66963acf2810512a244e17d7b79"
+        });
         console.log('✅ Bmob 初始化成功');
         return true;
       } else {
@@ -2281,11 +2286,11 @@
         const timeSinceLastSync = now - this.lastSyncAttempt;
         
         // 优化同步条件：确保多端数据同步
-        // 同步频率：1分钟一次，变更阈值：3次
+        // 同步频率：30秒一次，变更阈值：1次
         // 确保跨设备数据一致性
         const shouldSyncToCloud = 
           navigator.onLine && 
-          (this.dataChanged || timeSinceLastSync >= 60 * 1000); // 1分钟同步一次，确保跨设备数据一致
+          (this.dataChanged || timeSinceLastSync >= 30 * 1000); // 30秒同步一次，确保跨设备数据一致
         
         if (shouldSyncToCloud) {
           console.log('满足云端同步条件，开始同步...');
@@ -2294,7 +2299,7 @@
           // 同步失败重试机制 - 优化重试策略
           let retryCount = 0;
           const maxRetries = 3; // 增加重试次数
-          const retryDelay = 2000; // 合理的重试间隔
+          const retryDelay = 1000; // 合理的重试间隔
           
           while (retryCount < maxRetries) {
             try {
@@ -2524,6 +2529,8 @@
           }
         } else {
           console.log('Bmob SDK未加载，跳过云端同步');
+          // 尝试重新初始化Bmob
+          initBmob();
         }
         
         // 同步成功后更新本地数据的lastModified

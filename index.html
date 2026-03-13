@@ -25,8 +25,19 @@
     setTimeout(function() {
       if (typeof Bmob !== 'undefined') {
         console.log('✅ Bmob SDK 本地文件加载成功');
+        console.log('Bmob SDK版本:', Bmob.version || '未知');
       } else {
         console.error('❌ Bmob SDK 未加载，请确保Bmob-2.7.0.min.js文件存在于项目根目录');
+        // 尝试重新加载Bmob SDK
+        var script = document.createElement('script');
+        script.src = 'Bmob-2.7.0.min.js';
+        script.onload = function() {
+          console.log('✅ Bmob SDK 重新加载成功');
+        };
+        script.onerror = function() {
+          console.error('❌ Bmob SDK 重新加载失败');
+        };
+        document.head.appendChild(script);
       }
     }, 1000);
   </script>
