@@ -422,6 +422,16 @@
           return false;
         }
         
+        // 先从云端同步用户列表（确保多端数据一致）
+        if (navigator.onLine) {
+          try {
+            console.log('登录前从云端同步用户列表...');
+            await this.syncUserListFromCloud();
+          } catch (e) {
+            console.error('同步用户列表失败:', e);
+          }
+        }
+        
         const users = getUserList();
         const user = users.find(u => u.username === username && u.password === password);
         if (user) {
@@ -578,6 +588,10 @@
             // 同步到云端
             await this.syncToCloud();
             console.log('授权码状态已同步到云端');
+            
+            // 同步用户列表到云端
+            await this.syncUserListToCloud();
+            console.log('用户列表已同步到云端');
           } catch (e) {
             console.error('同步授权码状态到云端失败:', e);
           }
@@ -826,6 +840,97 @@
     // 获取用户列表
     getUserList() {
       return getUserList();
+    },
+    
+    // 同步用户列表到云端
+    async syncUserListToCloud() {
+      if (!navigator.onLine) {
+        console.log('无网络连接，跳过用户列表同步');
+        return false;
+      }
+      
+      try {
+        const supabaseReady = await this.waitForSupabase();
+        if (!supabaseReady) {
+          console.log('Supabase未初始化，跳过用户列表同步');
+          return false;
+        }
+        
+        const users = getUserList();
+        const now = new Date().toISOString();
+        
+        // 将用户列表存储在云端
+        const { error } = await supabase
+          .from('users')
+          .upsert({
+            id: 'user_list_global',
+            data: { users: users },
+            updated_at: now
+          });
+        
+        if (error) {
+          console.error('同步用户列表到云端失败:', error);
+          return false;
+        }
+        
+        console.log('用户列表已同步到云端，用户数:', users.length);
+        return true;
+      } catch (e) {
+        console.error('同步用户列表到云端失败:', e);
+        return false;
+      }
+    },
+    
+    // 从云端同步用户列表
+    async syncUserListFromCloud() {
+      if (!navigator.onLine) {
+        console.log('无网络连接，跳过用户列表同步');
+        return false;
+      }
+      
+      try {
+        const supabaseReady = await this.waitForSupabase();
+        if (!supabaseReady) {
+          console.log('Supabase未初始化，跳过用户列表同步');
+          return false;
+        }
+        
+        const { data, error } = await supabase
+          .from('users')
+          .select('data, updated_at')
+          .eq('id', 'user_list_global')
+          .single();
+        
+        if (error && error.code === 'PGRST116') {
+          console.log('云端没有用户列表数据');
+          return false;
+        } else if (error) {
+          console.error('从云端同步用户列表失败:', error);
+          return false;
+        }
+        
+        if (data && data.data && data.data.users) {
+          const cloudUsers = data.data.users;
+          const localUsers = getUserList();
+          
+          // 合并用户列表（以云端为准，但保留本地的新用户）
+          const mergedUsers = [...cloudUsers];
+          localUsers.forEach(localUser => {
+            if (!mergedUsers.some(u => u.id === localUser.id)) {
+              mergedUsers.push(localUser);
+            }
+          });
+          
+          setUserList(mergedUsers);
+          console.log('用户列表已从云端同步，用户数:', mergedUsers.length);
+          return true;
+        }
+        
+        return false;
+      } catch (e) {
+        console.error('从云端同步用户列表失败:', e);
+        return false;
+      }
     },
     
     // 数据同步方法 - 大幅减少云端操作
