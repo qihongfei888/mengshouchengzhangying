@@ -1393,7 +1393,9 @@
       
       // 检查班级名称是否已存在
       if (data.classes && data.classes.some(c => c.name === className)) {
-        alert('该班级名称已存在');
+        alert('该班级名称已存在，请输入新的班级名称');
+        // 清空输入框，让用户输入新的班级名称
+        document.getElementById('settingClassName').value = '';
         return;
       }
       
