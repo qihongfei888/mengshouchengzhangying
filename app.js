@@ -484,6 +484,7 @@
           let syncSuccess = false;
           try {
             console.log('登录时从云端同步数据...');
+            // 强制从云端同步数据，不考虑时间差
             syncSuccess = await this.syncFromCloud();
             if (syncSuccess) {
               console.log('从云端同步成功，使用云端数据');
@@ -1188,11 +1189,11 @@
       const now = Date.now();
       const timeSinceLastSync = now - this.lastSyncAttempt;
       
-      // 条件：距离上次同步超过4小时 或 累积了100个变更
+      // 条件：距离上次同步超过15分钟 或 累积了20个变更
       const shouldSyncToCloud = 
         navigator.onLine && 
         this.dataChanged && 
-        (timeSinceLastSync >= 4 * 60 * 60 * 1000 || this.pendingChanges >= 100);
+        (timeSinceLastSync >= 15 * 60 * 1000 || this.pendingChanges >= 20);
       
       if (shouldSyncToCloud) {
         console.log('满足云端同步条件，开始同步...');
@@ -1436,60 +1437,56 @@
               console.log(`本地数据:`, localData);
               console.log(`云端数据:`, data.data);
               
-              // 比较时间戳，选择较新的数据
-              if (cloudTimestamp > localTimestamp) {
-                console.log('云端数据更新，准备更新本地数据');
-                // 迁移和验证云端数据
-                let updatedData = this.migrateUserData(data.data);
-                
-                // 验证数据
-                if (!this.validateUserData(updatedData)) {
-                  console.error('云端数据验证失败，跳过同步');
-                  return false;
-                }
-                
-                // 更新时间戳
-                updatedData.lastModified = cloudTimestamp;
-                
-                // 保存数据
-                setUserData(updatedData);
-                
-                // 同步授权码
-                if (updatedData.licenses) {
-                  console.log('同步云端授权码，数量:', updatedData.licenses.length);
-                  setLicenses(updatedData.licenses);
-                }
-                
-                // 同时更新本地备份
-                try {
-                  localStorage.setItem(`class_pet_local_${this.currentUserId}`, JSON.stringify({
-                    data: updatedData,
-                    timestamp: cloudTimestamp
-                  }));
-                } catch (e) {
-                  console.error('本地备份失败:', e);
-                }
-                
-                console.log('从Supabase云存储同步成功，数据已更新');
-                syncSuccess = true;
-                // 标记数据已加载，避免init中重复加载
-                this.dataLoaded = true;
-                // 立即加载更新后的数据到内存
-                this.loadUserData();
-                // 重新渲染界面以显示新数据
-                this.renderDashboard();
-                this.renderStudents();
-                this.renderHonor();
-                this.renderStore();
-                console.log('界面已重新渲染');
-              } else {
-                console.log('本地数据更新或相同，跳过同步');
-                console.log(`本地时间戳: ${localTimestamp} >= 云端时间戳: ${cloudTimestamp}`);
-                // 即使本地数据更新，也要确保云端有数据
-                if (this.dataChanged) {
-                  console.log('本地数据有变更，同步到云端');
-                  await this.syncToCloud();
-                }
+              // 总是从云端同步最新数据，不考虑时间差
+              console.log('从云端同步最新数据');
+              // 迁移和验证云端数据
+              let updatedData = this.migrateUserData(data.data);
+              
+              // 验证数据
+              if (!this.validateUserData(updatedData)) {
+                console.error('云端数据验证失败，跳过同步');
+                return false;
+              }
+              
+              // 更新时间戳
+              updatedData.lastModified = cloudTimestamp;
+              
+              // 保存数据
+              setUserData(updatedData);
+              
+              // 同步授权码
+              if (updatedData.licenses) {
+                console.log('同步云端授权码，数量:', updatedData.licenses.length);
+                setLicenses(updatedData.licenses);
+              }
+              
+              // 同时更新本地备份
+              try {
+                localStorage.setItem(`class_pet_local_${this.currentUserId}`, JSON.stringify({
+                  data: updatedData,
+                  timestamp: cloudTimestamp
+                }));
+              } catch (e) {
+                console.error('本地备份失败:', e);
+              }
+              
+              console.log('从Supabase云存储同步成功，数据已更新');
+              syncSuccess = true;
+              // 标记数据已加载，避免init中重复加载
+              this.dataLoaded = true;
+              // 立即加载更新后的数据到内存
+              this.loadUserData();
+              // 重新渲染界面以显示新数据
+              this.renderDashboard();
+              this.renderStudents();
+              this.renderHonor();
+              this.renderStore();
+              console.log('界面已重新渲染');
+              
+              // 即使本地数据更新，也要确保云端有数据
+              if (this.dataChanged) {
+                console.log('本地数据有变更，同步到云端');
+                await this.syncToCloud();
               }
             } else {
               console.log('云端data字段为空，上传本地数据');
@@ -1555,15 +1552,15 @@
         this.autoSyncInterval = null;
       }
       
-      // 每4小时检查一次是否需要同步（减少频次）
+      // 每15分钟检查一次是否需要同步
       this.autoSyncInterval = setInterval(async () => {
         // 只有当网络可用且有数据变更时才同步
         if (navigator.onLine && this.dataChanged) {
           const now = Date.now();
           const timeSinceLastSync = now - this.lastSyncAttempt;
           
-          // 只有距离上次同步超过4小时，或者累积了100个变更，才进行云端同步
-          if (timeSinceLastSync >= 4 * 60 * 60 * 1000 || this.pendingChanges >= 100) {
+          // 只有距离上次同步超过15分钟，或者累积了20个变更，才进行云端同步
+          if (timeSinceLastSync >= 15 * 60 * 1000 || this.pendingChanges >= 20) {
             console.log('自动同步：满足条件，开始云端同步');
             await this.syncData();
           } else {
@@ -1571,7 +1568,7 @@
             this.saveUserData();
           }
         }
-      }, 4 * 60 * 60 * 1000); // 每4小时检查一次
+      }, 15 * 60 * 1000); // 每15分钟检查一次
     },
     
     // 禁用自动同步
