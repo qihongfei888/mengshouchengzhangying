@@ -5778,15 +5778,16 @@
     // 自动保存备份到localStorage
     autoSaveBackup() {
       try {
-        const classList = getClassList();
-        let currentClassId = null;
+        const userData = getUserData();
+        const classList = userData.classes || [];
+        let currentClassId = userData.currentClassId || null;
         
         // 尝试从localStorage读取当前班级ID
         try {
-          currentClassId = localStorage.getItem(CURRENT_CLASS_KEY);
+          currentClassId = localStorage.getItem(CURRENT_CLASS_KEY) || currentClassId;
         } catch (e) {
           // localStorage不可用时，从内存存储读取
-          currentClassId = memoryStorage[CURRENT_CLASS_KEY];
+          currentClassId = memoryStorage[CURRENT_CLASS_KEY] || currentClassId;
         }
         
         const classData = {};
