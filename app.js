@@ -5224,8 +5224,8 @@
         
         jsonData.forEach((row, index) => {
           // 支持多种列名格式
-          const id = row['学号'] || row['ID'] || row['id'] || row['编号'];
-          const name = row['姓名'] || row['名字'] || row['name'] || row['学生姓名'];
+          const id = row['学号'] || row['ID'] || row['id'] || row['编号'] || '';
+          const name = row['姓名'] || row['名字'] || row['name'] || row['学生姓名'] || '';
           
           if (id && name) {
             // 检查是否已存在
@@ -6445,6 +6445,8 @@
           rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
         }
         if (rows.length < 2) { alert('文件至少需要表头+一行数据'); return; }
+        // 确保表头是数组
+        if (!Array.isArray(rows[0])) { alert('文件格式错误：表头不是有效的数组'); return; }
         const headers = rows[0].map(h => (h || '').toString().toLowerCase());
         const idCol = headers.findIndex(h => h.includes('学号') || h === 'id' || h === '编号');
         const nameCol = headers.findIndex(h => h.includes('姓名') || h === 'name');
@@ -6454,8 +6456,13 @@
         const added = [];
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i];
-          const id = (row[idIdx] != null ? row[idIdx] : row[0]).toString().trim();
-          const name = (row[nameIdx] != null ? row[nameIdx] : row[1]).toString().trim();
+          // 确保row是数组
+          if (!Array.isArray(row)) continue;
+          // 安全地获取ID和姓名，确保值不是undefined
+          const idValue = row[idIdx] != null ? row[idIdx] : row[0];
+          const nameValue = row[nameIdx] != null ? row[nameIdx] : row[1];
+          const id = idValue != null ? idValue.toString().trim() : '';
+          const name = nameValue != null ? nameValue.toString().trim() : '';
           if (!id && !name) continue;
           const sid = id || 's' + (existing.length + added.length + 1);
           if (existing.includes(sid) || added.some(a => a.id === sid)) continue;
