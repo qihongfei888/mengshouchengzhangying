@@ -3239,11 +3239,16 @@
       document.getElementById('plusItemsList').innerHTML = html;
       document.querySelectorAll('#plusItemsList input').forEach(inp => {
         inp.addEventListener('change', () => {
-          const arr = this.getPlusItems();
-          const i = parseInt(inp.dataset.index, 10);
-          if (arr[i]) arr[i][inp.dataset.field] = inp.dataset.field === 'points' ? parseInt(inp.value, 10) || 0 : inp.value;
-          setStorage(STORAGE_KEYS.plusItems, arr);
-          this.saveData();
+          const data = getUserData();
+          const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+          if (currentClass) {
+            const arr = currentClass.plusItems || [...DEFAULT_PLUS_ITEMS];
+            const i = parseInt(inp.dataset.index, 10);
+            if (arr[i]) arr[i][inp.dataset.field] = inp.dataset.field === 'points' ? parseInt(inp.value, 10) || 0 : inp.value;
+            currentClass.plusItems = arr;
+            setUserData(data);
+            this.saveData();
+          }
         });
       });
     },
@@ -3259,32 +3264,53 @@
       document.getElementById('minusItemsList').innerHTML = html;
       document.querySelectorAll('#minusItemsList input').forEach(inp => {
         inp.addEventListener('change', () => {
-          const arr = this.getMinusItems();
-          const i = parseInt(inp.dataset.index, 10);
-          if (arr[i]) arr[i][inp.dataset.field] = inp.dataset.field === 'points' ? Math.abs(parseInt(inp.value, 10) || 0) : inp.value;
-          setStorage(STORAGE_KEYS.minusItems, arr);
-          this.saveData();
+          const data = getUserData();
+          const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+          if (currentClass) {
+            const arr = currentClass.minusItems || [...DEFAULT_MINUS_ITEMS];
+            const i = parseInt(inp.dataset.index, 10);
+            if (arr[i]) arr[i][inp.dataset.field] = inp.dataset.field === 'points' ? Math.abs(parseInt(inp.value, 10) || 0) : inp.value;
+            currentClass.minusItems = arr;
+            setUserData(data);
+            this.saveData();
+          }
         });
       });
     },
 
     addScoreItem(type) {
-      const key = type === 'plus' ? STORAGE_KEYS.plusItems : STORAGE_KEYS.minusItems;
-      const defaultItems = type === 'plus' ? DEFAULT_PLUS_ITEMS : DEFAULT_MINUS_ITEMS;
-      const arr = getStorage(key, defaultItems);
-      arr.push({ name: '新项目', points: 1 });
-      setStorage(key, arr);
-      this.saveData();
-      type === 'plus' ? this.renderPlusItems() : this.renderMinusItems();
+      const data = getUserData();
+      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (currentClass) {
+        const defaultItems = type === 'plus' ? DEFAULT_PLUS_ITEMS : DEFAULT_MINUS_ITEMS;
+        const arr = type === 'plus' ? (currentClass.plusItems || [...defaultItems]) : (currentClass.minusItems || [...defaultItems]);
+        arr.push({ name: '新项目', points: 1 });
+        if (type === 'plus') {
+          currentClass.plusItems = arr;
+        } else {
+          currentClass.minusItems = arr;
+        }
+        setUserData(data);
+        this.saveData();
+        type === 'plus' ? this.renderPlusItems() : this.renderMinusItems();
+      }
     },
     removeScoreItem(type, index) {
-      const key = type === 'plus' ? STORAGE_KEYS.plusItems : STORAGE_KEYS.minusItems;
-      const defaultItems = type === 'plus' ? DEFAULT_PLUS_ITEMS : DEFAULT_MINUS_ITEMS;
-      const arr = getStorage(key, defaultItems);
-      arr.splice(index, 1);
-      setStorage(key, arr);
-      this.saveData();
-      type === 'plus' ? this.renderPlusItems() : this.renderMinusItems();
+      const data = getUserData();
+      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (currentClass) {
+        const defaultItems = type === 'plus' ? DEFAULT_PLUS_ITEMS : DEFAULT_MINUS_ITEMS;
+        const arr = type === 'plus' ? (currentClass.plusItems || [...defaultItems]) : (currentClass.minusItems || [...defaultItems]);
+        arr.splice(index, 1);
+        if (type === 'plus') {
+          currentClass.plusItems = arr;
+        } else {
+          currentClass.minusItems = arr;
+        }
+        setUserData(data);
+        this.saveData();
+        type === 'plus' ? this.renderPlusItems() : this.renderMinusItems();
+      }
     },
 
     saveScoreItem() {
