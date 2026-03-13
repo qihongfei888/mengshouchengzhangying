@@ -1024,15 +1024,35 @@
           try {
             console.log('登录时从云端同步数据...');
             // 强制从云端同步数据，不考虑时间差
-            syncSuccess = await this.syncFromCloud();
-            if (syncSuccess) {
-              console.log('从云端同步成功，使用云端数据');
-            } else {
-              console.log('云端数据较旧或没有数据，使用本地数据');
-              // 即使云端没有数据，也要尝试同步本地数据到云端
-              if (navigator.onLine) {
-                console.log('尝试将本地数据同步到云端...');
-                await this.syncToCloud();
+            // 增加重试机制，确保同步成功
+            let retryCount = 0;
+            const maxRetries = 3;
+            const retryDelay = 2000;
+            
+            while (retryCount < maxRetries) {
+              try {
+                syncSuccess = await this.syncFromCloud();
+                if (syncSuccess) {
+                  console.log('从云端同步成功，使用云端数据');
+                  break;
+                } else {
+                  console.log('云端数据较旧或没有数据，使用本地数据');
+                  // 即使云端没有数据，也要尝试同步本地数据到云端
+                  if (navigator.onLine) {
+                    console.log('尝试将本地数据同步到云端...');
+                    await this.syncToCloud();
+                  }
+                  break;
+                }
+              } catch (e) {
+                retryCount++;
+                console.error(`登录时云端同步失败 (${retryCount}/${maxRetries}):`, e);
+                if (retryCount < maxRetries) {
+                  console.log(`等待 ${retryDelay}ms 后重试...`);
+                  await new Promise(resolve => setTimeout(resolve, retryDelay));
+                } else {
+                  console.error('登录时云端同步多次失败，使用本地数据');
+                }
               }
             }
           } catch (e) {
@@ -1335,13 +1355,14 @@
         clearTimeout(this.syncTimeout);
       }
       
-      // 累积多个变更后一次性同步（延迟5秒）
+      // 累积多个变更后一次性同步（延迟3秒）
+      // 减少延迟，确保数据及时同步
       this.syncTimeout = setTimeout(() => {
         if (this.dataChanged && navigator.onLine) {
           this.syncData();
           this.pendingChanges = 0;
         }
-      }, 5 * 1000);
+      }, 3 * 1000);
     },
     logout() {
       try {
@@ -2259,12 +2280,12 @@
         const now = Date.now();
         const timeSinceLastSync = now - this.lastSyncAttempt;
         
-        // 优化同步条件：根据用户要求调整
-        // 同步频率：2分钟一次，变更阈值：5次
+        // 优化同步条件：确保多端数据同步
+        // 同步频率：1分钟一次，变更阈值：3次
+        // 确保跨设备数据一致性
         const shouldSyncToCloud = 
           navigator.onLine && 
-          this.dataChanged && 
-          (timeSinceLastSync >= 2 * 60 * 1000 || this.pendingChanges >= 5); // 2分钟同步一次，5次变更触发
+          (this.dataChanged || timeSinceLastSync >= 60 * 1000); // 1分钟同步一次，确保跨设备数据一致
         
         if (shouldSyncToCloud) {
           console.log('满足云端同步条件，开始同步...');
@@ -2272,8 +2293,8 @@
           
           // 同步失败重试机制 - 优化重试策略
           let retryCount = 0;
-          const maxRetries = 2; // 减少重试次数，避免过多API请求
-          const retryDelay = 3000; // 增加重试间隔
+          const maxRetries = 3; // 增加重试次数
+          const retryDelay = 2000; // 合理的重试间隔
           
           while (retryCount < maxRetries) {
             try {
