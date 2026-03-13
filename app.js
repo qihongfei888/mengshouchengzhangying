@@ -1433,7 +1433,11 @@
       data.currentClassId = newClass.id;
       setUserData(data);
       this.loadUserData();
-      this.init();
+      // 只更新必要的界面，不重新初始化整个应用
+      this.renderDashboard();
+      this.renderStudents();
+      this.renderHonor();
+      this.renderStore();
       alert('班级创建成功：' + className);
     },
     deleteClass() {
