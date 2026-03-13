@@ -619,18 +619,29 @@
       }
     },
     initUserData() {
-      const defaultData = {
-        classes: [],
-        currentClassId: null,
-        systemName: '童心宠伴',
-        theme: 'coral'
-      };
-      setUserData(defaultData);
+      // 检查用户数据是否已存在
+      const existingData = getUserData();
+      
+      // 只有在用户数据不存在时才创建默认数据
+      if (Object.keys(existingData).length === 0) {
+        const defaultData = {
+          version: '1.0.0', // 数据版本号
+          classes: [],
+          currentClassId: null,
+          systemName: '童心宠伴',
+          theme: 'coral'
+        };
+        setUserData(defaultData);
+      }
+      
       this.loadUserData();
     },
     loadUserData() {
       try {
-        const data = getUserData();
+        let data = getUserData();
+        
+        // 数据迁移
+        data = this.migrateUserData(data);
         
         // 确保数据结构正确
         if (!data.classes) {
@@ -842,6 +853,81 @@
       return getUserList();
     },
     
+    // 数据迁移函数
+    migrateUserData(data) {
+      if (!data) {
+        return {
+          version: '1.0.0',
+          classes: [],
+          currentClassId: null,
+          systemName: '童心宠伴',
+          theme: 'coral'
+        };
+      }
+      
+      // 版本 1.0.0 迁移
+      if (!data.version) {
+        data.version = '1.0.0';
+        // 为旧数据添加必要的字段
+        if (!data.systemName) data.systemName = '童心宠伴';
+        if (!data.theme) data.theme = 'coral';
+        if (!data.classes) data.classes = [];
+        if (!data.currentClassId) data.currentClassId = null;
+        setUserData(data);
+      }
+      
+      // 后续版本的迁移可以在这里添加
+      // 例如：if (data.version < '1.1.0') { ... }
+      
+      return data;
+    },
+    
+    // 数据验证函数
+    validateUserData(data) {
+      if (!data) {
+        console.error('数据为空');
+        return false;
+      }
+      
+      // 验证必要字段
+      if (!Array.isArray(data.classes)) {
+        console.error('班级数据不是数组');
+        data.classes = [];
+      }
+      
+      // 验证班级数据结构
+      for (const cls of data.classes) {
+        if (!cls.id || !cls.name) {
+          console.error('班级缺少必要字段:', cls);
+          return false;
+        }
+        
+        // 验证学生数据
+        if (cls.students && !Array.isArray(cls.students)) {
+          console.error('学生数据不是数组');
+          cls.students = [];
+        }
+        
+        // 验证学生数据结构
+        if (cls.students) {
+          for (const student of cls.students) {
+            if (!student.id || !student.name) {
+              console.error('学生缺少必要字段:', student);
+              return false;
+            }
+          }
+        }
+      }
+      
+      // 验证当前班级ID
+      if (data.currentClassId && !data.classes.some(cls => cls.id === data.currentClassId)) {
+        console.error('当前班级ID不存在于班级列表中');
+        data.currentClassId = data.classes.length > 0 ? data.classes[0].id : null;
+      }
+      
+      return true;
+    },
+    
     // 同步用户列表到云端
     async syncUserListToCloud() {
       if (!navigator.onLine) {
@@ -881,6 +967,162 @@
       }
     },
     
+    // 备份云端数据
+    async backupCloudData() {
+      if (!navigator.onLine || !this.currentUserId) {
+        console.log('无网络连接或无用户ID，跳过备份');
+        return false;
+      }
+      
+      try {
+        const supabaseReady = await this.waitForSupabase();
+        if (!supabaseReady) {
+          console.log('Supabase未初始化，跳过备份');
+          return false;
+        }
+        
+        const userData = getUserData();
+        const now = new Date().toISOString();
+        
+        // 创建备份数据
+        const backupData = {
+          id: `backup_${this.currentUserId}_${Date.now()}`,
+          userId: this.currentUserId,
+          data: userData,
+          timestamp: now,
+          version: userData.version || '1.0.0'
+        };
+        
+        // 插入备份
+        const { error } = await supabase
+          .from('backups')
+          .insert(backupData);
+        
+        if (error) {
+          console.error('创建备份失败:', error);
+          return false;
+        }
+        
+        console.log('数据备份成功');
+        
+        // 清理旧备份，保留最近5个
+        await this.cleanupOldBackups();
+        
+        return true;
+      } catch (e) {
+        console.error('备份失败:', e);
+        return false;
+      }
+    },
+    
+    // 清理旧备份
+    async cleanupOldBackups() {
+      if (!navigator.onLine || !this.currentUserId) {
+        return false;
+      }
+      
+      try {
+        const supabaseReady = await this.waitForSupabase();
+        if (!supabaseReady) {
+          return false;
+        }
+        
+        // 获取备份列表
+        const { data: backups, error } = await supabase
+          .from('backups')
+          .select('id, timestamp')
+          .eq('userId', this.currentUserId)
+          .order('timestamp', { ascending: false });
+        
+        if (error) {
+          console.error('获取备份列表失败:', error);
+          return false;
+        }
+        
+        // 保留最近5个备份，删除其他的
+        if (backups && backups.length > 5) {
+          const backupsToDelete = backups.slice(5);
+          for (const backup of backupsToDelete) {
+            const { error: deleteError } = await supabase
+              .from('backups')
+              .delete()
+              .eq('id', backup.id);
+            
+            if (deleteError) {
+              console.error('删除旧备份失败:', deleteError);
+            }
+          }
+          console.log('清理旧备份完成');
+        }
+        
+        return true;
+      } catch (e) {
+        console.error('清理旧备份失败:', e);
+        return false;
+      }
+    },
+    
+    // 从备份恢复数据
+    async restoreFromBackup(backupId) {
+      if (!navigator.onLine || !this.currentUserId) {
+        console.log('无网络连接或无用户ID，跳过恢复');
+        return false;
+      }
+      
+      try {
+        const supabaseReady = await this.waitForSupabase();
+        if (!supabaseReady) {
+          console.log('Supabase未初始化，跳过恢复');
+          return false;
+        }
+        
+        let backupData;
+        if (backupId) {
+          // 恢复指定备份
+          const { data, error } = await supabase
+            .from('backups')
+            .select('data')
+            .eq('id', backupId)
+            .single();
+          
+          if (error) {
+            console.error('获取备份失败:', error);
+            return false;
+          }
+          backupData = data.data;
+        } else {
+          // 恢复最近的备份
+          const { data: backups, error } = await supabase
+            .from('backups')
+            .select('data')
+            .eq('userId', this.currentUserId)
+            .order('timestamp', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (error) {
+            console.error('获取最近备份失败:', error);
+            return false;
+          }
+          backupData = backups.data;
+        }
+        
+        if (backupData) {
+          // 迁移备份数据
+          const migratedData = this.migrateUserData(backupData);
+          setUserData(migratedData);
+          this.loadUserData();
+          console.log('数据恢复成功');
+          return true;
+        }
+        
+        return false;
+      } catch (e) {
+        console.error('恢复数据失败:', e);
+        return false;
+      }
+    },
+    
     // 从云端同步用户列表
     async syncUserListFromCloud() {
       if (!navigator.onLine) {
@@ -902,8 +1144,10 @@
           .single();
         
         if (error && error.code === 'PGRST116') {
-          console.log('云端没有用户列表数据');
-          return false;
+          console.log('云端没有用户列表数据，尝试上传本地用户列表');
+          // 云端没有数据时，上传本地用户列表
+          await this.syncUserListToCloud();
+          return true;
         } else if (error) {
           console.error('从云端同步用户列表失败:', error);
           return false;
@@ -998,18 +1242,26 @@
       this.syncing = true;
       
       try {
-        const userData = getUserData();
+        // 1. 获取并迁移数据
+        let userData = getUserData();
+        userData = this.migrateUserData(userData);
         const licenses = getLicenses(); // 读取授权码
         const now = new Date().toISOString();
+        
+        // 2. 数据验证
+        if (!this.validateUserData(userData)) {
+          console.error('数据验证失败，跳过同步');
+          return;
+        }
         
         console.log('准备同步到云端，用户ID:', this.currentUserId);
         console.log('同步时间:', now);
         console.log('授权码数量:', licenses.length);
         
-        // 更新数据的最后修改时间
+        // 3. 更新数据的最后修改时间
         userData.lastModified = now;
         
-        // 1. 优先使用本地存储
+        // 4. 优先使用本地存储
         try {
           localStorage.setItem(`class_pet_local_${this.currentUserId}`, JSON.stringify({
             data: userData,
@@ -1020,7 +1272,10 @@
           console.error('本地存储失败:', localError);
         }
         
-        // 2. 等待Supabase初始化完成
+        // 5. 创建数据备份
+        await this.backupCloudData();
+        
+        // 6. 等待Supabase初始化完成
         console.log('等待Supabase初始化...');
         const supabaseReady = await this.waitForSupabase();
         
@@ -1029,7 +1284,7 @@
           return;
         }
         
-        // 3. 进行云同步
+        // 7. 进行云同步
         console.log('开始上传到Supabase...');
         
         // 将授权码存储在data字段中，避免数据库字段不存在的问题
@@ -1051,6 +1306,8 @@
         
         if (error) {
           console.error('Supabase同步失败:', error);
+          // 同步失败时尝试从备份恢复
+          await this.restoreFromBackup();
         } else {
           console.log('数据已同步到Supabase云存储');
           // 同步成功后更新本地数据的lastModified
@@ -1058,6 +1315,12 @@
         }
       } catch (e) {
         console.error('云同步失败:', e);
+        // 异常时尝试从备份恢复
+        try {
+          await this.restoreFromBackup();
+        } catch (restoreError) {
+          console.error('恢复数据失败:', restoreError);
+        }
       } finally {
         this.syncing = false;
       }
@@ -1176,17 +1439,25 @@
               // 比较时间戳，选择较新的数据
               if (cloudTimestamp > localTimestamp) {
                 console.log('云端数据更新，准备更新本地数据');
-                // 更新本地数据
-                const updatedData = {
-                  ...data.data,
-                  lastModified: cloudTimestamp
-                };
+                // 迁移和验证云端数据
+                let updatedData = this.migrateUserData(data.data);
+                
+                // 验证数据
+                if (!this.validateUserData(updatedData)) {
+                  console.error('云端数据验证失败，跳过同步');
+                  return false;
+                }
+                
+                // 更新时间戳
+                updatedData.lastModified = cloudTimestamp;
+                
+                // 保存数据
                 setUserData(updatedData);
                 
                 // 同步授权码
-                if (data.data && data.data.licenses) {
-                  console.log('同步云端授权码，数量:', data.data.licenses.length);
-                  setLicenses(data.data.licenses);
+                if (updatedData.licenses) {
+                  console.log('同步云端授权码，数量:', updatedData.licenses.length);
+                  setLicenses(updatedData.licenses);
                 }
                 
                 // 同时更新本地备份
@@ -6533,6 +6804,10 @@
           app.currentUserId = user.id;
           app.currentUsername = user.username;
           
+          // 加载用户数据
+          app.loadUserData();
+          app.dataLoaded = true;
+          
           if (navigator.onLine) {
             try {
               console.log('自动登录时从云端同步数据...');
@@ -6541,19 +6816,13 @@
                 console.log('从云端同步成功，使用云端数据');
               } else {
                 console.log('云端数据较旧或没有数据，使用本地数据');
-                app.loadUserData();
-                app.dataLoaded = true;
               }
             } catch (e) {
               console.error('云端同步失败，使用本地数据:', e);
-              app.loadUserData();
-              app.dataLoaded = true;
             }
           } else {
             // 无网时直接使用本地数据
             console.log('无网络连接，直接使用本地数据');
-            app.loadUserData();
-            app.dataLoaded = true;
           }
           
           app.showApp();
@@ -6654,7 +6923,20 @@
           const users = app.getUserList();
           const userExists = users.some(u => u.username === username);
           if (!userExists) {
-            alert('用户名不存在，请先注册');
+            // 尝试从云端同步用户列表后再次检查
+            app.syncUserListFromCloud().then(function(syncSuccess) {
+              if (syncSuccess) {
+                const updatedUsers = app.getUserList();
+                const updatedUserExists = updatedUsers.some(u => u.username === username);
+                if (updatedUserExists) {
+                  alert('用户名已存在，请检查密码');
+                } else {
+                  alert('用户名不存在，请先注册');
+                }
+              } else {
+                alert('用户名不存在，请先注册');
+              }
+            });
           } else {
             alert('密码错误，请重新输入');
           }

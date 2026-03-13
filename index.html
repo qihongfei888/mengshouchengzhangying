@@ -894,8 +894,29 @@
   <div id="effectContainer" class="effect-container"></div>
 
   <script src="xlsx.full.min.js"></script>
-  <script src="db.js"></script>
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+    <script src="db.js"></script>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+    <script>
+      // 图片懒加载
+      document.addEventListener('DOMContentLoaded', function() {
+        const lazyImages = document.querySelectorAll('img[data-src]');
+        
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              img.src = img.dataset.src;
+              img.classList.remove('lazy');
+              imageObserver.unobserve(img);
+            }
+          });
+        });
+        
+        lazyImages.forEach(img => {
+          imageObserver.observe(img);
+        });
+      });
+    </script>
 </body>
 </html>
