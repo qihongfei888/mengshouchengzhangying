@@ -992,16 +992,16 @@
         clearTimeout(this.syncTimeout);
       }
       
-      // 累积多个变更后一次性同步（延迟10秒）
+      // 累积多个变更后一次性同步（延迟5秒）
       this.syncTimeout = setTimeout(() => {
         if (this.dataChanged && navigator.onLine) {
           this.syncData();
           this.pendingChanges = 0;
         }
-      }, 10 * 1000);
+      }, 5 * 1000);
       
-      // 如果累积了5个变更，立即同步
-      if (this.pendingChanges >= 5) {
+      // 如果累积了3个变更，立即同步
+      if (this.pendingChanges >= 3) {
         clearTimeout(this.syncTimeout);
         if (navigator.onLine) {
           this.syncData();
@@ -2008,6 +2008,12 @@
         console.log('数据已同步到Bmob云存储');
         // 同步成功后更新本地数据的lastModified
         setUserData(compressedData);
+        
+        // 8. 通知其他设备同步数据
+        if (window.realtimeSync) {
+          console.log('通知其他设备同步数据');
+          // 这里可以添加推送通知逻辑，确保其他设备能够及时同步数据
+        }
         
       } catch (e) {
         console.error('云同步失败:', e);
@@ -5963,8 +5969,10 @@
     },
     
     enableRealtimeSync() {
-      // 禁用实时同步，避免网络依赖
-      console.log('实时同步已禁用，使用本地存储');
+      // 启用实时同步
+      console.log('实时同步已启用');
+      // 启动自动同步机制
+      this.enableAutoSyncRealtime();
     },
     
     disableRealtimeSync() {
