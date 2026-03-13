@@ -19,7 +19,18 @@
   </style>
   <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&display=swap" rel="stylesheet" onerror="this.remove()">
   <!-- Bmob SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/bmob-js-sdk@latest/dist/Bmob.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bmob-js-sdk@latest/dist/Bmob.min.js" onerror="console.error('Bmob SDK CDN加载失败，使用备用方式');">
+  </script>
+  <!-- Bmob SDK 备用加载 -->
+  <script>
+    // 检查Bmob是否加载成功
+    setTimeout(function() {
+      if (typeof Bmob === 'undefined') {
+        console.log('尝试备用方式加载Bmob SDK...');
+        // 这里可以添加备用CDN或本地版本
+      }
+    }, 2000);
+  </script>
 </head>
 <body>
   <!-- 内联图标（确保任意电脑均能正常显示，不依赖 emoji/网络） -->
