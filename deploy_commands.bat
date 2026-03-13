@@ -12,7 +12,7 @@ git add .
 
 echo.
 echo [2/4] 提交更改...
-git commit -m "修复循环调用问题：移除getUserData中的setUserData调用，防止Maximum call stack size exceeded错误"
+git commit -m "修复Bmob SDK加载路径：更新版本号为3.7.3，确保SDK正确加载"
 
 echo.
 echo [3/4] 推送到 GitHub...
