@@ -2027,6 +2027,8 @@
         console.log('数据已同步到Bmob云存储');
         // 同步成功后更新本地数据的lastModified
         setUserData(compressedData);
+        // 同步成功后重新加载用户数据，确保应用界面显示最新数据
+        this.loadUserData();
         
         // 8. 通知其他设备同步数据
         if (window.realtimeSync) {
@@ -7743,7 +7745,7 @@
         document.getElementById('register-form').style.display = t === 'register' ? 'block' : 'none';
       });
     });
-    document.getElementById('login-form').addEventListener('submit', function (e) {
+    document.getElementById('login-form').addEventListener('submit', async function (e) {
       e.preventDefault();
       var username = (document.getElementById('loginUsername').value || '').trim();
       var password = (document.getElementById('loginPassword').value || '').trim();
