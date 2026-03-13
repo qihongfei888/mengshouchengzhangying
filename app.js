@@ -5943,15 +5943,7 @@
       return false;
     },
     
-    // Supabase 同步方法
-    async saveToSupabase() {
-      // 禁用云上传，只保存到本地
-    },
-    
-    async loadFromSupabase() {
-      // 禁用云同步，只从本地加载数据
-      this.loadFromLocalBackup();
-    },
+
     
     // 显示同步状态提示
     showSyncStatus(type, message) {
@@ -7766,6 +7758,12 @@
         app.showApp();
         // 显示管理员入口
         document.getElementById('adminButton').style.display = 'block';
+        // 初始化并启用RealtimeSync
+        window.realtimeSync.init(app.currentUserId);
+        // 启用实时同步和自动同步
+        app.enableRealtimeSync();
+        app.enableAutoSync();
+        console.log('管理员登录成功');
         return;
       }
       
