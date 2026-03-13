@@ -1,5 +1,5 @@
 // 15种宠物及品种定义（可爱萌宠风格图标使用 emoji + 名称，实际可替换为图片URL）
-let PET_TYPES = [
+window.PET_TYPES = [
   {
     id: 'cat',
     name: '猫咪',

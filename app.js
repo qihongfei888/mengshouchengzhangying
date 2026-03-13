@@ -13,6 +13,8 @@
     console.error('❌ Bmob 初始化失败:', e);
   }
   
+
+  
   // 实时同步管理类
   class RealtimeSync {
     constructor() {
@@ -2410,6 +2412,10 @@
           console.log('本地数据有变更，同步到云端');
           await this.syncToCloud();
         }
+      } catch (e) {
+        console.error('从云存储同步失败:', e);
+      } finally {
+        this.syncing = false;
       }
       
       // 2. 云存储没有数据或同步失败，尝试从本地备份加载
@@ -2440,12 +2446,8 @@
           console.error('从本地备份加载失败:', localError);
         }
       }
-    } catch (e) {
-      console.error('从云存储同步失败:', e);
-    } finally {
-      this.syncing = false;
-    }
-    return syncSuccess;
+      
+      return syncSuccess;
   },
     
     // 显示同步状态
