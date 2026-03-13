@@ -1,6 +1,49 @@
 (function () {
   console.log('🚀 应用启动中...');
   
+  // 检查存储空间
+  async function checkStorageSpace() {
+    try {
+      if (navigator.storage && navigator.storage.estimate) {
+        const estimate = await navigator.storage.estimate();
+        const usage = estimate.usage || 0;
+        const quota = estimate.quota || 0;
+        const percentUsed = quota > 0 ? ((usage / quota) * 100).toFixed(2) : 0;
+        
+        console.log('📦 存储空间使用情况:');
+        console.log('  - 已使用: ' + (usage / 1024 / 1024).toFixed(2) + ' MB');
+        console.log('  - 总配额: ' + (quota / 1024 / 1024).toFixed(2) + ' MB');
+        console.log('  - 使用率: ' + percentUsed + '%');
+        
+        // 检查localStorage使用情况
+        let localStorageSize = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          const value = localStorage.getItem(key);
+          localStorageSize += (key.length + value.length) * 2; // UTF-16编码，每个字符2字节
+        }
+        console.log('  - localStorage使用: ' + (localStorageSize / 1024).toFixed(2) + ' KB');
+        
+        if (percentUsed > 90) {
+          console.warn('⚠️ 存储空间使用率超过90%，建议清理数据');
+        }
+        
+        return { usage, quota, percentUsed, localStorageSize };
+      } else {
+        console.log('📦 浏览器不支持存储空间检查');
+        return null;
+      }
+    } catch (e) {
+      console.error('检查存储空间失败:', e);
+      return null;
+    }
+  }
+  
+  // 启动时检查存储空间
+  checkStorageSpace().then(info => {
+    window.storageInfo = info;
+  });
+  
   // 初始化 Bmob
   try {
     if (typeof Bmob !== 'undefined') {
@@ -33,27 +76,37 @@
 
     // 设置实时监听器
     setupRealtimeListener() {
+      // 检查Bmob是否加载
+      if (typeof Bmob === 'undefined') {
+        console.error('Bmob SDK未加载，无法设置实时监听器');
+        return;
+      }
+      
       // 监听用户数据变化
-      const query = Bmob.Query('UserData');
-      query.equalTo('userId', this.userId);
-      query.subscribe().then((subscription) => {
-        this.channels.userData = subscription;
-        subscription.on('create', (object) => {
-          console.log('收到云端创建事件:', object);
-          this.updateLocalData(object.get('data'));
+      try {
+        const query = Bmob.Query('UserData');
+        query.equalTo('userId', this.userId);
+        query.subscribe().then((subscription) => {
+          this.channels.userData = subscription;
+          subscription.on('create', (object) => {
+            console.log('收到云端创建事件:', object);
+            this.updateLocalData(object.get('data'));
+          });
+          subscription.on('update', (object) => {
+            console.log('收到云端更新事件:', object);
+            this.updateLocalData(object.get('data'));
+          });
+          subscription.on('delete', (object) => {
+            console.log('收到云端删除事件:', object);
+            // 处理删除事件
+          });
+          console.log('实时同步监听器已设置');
+        }).catch((error) => {
+          console.error('设置实时监听器失败:', error);
         });
-        subscription.on('update', (object) => {
-          console.log('收到云端更新事件:', object);
-          this.updateLocalData(object.get('data'));
-        });
-        subscription.on('delete', (object) => {
-          console.log('收到云端删除事件:', object);
-          // 处理删除事件
-        });
-        console.log('实时同步监听器已设置');
-      }).catch((error) => {
-        console.error('设置实时监听器失败:', error);
-      });
+      } catch (e) {
+        console.error('设置实时监听器失败:', e);
+      }
     }
 
     // 更新本地数据
@@ -88,6 +141,12 @@
 
     // 同步数据到云端
     async syncToCloud(data) {
+      // 检查Bmob是否加载
+      if (typeof Bmob === 'undefined') {
+        console.error('Bmob SDK未加载，无法同步到云端');
+        return false;
+      }
+      
       try {
         const query = Bmob.Query('UserData');
         const results = await query.equalTo('userId', this.userId).find();
@@ -370,10 +429,58 @@
   }
   function setUserList(list) {
     try {
-      localStorage.setItem(USER_LIST_KEY, JSON.stringify(list));
+      // 检查存储空间
+      const dataStr = JSON.stringify(list);
+      const dataSize = new Blob([dataStr]).size;
+      
+      // 如果数据超过1MB，可能是数据过大
+      if (dataSize > 1024 * 1024) {
+        console.warn('用户列表数据过大 (' + (dataSize / 1024).toFixed(2) + 'KB)，尝试压缩...');
+        // 清理不必要的数据
+        const cleanedList = list.map(user => ({
+          id: user.id,
+          username: user.username,
+          password: user.password,
+          licenseKey: user.licenseKey,
+          createdAt: user.createdAt,
+          maxDevices: user.maxDevices || 1,
+          devices: (user.devices || []).slice(0, 1) // 只保留最近一个设备
+        }));
+        localStorage.setItem(USER_LIST_KEY, JSON.stringify(cleanedList));
+      } else {
+        localStorage.setItem(USER_LIST_KEY, dataStr);
+      }
+      
+      // 同时保存到内存
+      memoryStorage[USER_LIST_KEY] = list;
+      return true;
     } catch (e) {
+      console.error('localStorage 写入失败:', e);
       // localStorage 不可用时使用内存存储
       memoryStorage[USER_LIST_KEY] = list;
+      
+      // 如果是存储空间不足，尝试清理旧数据
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        console.log('尝试清理存储空间...');
+        try {
+          // 清理旧的备份数据
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('class_pet_backup_')) {
+              localStorage.removeItem(key);
+              console.log('已清理备份:', key);
+            }
+          }
+          // 再次尝试保存
+          localStorage.setItem(USER_LIST_KEY, JSON.stringify(list));
+          return true;
+        } catch (e2) {
+          console.error('清理后仍然无法保存:', e2);
+        }
+      }
+      
+      // 抛出错误让调用者知道保存失败
+      throw new Error('存储空间不足，请清理浏览器数据后重试');
     }
   }
   var useIndexedDB = typeof IndexedDBManager !== 'undefined' && IndexedDBManager.isSupported();
@@ -600,6 +707,35 @@
       }
     } catch (e) {
       console.warn('localStorage 写入失败:', e);
+      
+      // 如果是存储空间不足，尝试清理旧数据
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        console.log('尝试清理存储空间...');
+        try {
+          // 清理旧的备份数据
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const storageKey = localStorage.key(i);
+            if (storageKey && storageKey.startsWith('class_pet_backup_')) {
+              localStorage.removeItem(storageKey);
+              console.log('已清理备份:', storageKey);
+            }
+          }
+          // 再次尝试保存
+          localStorage.setItem(key, JSON.stringify(data));
+          if (userId) {
+            localStorage.setItem('class_pet_default_user', JSON.stringify(data));
+          }
+          console.log('清理后保存成功');
+          return; // 保存成功，直接返回
+        } catch (e2) {
+          console.error('清理后仍然无法保存:', e2);
+          // 抛出错误让调用者知道
+          throw new Error('存储空间不足，请清理浏览器数据后重试');
+        }
+      } else {
+        // 其他类型的错误也抛出，让调用者知道
+        throw new Error('数据保存失败: ' + (e.message || '未知错误'));
+      }
     }
     if (useIndexedDB && indexedDBReady) {
       IndexedDBManager.setItem(key, data).catch(function(e) {
@@ -753,15 +889,33 @@
           }
           
           // 保存用户数据
-          setUserList(users);
+          try {
+            setUserList(users);
+          } catch (saveError) {
+            console.error('保存用户列表失败:', saveError);
+            alert('保存登录信息失败: ' + saveError.message);
+            return false;
+          }
           
           this.currentUserId = user.id;
           this.currentUsername = user.username;
-          localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({ 
-            id: user.id, 
-            username: user.username,
-            deviceId: deviceId 
-          }));
+          
+          // 保存当前用户信息
+          try {
+            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({ 
+              id: user.id, 
+              username: user.username,
+              deviceId: deviceId 
+            }));
+          } catch (e) {
+            console.warn('保存当前用户信息到localStorage失败:', e);
+            // 保存到内存存储
+            memoryStorage[CURRENT_USER_KEY] = JSON.stringify({ 
+              id: user.id, 
+              username: user.username,
+              deviceId: deviceId 
+            });
+          }
           
           // 数据迁移：从旧存储导入到新的Bmob数据库
           try {
@@ -818,7 +972,14 @@
         return false;
       } catch (e) {
         console.error('登录失败:', e);
-        alert('登录失败，请重试');
+        // 根据错误类型显示不同的提示
+        if (e.message && e.message.includes('存储空间不足')) {
+          alert('登录失败：浏览器存储空间不足。\n\n解决方法：\n1. 清理浏览器缓存和历史记录\n2. 关闭其他标签页\n3. 使用隐私/无痕模式登录\n4. 更换浏览器尝试');
+        } else if (e.name === 'QuotaExceededError' || (e.code === 22)) {
+          alert('登录失败：存储空间已满。请清理浏览器数据后重试。');
+        } else {
+          alert('登录失败: ' + (e.message || '请检查网络连接或稍后重试'));
+        }
         return false;
       }
     },
@@ -1142,9 +1303,20 @@
         console.error('保存用户数据失败:', e);
         // 显示用户友好的错误提示
         try {
-          alert('保存数据时发生错误，请检查存储空间是否充足');
+          let errorMsg = '保存数据时发生错误';
+          
+          if (e.message && e.message.includes('存储空间不足')) {
+            errorMsg = '保存失败：浏览器存储空间不足。\n\n解决方法：\n1. 清理浏览器缓存（按Ctrl+Shift+Delete）\n2. 关闭其他标签页释放内存\n3. 使用隐私/无痕模式（Ctrl+Shift+N）\n4. 导出数据后清理浏览器数据再导入';
+          } else if (e.name === 'QuotaExceededError' || e.code === 22) {
+            errorMsg = '保存失败：存储空间已满。请清理浏览器缓存或导出数据后重置应用。';
+          } else if (e.message) {
+            errorMsg = '保存失败：' + e.message;
+          }
+          
+          alert(errorMsg);
         } catch (alertError) {
           // 防止alert也失败
+          console.error('显示错误提示失败:', alertError);
         }
       }
     },
@@ -1612,6 +1784,12 @@
         return false;
       }
       
+      // 检查Bmob是否加载
+      if (typeof Bmob === 'undefined') {
+        console.error('Bmob SDK未加载，无法同步用户列表到云端');
+        return false;
+      }
+      
       try {
         const users = getUserList();
         const now = new Date().toISOString();
@@ -1648,6 +1826,12 @@
       if (!navigator.onLine) {
         console.log('无网络连接，跳过批量上传');
         return { success: false, message: '无网络连接' };
+      }
+      
+      // 检查Bmob是否加载
+      if (typeof Bmob === 'undefined') {
+        console.error('Bmob SDK未加载，无法批量上传用户数据到云端');
+        return { success: false, message: 'Bmob SDK未加载' };
       }
       
       try {
@@ -1739,6 +1923,12 @@
       if (!navigator.onLine) {
         console.log('无网络连接，跳过批量下载');
         return { success: false, message: '无网络连接' };
+      }
+      
+      // 检查Bmob是否加载
+      if (typeof Bmob === 'undefined') {
+        console.error('Bmob SDK未加载，无法从云端下载用户数据');
+        return { success: false, message: 'Bmob SDK未加载' };
       }
       
       try {
@@ -1909,6 +2099,12 @@
         return false;
       }
       
+      // 检查Bmob是否加载
+      if (typeof Bmob === 'undefined') {
+        console.error('Bmob SDK未加载，无法从备份恢复数据');
+        return false;
+      }
+      
       try {
         let backupData;
         if (backupId) {
@@ -1997,6 +2193,12 @@
     
     // 从云端同步用户列表
     async syncUserListFromCloud() {
+      // 检查Bmob是否加载
+      if (typeof Bmob === 'undefined') {
+        console.error('Bmob SDK未加载，无法从云端同步用户列表');
+        return false;
+      }
+      
       try {
         // 从云端获取用户列表数据
         const query = Bmob.Query('UserData');
@@ -2218,6 +2420,12 @@
     async syncLicensesFromCloud() {
       if (!navigator.onLine) {
         console.log('无网络连接，跳过云端同步');
+        return null;
+      }
+      
+      // 检查Bmob是否加载
+      if (typeof Bmob === 'undefined') {
+        console.error('Bmob SDK未加载，无法从云端同步授权码');
         return null;
       }
       
@@ -6047,8 +6255,11 @@
         <button id="batchSyncBtn" class="btn" style="background: #1890ff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">
           一键同步所有用户数据
         </button>
-        <button id="downloadCloudBtn" class="btn" style="background: #52c41a; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+        <button id="downloadCloudBtn" class="btn" style="background: #52c41a; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">
           从云端下载数据
+        </button>
+        <button id="clearStorageBtn" class="btn" style="background: #ff4d4f; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+          清理存储空间
         </button>
         <div id="batchSyncStatus" style="margin-top: 10px; font-size: 12px;"></div>
       `;
@@ -6056,59 +6267,154 @@
       settingsEl.parentNode.appendChild(btnContainer);
       
       // 绑定一键同步按钮事件
-      document.getElementById('batchSyncBtn').addEventListener('click', async () => {
-        if (!navigator.onLine) {
-          alert('请检查网络连接');
-          return;
-        }
-        
-        const statusEl = document.getElementById('batchSyncStatus');
-        statusEl.innerHTML = '<span style="color: #1890ff;">正在上传本地数据到云端，请稍候...</span>';
-        document.getElementById('batchSyncBtn').disabled = true;
-        
-        try {
-          const result = await this.uploadAllLocalUsersToCloud();
-          if (result.success) {
-            statusEl.innerHTML = `<span style="color: #52c41a;">✅ ${result.message}</span>`;
-            // 同步完成后自动从云端下载最新数据
-            setTimeout(async () => {
-              await this.downloadAllCloudUsersToLocal();
-              statusEl.innerHTML += '<br><span style="color: #52c41a;">✅ 云端数据已同步到本地</span>';
-            }, 1000);
-          } else {
-            statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ ${result.message}</span>`;
+      const batchSyncBtn = document.getElementById('batchSyncBtn');
+      if (batchSyncBtn) {
+        batchSyncBtn.addEventListener('click', async () => {
+          if (!navigator.onLine) {
+            alert('请检查网络连接');
+            return;
           }
-        } catch (e) {
-          statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ 同步失败：${e.message}</span>`;
-        }
-        
-        document.getElementById('batchSyncBtn').disabled = false;
-      });
+          
+          const statusEl = document.getElementById('batchSyncStatus');
+          if (statusEl) {
+            statusEl.innerHTML = '<span style="color: #1890ff;">正在上传本地数据到云端，请稍候...</span>';
+          }
+          batchSyncBtn.disabled = true;
+          
+          try {
+            const result = await this.uploadAllLocalUsersToCloud();
+            if (result.success) {
+              if (statusEl) {
+                statusEl.innerHTML = `<span style="color: #52c41a;">✅ ${result.message}</span>`;
+                // 同步完成后自动从云端下载最新数据
+                setTimeout(async () => {
+                  await this.downloadAllCloudUsersToLocal();
+                  statusEl.innerHTML += '<br><span style="color: #52c41a;">✅ 云端数据已同步到本地</span>';
+                }, 1000);
+              }
+            } else {
+              if (statusEl) {
+                statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ ${result.message}</span>`;
+              }
+            }
+          } catch (e) {
+            if (statusEl) {
+              statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ 同步失败：${e.message}</span>`;
+            }
+          }
+          
+          batchSyncBtn.disabled = false;
+        });
+      }
       
       // 绑定从云端下载按钮事件
-      document.getElementById('downloadCloudBtn').addEventListener('click', async () => {
-        if (!navigator.onLine) {
-          alert('请检查网络连接');
-          return;
-        }
-        
-        const statusEl = document.getElementById('batchSyncStatus');
-        statusEl.innerHTML = '<span style="color: #1890ff;">正在从云端下载数据，请稍候...</span>';
-        document.getElementById('downloadCloudBtn').disabled = true;
-        
-        try {
-          const result = await this.downloadAllCloudUsersToLocal();
-          if (result.success) {
-            statusEl.innerHTML = `<span style="color: #52c41a;">✅ ${result.message}</span>`;
-          } else {
-            statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ ${result.message}</span>`;
+      const downloadCloudBtn = document.getElementById('downloadCloudBtn');
+      if (downloadCloudBtn) {
+        downloadCloudBtn.addEventListener('click', async () => {
+          if (!navigator.onLine) {
+            alert('请检查网络连接');
+            return;
           }
-        } catch (e) {
-          statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ 下载失败：${e.message}</span>`;
-        }
-        
-        document.getElementById('downloadCloudBtn').disabled = false;
-      });
+          
+          const statusEl = document.getElementById('batchSyncStatus');
+          if (statusEl) {
+            statusEl.innerHTML = '<span style="color: #1890ff;">正在从云端下载数据，请稍候...</span>';
+          }
+          downloadCloudBtn.disabled = true;
+          
+          try {
+            const result = await this.downloadAllCloudUsersToLocal();
+            if (result.success) {
+              if (statusEl) {
+                statusEl.innerHTML = `<span style="color: #52c41a;">✅ ${result.message}</span>`;
+              }
+            } else {
+              if (statusEl) {
+                statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ ${result.message}</span>`;
+              }
+            }
+          } catch (e) {
+            if (statusEl) {
+              statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ 下载失败：${e.message}</span>`;
+            }
+          } finally {
+            downloadCloudBtn.disabled = false;
+          }
+        });
+      }
+      
+      // 绑定清理存储空间按钮事件
+      const clearStorageBtn = document.getElementById('clearStorageBtn');
+      if (clearStorageBtn) {
+        clearStorageBtn.addEventListener('click', async () => {
+          const statusEl = document.getElementById('batchSyncStatus');
+          
+          if (!confirm('⚠️ 警告：清理存储空间将删除所有本地备份数据！\n\n建议先导出重要数据后再清理。\n\n确定要继续吗？')) {
+            return;
+          }
+          
+          if (statusEl) {
+            statusEl.innerHTML = '<span style="color: #1890ff;">正在清理存储空间...</span>';
+          }
+          clearStorageBtn.disabled = true;
+          
+          try {
+            let cleanedCount = 0;
+            let cleanedSize = 0;
+            
+            // 清理localStorage中的备份数据
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('class_pet_backup_')) {
+                const value = localStorage.getItem(key);
+                cleanedSize += (key.length + value.length) * 2;
+                localStorage.removeItem(key);
+                cleanedCount++;
+              }
+            }
+            
+            // 清理内存存储中的备份数据
+            for (const key in memoryStorage) {
+              if (key.startsWith('class_pet_backup_')) {
+                delete memoryStorage[key];
+                cleanedCount++;
+              }
+            }
+            
+            // 清理IndexedDB中的备份数据
+            if (useIndexedDB && indexedDBReady) {
+              try {
+                const allKeys = await IndexedDBManager.getAllKeys();
+                for (const key of allKeys) {
+                  if (key.startsWith('class_pet_backup_')) {
+                    await IndexedDBManager.removeItem(key);
+                    cleanedCount++;
+                  }
+                }
+              } catch (e) {
+                console.error('清理IndexedDB备份失败:', e);
+              }
+            }
+            
+            // 重新检查存储空间
+            const storageInfo = await checkStorageSpace();
+            
+            if (statusEl) {
+              statusEl.innerHTML = `<span style="color: #52c41a;">✅ 清理完成！已清理 ${cleanedCount} 项数据，释放 ${(cleanedSize / 1024).toFixed(2)} KB 空间</span>`;
+            }
+            
+            alert(`✅ 存储空间清理完成！\n\n已清理项目：${cleanedCount} 个\n释放空间：${(cleanedSize / 1024).toFixed(2)} KB\n\n当前存储使用率：${storageInfo ? storageInfo.percentUsed + '%' : '未知'}\n\n建议刷新页面后重新登录。`);
+            
+          } catch (e) {
+            console.error('清理存储空间失败:', e);
+            if (statusEl) {
+              statusEl.innerHTML = `<span style="color: #ff4d4f;">❌ 清理失败：${e.message}</span>`;
+            }
+          } finally {
+            clearStorageBtn.disabled = false;
+          }
+        });
+      }
       
       console.log('已添加批量同步按钮（仅管理员可见）');
     },
