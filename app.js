@@ -942,16 +942,16 @@
         clearTimeout(this.syncTimeout);
       }
       
-      // 累积多个变更后一次性同步（延迟5分钟）
+      // 累积多个变更后一次性同步（延迟10秒）
       this.syncTimeout = setTimeout(() => {
         if (this.dataChanged && navigator.onLine) {
           this.syncData();
           this.pendingChanges = 0;
         }
-      }, 5 * 60 * 1000);
+      }, 10 * 1000);
       
-      // 如果累积了10个变更，立即同步
-      if (this.pendingChanges >= 10) {
+      // 如果累积了5个变更，立即同步
+      if (this.pendingChanges >= 5) {
         clearTimeout(this.syncTimeout);
         if (navigator.onLine) {
           this.syncData();
@@ -2238,8 +2238,8 @@
           const now = Date.now();
           const timeSinceLastSync = now - this.lastSyncAttempt;
           
-          // 只有距离上次同步超过5分钟，或者累积了10个变更，才进行云端同步
-          if (timeSinceLastSync >= 5 * 60 * 1000 || this.pendingChanges >= 10) {
+          // 只有距离上次同步超过2分钟，或者累积了5个变更，才进行云端同步
+          if (timeSinceLastSync >= 2 * 60 * 1000 || this.pendingChanges >= 5) {
             console.log('自动同步：满足条件，开始云端同步');
             this.showSyncStatus('正在同步数据...', 'info');
             try {
@@ -5825,7 +5825,6 @@
     },
     
     saveStudents() { 
-      setStorage(STORAGE_KEYS.students, this.students); 
       this.saveData();
     },
     
