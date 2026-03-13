@@ -136,6 +136,17 @@
     // 更新本地数据
     updateLocalData(data) {
       try {
+        // 尝试解析JSON字符串格式的数据
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+            console.log('解析云端JSON数据成功');
+          } catch (e) {
+            console.error('解析云端JSON数据失败:', e);
+            return;
+          }
+        }
+        
         // 使用与app对象一致的键名
         const key = this.userId ? `class_pet_user_data_${this.userId}` : 'class_pet_default_user';
         console.log('更新本地数据，键名:', key);
@@ -172,20 +183,23 @@
       }
       
       try {
+        // 尝试将数据转换为JSON字符串，解决参数类型错误
+        const dataToSync = JSON.stringify(data);
+        
         const query = Bmob.Query('UserData');
         const results = await query.equalTo('userId', this.userId).find();
         
         if (results.length > 0) {
           // 更新现有数据
           const userData = results[0];
-          userData.set('data', data);
+          userData.set('data', dataToSync);
           userData.set('updatedAt', new Date().toISOString());
           await userData.save();
         } else {
           // 创建新数据
           const userData = Bmob.Query('UserData');
           userData.set('userId', this.userId);
-          userData.set('data', data);
+          userData.set('data', dataToSync);
           userData.set('updatedAt', new Date().toISOString());
           await userData.save();
         }
@@ -2392,10 +2406,13 @@
             const query = Bmob.Query('UserData');
             const results = await query.equalTo('userId', userId).find();
             
+            // 尝试将数据转换为JSON字符串，解决参数类型错误
+            const dataToSync = JSON.stringify(userDataWithLicenses);
+            
             if (results.length > 0) {
               // 更新现有数据
               const userDataRecord = results[0];
-              userDataRecord.set('data', userDataWithLicenses);
+              userDataRecord.set('data', dataToSync);
               userDataRecord.set('updatedAt', now);
               userDataRecord.set('last_sync', now);
               await userDataRecord.save();
@@ -2403,7 +2420,7 @@
               // 创建新数据
               const userDataRecord = Bmob.Query('UserData');
               userDataRecord.set('userId', userId);
-              userDataRecord.set('data', userDataWithLicenses);
+              userDataRecord.set('data', dataToSync);
               userDataRecord.set('updatedAt', now);
               userDataRecord.set('last_sync', now);
               await userDataRecord.save();
@@ -2545,13 +2562,24 @@
               }
             } else {
               const userDataRecord = results[0];
-              const cloudData = userDataRecord.get('data');
+              let cloudData = userDataRecord.get('data');
               const cloudTimestamp = userDataRecord.get('updatedAt') || '1970-01-01T00:00:00.000Z';
               
               console.log('云端数据内容:', cloudData);
               console.log('云端更新时间:', cloudTimestamp);
               
               if (cloudData) {
+                // 尝试解析JSON字符串格式的数据
+                if (typeof cloudData === 'string') {
+                  try {
+                    cloudData = JSON.parse(cloudData);
+                    console.log('解析云端JSON数据成功');
+                  } catch (e) {
+                    console.error('解析云端JSON数据失败:', e);
+                    return false;
+                  }
+                }
+                
                 const localData = getUserData();
                 const localTimestamp = localData.lastModified || '1970-01-01T00:00:00.000Z';
                 
