@@ -445,20 +445,23 @@
           if (!user.devices) {
             user.devices = [];
           }
-          if (!user.maxDevices) {
-            user.maxDevices = 5;
-          }
+          // 强制设置最大设备数为1，确保一个用户只能同时在线一个设备
+          user.maxDevices = 1;
           
           const existingDevice = user.devices.find(d => d.id === deviceId);
           
           if (existingDevice) {
             // 设备已绑定，更新最后登录时间
             existingDevice.lastLogin = new Date().toISOString();
+            console.log('设备已绑定，更新登录时间');
           } else {
-            // 设备未绑定，检查是否超过设备限制
+            // 设备未绑定，检查是否已有设备
             if (user.devices.length >= user.maxDevices) {
-              alert('设备数量已达上限，请联系管理员或解绑其他设备');
-              return false;
+              // 已有设备，强制下线
+              console.log('已有设备登录，强制下线');
+              // 清空设备列表，只保留当前设备
+              user.devices = [];
+              console.log('旧设备已强制下线');
             }
             
             // 添加新设备
@@ -467,6 +470,7 @@
               name: navigator.userAgent || 'Unknown Device',
               lastLogin: new Date().toISOString()
             });
+            console.log('添加新设备:', deviceId);
           }
           
           // 保存用户数据
@@ -490,10 +494,20 @@
               console.log('从云端同步成功，使用云端数据');
             } else {
               console.log('云端数据较旧或没有数据，使用本地数据');
+              // 即使云端没有数据，也要尝试同步本地数据到云端
+              if (navigator.onLine) {
+                console.log('尝试将本地数据同步到云端...');
+                await this.syncToCloud();
+              }
             }
           } catch (e) {
             console.error('云端同步失败，使用本地数据:', e);
+            // 即使同步失败，也要确保本地数据可用
+            console.log('使用本地数据，确保应用正常运行');
           }
+          
+          // 无论同步是否成功，都重新加载用户数据，确保显示最新信息
+          this.loadUserData();
           
           // 显示应用界面（init中会调用loadUserData加载最新数据）
           this.showApp();
@@ -501,6 +515,11 @@
           // 启用实时同步和自动同步（减少频次）
           this.enableRealtimeSync();
           this.enableAutoSync();
+          
+          // 登录成功后，通知用户设备切换成功
+          if (user.devices.length > 0 && user.devices[0].id !== deviceId) {
+            alert('您的账号已在新设备登录，其他设备已下线');
+          }
           
           return true;
         }
@@ -579,23 +598,23 @@
         activateLicense(licenseKey, deviceId, newUser.id);
         
         // 实时同步授权码状态到云端
-        if (navigator.onLine) {
-          try {
-            console.log('激活授权码后实时同步到云端...');
-            // 先设置用户ID
-            this.currentUserId = newUser.id;
-            this.currentUsername = newUser.username;
-            
-            // 同步到云端
-            await this.syncToCloud();
-            console.log('授权码状态已同步到云端');
-            
-            // 同步用户列表到云端
-            await this.syncUserListToCloud();
-            console.log('用户列表已同步到云端');
-          } catch (e) {
-            console.error('同步授权码状态到云端失败:', e);
-          }
+        try {
+          console.log('激活授权码后实时同步到云端...');
+          // 先设置用户ID
+          this.currentUserId = newUser.id;
+          this.currentUsername = newUser.username;
+          
+          // 同步用户列表到云端（优先同步用户列表，确保用户信息不丢失）
+          await this.syncUserListToCloud();
+          console.log('用户列表已同步到云端');
+          
+          // 同步到云端
+          await this.syncToCloud();
+          console.log('授权码状态已同步到云端');
+        } catch (e) {
+          console.error('同步授权码状态到云端失败:', e);
+          // 即使同步失败，也要确保用户信息已保存到本地
+          console.log('用户信息已保存到本地');
         }
         
         this.currentUserId = newUser.id;
@@ -639,6 +658,7 @@
     },
     loadUserData() {
       try {
+        // 首先尝试从本地存储加载数据
         let data = getUserData();
         
         // 数据迁移
@@ -687,6 +707,8 @@
           if (broadcastEl) broadcastEl.value = '欢迎来到童心宠伴！🎉';
         }
         
+        console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
+        
         // 加载全局设置
         const systemTitleEl = document.getElementById('systemTitleText');
         const classNameEl = document.getElementById('currentClassName');
@@ -727,6 +749,9 @@
     },
     saveUserData() {
       try {
+        // 1. 先获取当前数据作为备份
+        const backupData = getUserData();
+        
         const data = getUserData();
         
         // 确保数据结构正确
@@ -772,7 +797,24 @@
         }
         
         data.lastModified = new Date().toISOString();
-        setUserData(data);
+        
+        // 2. 尝试保存数据
+        try {
+          setUserData(data);
+          console.log('用户数据保存完成，最后修改时间:', data.lastModified);
+        } catch (saveError) {
+          console.error('保存用户数据失败，尝试恢复备份:', saveError);
+          // 保存失败时恢复备份
+          if (backupData) {
+            try {
+              setUserData(backupData);
+              console.log('已恢复数据备份');
+            } catch (restoreError) {
+              console.error('恢复备份失败:', restoreError);
+            }
+          }
+          throw saveError;
+        }
         
         // 设置数据变更标志
         this.dataChanged = true;
@@ -782,6 +824,12 @@
         this.scheduleSync();
       } catch (e) {
         console.error('保存用户数据失败:', e);
+        // 显示用户友好的错误提示
+        try {
+          alert('保存数据时发生错误，请检查存储空间是否充足');
+        } catch (alertError) {
+          // 防止alert也失败
+        }
       }
     },
     
@@ -792,13 +840,13 @@
         clearTimeout(this.syncTimeout);
       }
       
-      // 累积多个变更后一次性同步（延迟5秒）
+      // 累积多个变更后一次性同步（延迟5分钟）
       this.syncTimeout = setTimeout(() => {
         if (this.dataChanged && navigator.onLine) {
           this.syncData();
           this.pendingChanges = 0;
         }
-      }, 5000);
+      }, 5 * 60 * 1000);
       
       // 如果累积了10个变更，立即同步
       if (this.pendingChanges >= 10) {
@@ -811,7 +859,11 @@
     },
     logout() {
       try {
-        // 退出前同步数据到云端
+        // 退出前先保存数据到本地
+        console.log('退出前保存数据到本地...');
+        this.saveUserData();
+        
+        // 如果网络可用且数据有变更，同步到云端
         if (this.currentUserId && navigator.onLine && this.dataChanged) {
           console.log('退出前同步数据到云端...');
           this.syncToCloud();
@@ -883,6 +935,69 @@
       return data;
     },
     
+    // 数据压缩和清理
+    compressAndCleanData() {
+      try {
+        const data = getUserData();
+        
+        // 1. 清理过期的历史记录
+        if (data.classes) {
+          for (const cls of data.classes) {
+            // 清理旧的积分历史记录（保留最近1000条）
+            if (cls.groupPointHistory && cls.groupPointHistory.length > 1000) {
+              cls.groupPointHistory = cls.groupPointHistory.slice(-1000);
+              console.log(`清理班级 ${cls.name} 的积分历史记录，保留最近1000条`);
+            }
+            
+            // 清理学生的宠物历史记录
+            if (cls.students) {
+              for (const student of cls.students) {
+                if (student.petHistory && student.petHistory.length > 500) {
+                  student.petHistory = student.petHistory.slice(-500);
+                }
+              }
+            }
+          }
+        }
+        
+        // 2. 压缩数据（移除空数组和空对象）
+        const compressData = (obj) => {
+          if (Array.isArray(obj)) {
+            return obj.filter(item => item !== null && item !== undefined).map(compressData);
+          } else if (typeof obj === 'object' && obj !== null) {
+            const compressed = {};
+            for (const [key, value] of Object.entries(obj)) {
+              if (value !== null && value !== undefined) {
+                if (typeof value === 'object') {
+                  const compressedValue = compressData(value);
+                  if (Array.isArray(compressedValue) && compressedValue.length > 0) {
+                    compressed[key] = compressedValue;
+                  } else if (typeof compressedValue === 'object' && Object.keys(compressedValue).length > 0) {
+                    compressed[key] = compressedValue;
+                  }
+                } else {
+                  compressed[key] = value;
+                }
+              }
+            }
+            return compressed;
+          }
+          return obj;
+        };
+        
+        const compressedData = compressData(data);
+        
+        // 3. 保存压缩后的数据
+        setUserData(compressedData);
+        console.log('数据压缩和清理完成');
+        
+        return true;
+      } catch (e) {
+        console.error('数据压缩和清理失败:', e);
+        return false;
+      }
+    },
+    
     // 数据验证函数
     validateUserData(data) {
       if (!data) {
@@ -890,21 +1005,41 @@
         return false;
       }
       
-      // 验证必要字段
-      if (!Array.isArray(data.classes)) {
+      // 确保数据结构完整
+      if (!data.classes) {
+        console.error('班级数据不存在');
+        data.classes = [];
+      } else if (!Array.isArray(data.classes)) {
         console.error('班级数据不是数组');
         data.classes = [];
       }
       
+      // 确保有版本号
+      if (!data.version) {
+        data.version = '1.0.0';
+      }
+      
+      // 确保有最后修改时间
+      if (!data.lastModified) {
+        data.lastModified = new Date().toISOString();
+      }
+      
       // 验证班级数据结构
       for (const cls of data.classes) {
-        if (!cls.id || !cls.name) {
-          console.error('班级缺少必要字段:', cls);
-          return false;
+        if (!cls.id) {
+          console.error('班级缺少ID:', cls);
+          cls.id = 'class_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
         
-        // 验证学生数据
-        if (cls.students && !Array.isArray(cls.students)) {
+        if (!cls.name) {
+          console.error('班级缺少名称:', cls);
+          cls.name = '未命名班级';
+        }
+        
+        // 确保学生数据结构
+        if (!cls.students) {
+          cls.students = [];
+        } else if (!Array.isArray(cls.students)) {
           console.error('学生数据不是数组');
           cls.students = [];
         }
@@ -912,11 +1047,74 @@
         // 验证学生数据结构
         if (cls.students) {
           for (const student of cls.students) {
-            if (!student.id || !student.name) {
-              console.error('学生缺少必要字段:', student);
-              return false;
+            if (!student.id) {
+              console.error('学生缺少ID:', student);
+              student.id = 'student_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+            
+            if (!student.name) {
+              console.error('学生缺少名称:', student);
+              student.name = '未命名学生';
+            }
+            
+            // 确保学生有积分
+            if (student.points === undefined) {
+              student.points = 0;
+            }
+            
+            // 确保学生有宠物数据
+            if (!student.pet) {
+              student.pet = {
+                type: 'cat',
+                name: '默认宠物',
+                level: 1,
+                exp: 0,
+                hunger: 100,
+                happiness: 100
+              };
             }
           }
+        }
+        
+        // 确保班级有其他必要数据
+        if (!cls.groups) {
+          cls.groups = [];
+        }
+        
+        if (!cls.groupPointHistory) {
+          cls.groupPointHistory = [];
+        }
+        
+        if (!cls.stagePoints) {
+          cls.stagePoints = 20;
+        }
+        
+        if (!cls.totalStages) {
+          cls.totalStages = 10;
+        }
+        
+        if (!cls.plusItems) {
+          cls.plusItems = [];
+        }
+        
+        if (!cls.minusItems) {
+          cls.minusItems = [];
+        }
+        
+        if (!cls.prizes) {
+          cls.prizes = [];
+        }
+        
+        if (!cls.lotteryPrizes) {
+          cls.lotteryPrizes = [];
+        }
+        
+        if (!cls.broadcastMessages) {
+          cls.broadcastMessages = ['欢迎来到童心宠伴！🎉'];
+        }
+        
+        if (!cls.petCategoryPhotos) {
+          cls.petCategoryPhotos = {};
         }
       }
       
@@ -1126,11 +1324,6 @@
     
     // 从云端同步用户列表
     async syncUserListFromCloud() {
-      if (!navigator.onLine) {
-        console.log('无网络连接，跳过用户列表同步');
-        return false;
-      }
-      
       try {
         const supabaseReady = await this.waitForSupabase();
         if (!supabaseReady) {
@@ -1151,6 +1344,7 @@
           return true;
         } else if (error) {
           console.error('从云端同步用户列表失败:', error);
+          // 即使同步失败，也要确保本地有用户列表
           return false;
         }
         
@@ -1169,11 +1363,15 @@
           setUserList(mergedUsers);
           console.log('用户列表已从云端同步，用户数:', mergedUsers.length);
           return true;
+        } else {
+          console.log('云端用户列表数据为空，上传本地用户列表');
+          // 云端数据为空时，上传本地用户列表
+          await this.syncUserListToCloud();
+          return true;
         }
-        
-        return false;
       } catch (e) {
         console.error('从云端同步用户列表失败:', e);
+        // 即使同步失败，也要确保本地有用户列表
         return false;
       }
     },
@@ -1199,14 +1397,29 @@
         console.log('满足云端同步条件，开始同步...');
         this.lastSyncAttempt = now;
         
-        try {
-          await this.syncToCloud();
-          this.dataChanged = false;
-          this.pendingChanges = 0;
-          this.lastSyncTime = new Date().toISOString();
-          console.log('云端同步完成');
-        } catch (e) {
-          console.error('云端同步失败:', e);
+        // 同步失败重试机制
+        let retryCount = 0;
+        const maxRetries = 3;
+        const retryDelay = 2000;
+        
+        while (retryCount < maxRetries) {
+          try {
+            await this.syncToCloud();
+            this.dataChanged = false;
+            this.pendingChanges = 0;
+            this.lastSyncTime = new Date().toISOString();
+            console.log('云端同步完成');
+            break;
+          } catch (e) {
+            retryCount++;
+            console.error(`云端同步失败 (${retryCount}/${maxRetries}):`, e);
+            if (retryCount < maxRetries) {
+              console.log(`等待 ${retryDelay}ms 后重试...`);
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
+            } else {
+              console.error('云端同步多次失败，放弃重试');
+            }
+          }
         }
       } else {
         console.log('仅保存到本地，跳过云端同步');
@@ -1544,7 +1757,60 @@
       return syncSuccess;
     },
     
-    // 启用自动同步 - 大幅减少云端操作
+    // 显示同步状态
+    showSyncStatus(message, type = 'info') {
+      try {
+        let statusEl = document.getElementById('syncStatus');
+        if (!statusEl) {
+          // 创建状态提示元素
+          statusEl = document.createElement('div');
+          statusEl.id = 'syncStatus';
+          statusEl.style.position = 'fixed';
+          statusEl.style.bottom = '20px';
+          statusEl.style.right = '20px';
+          statusEl.style.padding = '10px 15px';
+          statusEl.style.borderRadius = '4px';
+          statusEl.style.zIndex = '10000';
+          statusEl.style.fontSize = '14px';
+          statusEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+          document.body.appendChild(statusEl);
+        }
+        
+        // 设置样式
+        switch (type) {
+          case 'success':
+            statusEl.style.backgroundColor = '#52c41a';
+            statusEl.style.color = '#fff';
+            break;
+          case 'error':
+            statusEl.style.backgroundColor = '#ff4d4f';
+            statusEl.style.color = '#fff';
+            break;
+          case 'warning':
+            statusEl.style.backgroundColor = '#faad14';
+            statusEl.style.color = '#fff';
+            break;
+          default:
+            statusEl.style.backgroundColor = '#1890ff';
+            statusEl.style.color = '#fff';
+        }
+        
+        // 设置消息
+        statusEl.textContent = message;
+        statusEl.style.display = 'block';
+        
+        // 3秒后隐藏
+        setTimeout(() => {
+          if (statusEl) {
+            statusEl.style.display = 'none';
+          }
+        }, 3000);
+      } catch (e) {
+        console.error('显示同步状态失败:', e);
+      }
+    },
+    
+    // 启用自动同步和备份 - 大幅减少云端操作
     enableAutoSync() {
       // 如果已经启用，先禁用之前的定时器，避免重复创建
       if (this.autoSyncInterval) {
@@ -1552,9 +1818,12 @@
         this.autoSyncInterval = null;
       }
       
-      // 每5分钟检查一次是否需要同步
+      // 每5分钟检查一次是否需要同步，大幅减少API请求频率
       this.autoSyncInterval = setInterval(async () => {
-        // 只有当网络可用且有数据变更时才同步
+        // 保存本地数据（优先本地存储）
+        this.saveUserData();
+        
+        // 只有当网络可用且有数据变更时才同步到云端
         if (navigator.onLine && this.dataChanged) {
           const now = Date.now();
           const timeSinceLastSync = now - this.lastSyncAttempt;
@@ -1562,10 +1831,32 @@
           // 只有距离上次同步超过5分钟，或者累积了10个变更，才进行云端同步
           if (timeSinceLastSync >= 5 * 60 * 1000 || this.pendingChanges >= 10) {
             console.log('自动同步：满足条件，开始云端同步');
-            await this.syncData();
+            this.showSyncStatus('正在同步数据...', 'info');
+            try {
+              await this.syncData();
+              this.showSyncStatus('数据同步成功', 'success');
+            } catch (e) {
+              this.showSyncStatus('同步失败，将在网络恢复后重试', 'warning');
+            }
           } else {
             console.log('自动同步：条件不满足，仅保存本地');
-            this.saveUserData();
+          }
+        } else if (!navigator.onLine) {
+          console.log('无网络连接，仅保存本地');
+        }
+        
+        // 每30分钟自动备份到云端
+        const now = Date.now();
+        if (!this.lastBackupTime || now - this.lastBackupTime >= 30 * 60 * 1000) {
+          if (navigator.onLine && this.currentUserId) {
+            console.log('自动备份：开始备份到云端');
+            try {
+              await this.backupCloudData();
+              this.lastBackupTime = now;
+              this.showSyncStatus('数据备份成功', 'success');
+            } catch (e) {
+              console.error('自动备份失败:', e);
+            }
           }
         }
       }, 5 * 60 * 1000); // 每5分钟检查一次
@@ -6913,31 +7204,22 @@
         return;
       }
       
-      // 普通用户登录
-      app.login(username, password).then(function(success) {
-        if (!success) {
-          // 检查用户是否存在
-          const users = app.getUserList();
-          const userExists = users.some(u => u.username === username);
-          if (!userExists) {
-            // 尝试从云端同步用户列表后再次检查
-            app.syncUserListFromCloud().then(function(syncSuccess) {
-              if (syncSuccess) {
-                const updatedUsers = app.getUserList();
-                const updatedUserExists = updatedUsers.some(u => u.username === username);
-                if (updatedUserExists) {
-                  alert('用户名已存在，请检查密码');
-                } else {
-                  alert('用户名不存在，请先注册');
-                }
-              } else {
-                alert('用户名不存在，请先注册');
-              }
-            });
-          } else {
-            alert('密码错误，请重新输入');
+      // 先从云端同步用户列表，再进行登录
+      app.syncUserListFromCloud().then(function(syncSuccess) {
+        console.log('用户列表同步结果:', syncSuccess);
+        // 然后进行登录
+        app.login(username, password).then(function(success) {
+          if (!success) {
+            // 检查用户是否存在
+            const users = app.getUserList();
+            const userExists = users.some(u => u.username === username);
+            if (!userExists) {
+              alert('用户名不存在，请先注册');
+            } else {
+              alert('密码错误，请重新输入');
+            }
           }
-        }
+        });
       });
     });
     document.getElementById('register-form').addEventListener('submit', function (e) {
