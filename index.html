@@ -18,25 +18,19 @@
     }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&display=swap" rel="stylesheet" onerror="this.remove()">
-  <!-- Bmob SDK 加载脚本 -->
-  <script src="Bmob-2.7.0.min.js"></script>
+  <!-- Bmob SDK：统一使用 2.5.30（与 app.js 同步逻辑兼容；1.7.1 API 不同易导致不同步，2.7.0 易报 415） -->
+  <!-- 若 Bmob 在上一级目录，请改为 src="../Bmob-2.5.30.min.js" -->
+  <script src="Bmob-2.5.30.min.js"></script>
   <script>
-    // 检查Bmob是否加载成功
     setTimeout(function() {
       if (typeof Bmob !== 'undefined') {
-        console.log('✅ Bmob SDK 本地文件加载成功');
-        console.log('Bmob SDK版本:', Bmob.version || '未知');
+        console.log('✅ Bmob SDK 加载成功，版本:', Bmob.version || '未知');
       } else {
-        console.error('❌ Bmob SDK 未加载，请确保Bmob-2.7.0.min.js文件存在于项目根目录');
-        // 尝试重新加载Bmob SDK
+        console.error('❌ Bmob SDK 未加载。请把 Bmob-2.5.30.min.js 放到与 index.html 同目录，或把 src 改为 ../Bmob-2.5.30.min.js');
         var script = document.createElement('script');
-        script.src = 'Bmob-2.7.0.min.js';
-        script.onload = function() {
-          console.log('✅ Bmob SDK 重新加载成功');
-        };
-        script.onerror = function() {
-          console.error('❌ Bmob SDK 重新加载失败');
-        };
+        script.src = '../Bmob-2.5.30.min.js';
+        script.onload = function() { console.log('✅ Bmob SDK 从上级目录加载成功'); };
+        script.onerror = function() { console.error('❌ Bmob SDK 加载失败'); };
         document.head.appendChild(script);
       }
     }, 1000);

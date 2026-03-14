@@ -50,15 +50,15 @@
       if (typeof Bmob !== 'undefined') {
         // 检查Bmob版本
         console.log('Bmob SDK版本:', Bmob.version || '未知');
-        // 初始化Bmob - 使用API安全码（2.0以上版本需要）
-        // 注意：这里使用的是示例密钥，实际使用时需要替换为真实的API安全码
-        // 对于Bmob SDK 2.0+，使用对象格式初始化
-        Bmob.initialize({
-          appKey: "055bbfab769cf4ca035e9a97bdd2a015",
-          secretKey: "8f55b66963acf2810512a244e17d7b79"
-        });
-        console.log('✅ Bmob 初始化成功');
-        return true;
+        // 初始化Bmob - 使用正确的格式
+        try {
+          Bmob.initialize("055bbfab769cf4ca035e9a97bdd2a015", "8f55b66963acf2810512a244e17d7b79");
+          console.log('✅ Bmob 初始化成功');
+          return true;
+        } catch (e) {
+          console.error('❌ Bmob 初始化失败:', e);
+          return false;
+        }
       } else {
         console.error('❌ Bmob SDK 未加载');
         return false;
@@ -198,22 +198,26 @@
         
         // 确保userId是字符串类型
         const userIdStr = String(this.userId || 'default_user');
+        const queryUserId = userIdStr.toString();
         
         const query = Bmob.Query('UserData');
-        const results = await query.equalTo('userId', userIdStr).find();
+        // 使用最简单的查询格式
+        query.equalTo('userId', queryUserId);
+        const results = await query.find();
         
         if (results.length > 0) {
           // 更新现有数据
           const userData = results[0];
+          userData.set('userId', queryUserId);
           userData.set('data', dataToSync);
-          userData.set('updatedAt', new Date().toISOString());
+          userData.set('updatedAt', new Date().toISOString().toString());
           await userData.save();
         } else {
           // 创建新数据
           const userData = Bmob.Query('UserData');
-          userData.set('userId', userIdStr);
+          userData.set('userId', queryUserId);
           userData.set('data', dataToSync);
-          userData.set('updatedAt', new Date().toISOString());
+          userData.set('updatedAt', new Date().toISOString().toString());
           await userData.save();
         }
         
@@ -668,27 +672,11 @@
     // 5. 如果都没有数据，返回默认数据结构，而不是空对象
     console.log('所有存储都没有数据，返回默认数据结构');
     data = {
-      students: [],
-      groups: [],
-      pets: [],
-      settings: getDefaultSettings(),
-      scoreItems: {
-        plus: DEFAULT_PLUS_ITEMS,
-        minus: DEFAULT_MINUS_ITEMS
-      },
-      scoreHistory: [],
-      badges: [],
-      store: {
-        goods: DEFAULT_GOODS,
-        accessories: DEFAULT_ACCESSORIES,
-        lottery: DEFAULT_LOTTERY_PRIZES
-      },
-      honors: {
-        weekly: [],
-        monthly: [],
-        semester: [],
-        all: []
-      },
+      version: '1.0.0',
+      classes: [],
+      currentClassId: null,
+      systemName: '童心宠伴',
+      theme: 'coral',
       lastModified: new Date().toISOString()
     };
     
@@ -875,7 +863,7 @@
     setUserData(data);
   }
 
-  const app = {
+  window.app = {
     students: [],
     currentStudentId: null,
     selectedBatchStudents: new Set(),
@@ -891,6 +879,7 @@
     syncTimeout: null,
     pendingChanges: 0,
     lastSyncAttempt: 0,
+    lastPullFromCloud: 0, // 上次从云端拉取时间，用于多端同步
     dataLoaded: false, // 标记数据是否已加载
     
     // 照片存储管理
@@ -1068,6 +1057,19 @@
           
           // 无论同步是否成功，都重新加载用户数据，确保显示最新信息
           this.loadUserData();
+          
+          // 对于新用户，确保默认数据结构同步到云端
+          if (navigator.onLine) {
+            try {
+              const userData = getUserData();
+              if (userData && (userData.classes && userData.classes.length > 0)) {
+                console.log('确保默认数据同步到云端...');
+                await this.syncToCloud();
+              }
+            } catch (e) {
+              console.error('同步默认数据到云端失败:', e);
+            }
+          }
           
           // 显示应用界面（init中会调用loadUserData加载最新数据）
           this.showApp();
@@ -1309,14 +1311,14 @@
       try {
         document.getElementById('login-page').style.display = 'none';
         document.getElementById('app').style.display = 'block';
-        // 不再调用不存在的init()方法，直接渲染设备列表
-        // 渲染设备列表
         this.renderDevicesList();
         // 确保数据已加载
         if (!this.dataLoaded) {
           this.loadUserData();
           this.dataLoaded = true;
         }
+        // 渲染完整界面（首页、学生、小组、光荣榜等），多端打开或刷新时才能看到最新数据
+        this.init();
       } catch (e) {
         console.error('显示应用失败:', e);
         alert('应用加载失败，请刷新页面重试');
@@ -2367,21 +2369,35 @@
           const newClass = {
             id: 'class_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
             name: className || '默认班级',
-            students: this.students,
-            groups: this.groups,
-            groupPointHistory: this.groupPointHistory,
+            students: [],
+            groups: [],
+            groupPointHistory: [],
             stagePoints: 20,
             totalStages: 10,
-            plusItems: this.getPlusItems(),
-            minusItems: this.getMinusItems(),
-            prizes: this.getPrizes(),
-            lotteryPrizes: this.getLotteryPrizes(),
+            plusItems: [
+              { name: '早读打卡', points: 1 },
+              { name: '课堂表现好', points: 2 },
+              { name: '作业完成', points: 1 },
+              { name: '考试优秀', points: 3 },
+              { name: '乐于助人', points: 2 },
+              { name: '进步明显', points: 2 }
+            ],
+            minusItems: [
+              { name: '迟到', points: -1 },
+              { name: '未完成作业', points: -2 },
+              { name: '课堂违纪', points: -2 }
+            ],
+            prizes: [],
+            lotteryPrizes: [],
             broadcastMessages: ['欢迎来到童心宠伴！🎉'],
-            petCategoryPhotos: this.getPetCategoryPhotos()
+            petCategoryPhotos: {}
           };
           data.classes.push(newClass);
           this.currentClassId = newClass.id;
           this.currentClassName = newClass.name;
+          this.students = [];
+          this.groups = [];
+          this.groupPointHistory = [];
         }
         
         // 更新班级数据
@@ -2443,7 +2459,6 @@
         // 1. 获取并迁移数据
         let userData = getUserData();
         userData = this.migrateUserData(userData);
-        const licenses = getLicenses(); // 读取授权码
         const now = new Date().toISOString();
         
         // 2. 数据验证
@@ -2457,7 +2472,6 @@
         
         console.log('准备同步到云端，用户ID:', this.currentUserId);
         console.log('同步时间:', now);
-        console.log('授权码数量:', licenses.length);
         console.log('数据大小:', JSON.stringify(compressedData).length, 'bytes');
         
         // 4. 更新数据的最后修改时间
@@ -2475,61 +2489,32 @@
           console.error('本地存储失败:', localError);
         }
         
-        // 6. 减少备份频率（每10次同步才备份一次）
-        if (Math.random() < 0.1) { // 10%的概率创建备份
-          console.log('创建数据备份...');
-          try {
-            await this.backupCloudData();
-          } catch (e) {
-            console.error('备份失败:', e);
-          }
-        }
-        
-        // 7. 使用Bmob进行云同步 - 批量操作优化
+        // 6. 使用Bmob进行云同步 - 简化版
         if (typeof Bmob !== 'undefined') {
           console.log('开始上传到Bmob...');
           
           try {
-            // 对于Bmob SDK 2.7.0，使用更简单的方式
+            // 对于Bmob SDK 1.7.1，使用简单的方式
             const userId = this.currentUserId || 'default_user';
             const userIdStr = String(userId);
             
-            // 先检查是否存在该用户的数据
-            const query = Bmob.Query('UserData');
-            query.equalTo('userId', userIdStr);
-            const results = await query.find();
-            
-            // 创建一个简单的数据结构，只包含必要的字段
+            // 创建一个简单的数据结构
             const simpleData = {
               userId: userIdStr,
               data: JSON.stringify(compressedData),
-              licenses: JSON.stringify(licenses),
-              updatedAt: now,
-              last_sync: now
+              updatedAt: now
             };
             
             console.log('准备同步的数据:', simpleData);
             
-            if (results.length > 0) {
-              // 更新现有数据
-              const userDataRecord = results[0];
-              userDataRecord.set('data', simpleData.data);
-              userDataRecord.set('licenses', simpleData.licenses);
-              userDataRecord.set('updatedAt', simpleData.updatedAt);
-              userDataRecord.set('last_sync', simpleData.last_sync);
-              await userDataRecord.save();
-            } else {
-              // 创建新数据
-              const userDataRecord = Bmob.Query('UserData');
-              userDataRecord.set('userId', simpleData.userId);
-              userDataRecord.set('data', simpleData.data);
-              userDataRecord.set('licenses', simpleData.licenses);
-              userDataRecord.set('updatedAt', simpleData.updatedAt);
-              userDataRecord.set('last_sync', simpleData.last_sync);
-              await userDataRecord.save();
-            }
+            // 直接创建新记录，不查询现有数据
+            const userDataRecord = Bmob.Query('UserData');
+            userDataRecord.set('userId', simpleData.userId);
+            userDataRecord.set('data', simpleData.data);
+            userDataRecord.set('updatedAt', simpleData.updatedAt);
             
-            console.log('数据已同步到Bmob云存储');
+            const result = await userDataRecord.save();
+            console.log('✅ 数据已同步到Bmob云存储', result);
           } catch (bmobError) {
             console.error('Bmob同步失败:', bmobError);
             console.error('错误详情:', {
@@ -2537,43 +2522,6 @@
               message: bmobError.message,
               stack: bmobError.stack
             });
-            
-            // 尝试使用更简单的方式
-            try {
-              console.log('尝试使用更简单的同步方式');
-              const userId = this.currentUserId || 'default_user';
-              const userIdStr = String(userId);
-              
-              // 创建一个非常简单的数据结构
-              const minimalData = {
-                userId: userIdStr,
-                data: '{}',
-                updatedAt: now
-              };
-              
-              const query = Bmob.Query('UserData');
-              query.equalTo('userId', userIdStr);
-              const results = await query.find();
-              
-              if (results.length > 0) {
-                const userDataRecord = results[0];
-                userDataRecord.set('userId', minimalData.userId);
-                userDataRecord.set('data', minimalData.data);
-                userDataRecord.set('updatedAt', minimalData.updatedAt);
-                await userDataRecord.save();
-              } else {
-                const userDataRecord = Bmob.Query('UserData');
-                userDataRecord.set('userId', minimalData.userId);
-                userDataRecord.set('data', minimalData.data);
-                userDataRecord.set('updatedAt', minimalData.updatedAt);
-                await userDataRecord.save();
-              }
-              
-              console.log('使用最小数据结构同步成功');
-            } catch (e) {
-              console.error('最小数据结构同步也失败:', e);
-            }
-            
             // Bmob同步失败不影响本地存储
           }
         } else {
@@ -2586,12 +2534,6 @@
         setUserData(compressedData);
         // 同步成功后重新加载用户数据，确保应用界面显示最新数据
         this.loadUserData();
-        
-        // 8. 通知其他设备同步数据
-        if (window.realtimeSync) {
-          console.log('通知其他设备同步数据');
-          // 这里可以添加推送通知逻辑，确保其他设备能够及时同步数据
-        }
         
       } catch (e) {
         console.error('云同步失败:', e);
@@ -2627,10 +2569,34 @@
         
         if (adminResults.length > 0) {
           const adminData = adminResults[0].get('data');
-          if (adminData && adminData.licenses) {
-            console.log('从全局用户列表同步授权码，数量:', adminData.licenses.length);
-            setLicenses(adminData.licenses);
-            return adminData.licenses;
+          const adminLicenses = adminResults[0].get('licenses');
+          
+          // 尝试从licenses字段获取授权码
+          if (adminLicenses) {
+            try {
+              const licenses = typeof adminLicenses === 'string' ? JSON.parse(adminLicenses) : adminLicenses;
+              if (licenses && Array.isArray(licenses)) {
+                console.log('从全局用户列表licenses字段同步授权码，数量:', licenses.length);
+                setLicenses(licenses);
+                return licenses;
+              }
+            } catch (e) {
+              console.error('解析全局用户列表licenses字段失败:', e);
+            }
+          }
+          
+          // 尝试从data字段获取授权码
+          if (adminData) {
+            try {
+              const parsedData = typeof adminData === 'string' ? JSON.parse(adminData) : adminData;
+              if (parsedData && parsedData.licenses) {
+                console.log('从全局用户列表data字段同步授权码，数量:', parsedData.licenses.length);
+                setLicenses(parsedData.licenses);
+                return parsedData.licenses;
+              }
+            } catch (e) {
+              console.error('解析全局用户列表data字段失败:', e);
+            }
           }
         }
         
@@ -2644,10 +2610,34 @@
         
         if (results.length > 0) {
           const userData = results[0].get('data');
-          if (userData && userData.licenses) {
-            console.log('从用户数据同步授权码，数量:', userData.licenses.length);
-            setLicenses(userData.licenses);
-            return userData.licenses;
+          const userLicenses = results[0].get('licenses');
+          
+          // 尝试从licenses字段获取授权码
+          if (userLicenses) {
+            try {
+              const licenses = typeof userLicenses === 'string' ? JSON.parse(userLicenses) : userLicenses;
+              if (licenses && Array.isArray(licenses)) {
+                console.log('从用户licenses字段同步授权码，数量:', licenses.length);
+                setLicenses(licenses);
+                return licenses;
+              }
+            } catch (e) {
+              console.error('解析用户licenses字段失败:', e);
+            }
+          }
+          
+          // 尝试从data字段获取授权码
+          if (userData) {
+            try {
+              const parsedData = typeof userData === 'string' ? JSON.parse(userData) : userData;
+              if (parsedData && parsedData.licenses) {
+                console.log('从用户data字段同步授权码，数量:', parsedData.licenses.length);
+                setLicenses(parsedData.licenses);
+                return parsedData.licenses;
+              }
+            } catch (e) {
+              console.error('解析用户data字段失败:', e);
+            }
           }
         }
       } catch (e) {
@@ -2682,20 +2672,32 @@
           let results = [];
           
           try {
-            if (this.currentUserId) {
-              // 从Bmob查询用户数据
+            const userIdStr = this.currentUserId ? String(this.currentUserId).trim() : '';
+            console.log('查询用户ID:', userIdStr || '(无)', '类型:', typeof userIdStr);
+            // 仅使用 equalTo + find，避免 order/limit 在 Bmob 2.7.0 下触发 415
+            if (userIdStr) {
               const query = Bmob.Query('UserData');
-              // 确保userId是字符串类型
-              const userIdStr = String(this.currentUserId);
               query.equalTo('userId', userIdStr);
               results = await query.find();
+              if (results.length > 1) {
+                results.sort(function (a, b) {
+                  const t1 = (a.get && a.get('updatedAt')) ? new Date(a.get('updatedAt')).getTime() : 0;
+                  const t2 = (b.get && b.get('updatedAt')) ? new Date(b.get('updatedAt')).getTime() : 0;
+                  return t2 - t1;
+                });
+                results = results.slice(0, 1);
+              }
             } else {
-              // 没有用户ID时，查询最近更新的数据
               const query = Bmob.Query('UserData');
-              // 使用更兼容的排序方式
-              query.order('-updatedAt');
-              query.limit(1);
-              results = await query.find();
+              results = await query.limit(50).find();
+              if (results.length > 1) {
+                results.sort(function (a, b) {
+                  const t1 = (a.get && a.get('updatedAt')) ? new Date(a.get('updatedAt')).getTime() : 0;
+                  const t2 = (b.get && b.get('updatedAt')) ? new Date(b.get('updatedAt')).getTime() : 0;
+                  return t2 - t1;
+                });
+                results = results.slice(0, 1);
+              }
             }
             
             console.log('Bmob返回数据:', results);
@@ -2714,7 +2716,7 @@
               const userDataRecord = results[0];
               let cloudData = userDataRecord.get('data');
               const cloudLicenses = userDataRecord.get('licenses');
-              const cloudTimestamp = userDataRecord.get('updatedAt') || '1970-01-01T00:00:00.000Z';
+              const cloudTimestamp = String(userDataRecord.get('updatedAt') || '1970-01-01T00:00:00.000Z');
               
               console.log('云端数据内容:', cloudData);
               console.log('云端数据类型:', typeof cloudData);
@@ -2799,7 +2801,50 @@
               message: bmobError.message,
               stack: bmobError.stack
             });
-            // Bmob同步失败不影响本地存储
+            // 415 时降级：不传 where，拉取列表后本地按 userId 过滤（兼容 Bmob 2.7 / GitHub 部署）
+            if (bmobError.code === 415 && userIdStr) {
+              try {
+                const fallbackQuery = Bmob.Query('UserData');
+                const list = await fallbackQuery.limit(100).find();
+                const filtered = list.filter(function (r) {
+                  return (r.get && r.get('userId')) === userIdStr;
+                });
+                if (filtered.length > 0) {
+                  filtered.sort(function (a, b) {
+                    const t1 = (a.get && a.get('updatedAt')) ? new Date(a.get('updatedAt')).getTime() : 0;
+                    const t2 = (b.get && b.get('updatedAt')) ? new Date(b.get('updatedAt')).getTime() : 0;
+                    return t2 - t1;
+                  });
+                  const userDataRecord = filtered[0];
+                  let cloudData = userDataRecord.get('data');
+                  const cloudLicenses = userDataRecord.get('licenses');
+                  const cloudTimestamp = String(userDataRecord.get('updatedAt') || '1970-01-01T00:00:00.000Z');
+                  if (cloudData) {
+                    if (typeof cloudData === 'string') {
+                      try { cloudData = JSON.parse(cloudData); } catch (e) {}
+                    }
+                    if (cloudData && typeof cloudData === 'object') {
+                      let updatedData = this.migrateUserData(cloudData);
+                      if (this.validateUserData(updatedData)) {
+                        updatedData.lastModified = cloudTimestamp;
+                        if (cloudLicenses) {
+                          try {
+                            const licenses = typeof cloudLicenses === 'string' ? JSON.parse(cloudLicenses) : cloudLicenses;
+                            if (licenses && Array.isArray(licenses)) setLicenses(licenses);
+                          } catch (e) {}
+                        }
+                        setUserData(updatedData);
+                        syncSuccess = true;
+                        console.log('Bmob 415 降级：已用云端数据更新本地');
+                      }
+                    }
+                  }
+                }
+              } catch (e2) {
+                console.warn('Bmob 415 降级查询失败:', e2);
+              }
+            }
+            // Bmob同步失败不影响本地存储，应用仍可正常使用
           }
         } else {
           console.log('Bmob SDK未加载，使用本地数据');
@@ -2941,38 +2986,52 @@
         this.autoSyncInterval = null;
       }
       
-      // 每5分钟检查一次是否需要同步，大幅减少API请求频率
+      // 每5分钟：保存本地 + 从云端拉取最新（多端同步）+ 有变更时上传 + 定期备份
       this.autoSyncInterval = setInterval(async () => {
-        // 保存本地数据（优先本地存储）
+        const now = Date.now();
         this.saveUserData();
-        
-        // 只有当网络可用且有数据变更时才同步到云端
-        if (navigator.onLine && this.dataChanged) {
-          const now = Date.now();
+
+        if (!navigator.onLine) {
+          console.log('无网络连接，仅保存本地');
+          return;
+        }
+
+        // 多端同步：定期从云端拉取，使每个端口都能看到最新数据
+        if (this.currentUserId && (now - (this.lastPullFromCloud || 0)) >= 5 * 60 * 1000) {
+          this.lastPullFromCloud = now;
+          try {
+            const updated = await this.syncFromCloud();
+            if (updated) {
+              this.loadUserData();
+              this.renderStudents();
+              this.renderGroups();
+              this.renderDashboard();
+              this.renderHonor();
+              this.renderStore();
+              console.log('多端同步：已拉取云端最新数据并刷新界面');
+            }
+          } catch (e) {
+            console.warn('从云端拉取失败:', e);
+          }
+        }
+
+        // 有本地变更时上传到云端
+        if (this.dataChanged) {
           const timeSinceLastSync = now - this.lastSyncAttempt;
-          
-          // 只有距离上次同步超过2分钟，或者累积了5个变更，才进行云端同步
           if (timeSinceLastSync >= 2 * 60 * 1000 || this.pendingChanges >= 5) {
-            console.log('自动同步：满足条件，开始云端同步');
-            this.showSyncStatus('正在同步数据...', 'info');
             try {
+              this.showSyncStatus('正在同步数据...', 'info');
               await this.syncData();
               this.showSyncStatus('数据同步成功', 'success');
             } catch (e) {
               this.showSyncStatus('同步失败，将在网络恢复后重试', 'warning');
             }
-          } else {
-            console.log('自动同步：条件不满足，仅保存本地');
           }
-        } else if (!navigator.onLine) {
-          console.log('无网络连接，仅保存本地');
         }
-        
+
         // 每30分钟自动备份到云端
-        const now = Date.now();
         if (!this.lastBackupTime || now - this.lastBackupTime >= 30 * 60 * 1000) {
-          if (navigator.onLine && this.currentUserId) {
-            console.log('自动备份：开始备份到云端');
+          if (this.currentUserId) {
             try {
               await this.backupCloudData();
               this.lastBackupTime = now;
@@ -2982,7 +3041,7 @@
             }
           }
         }
-      }, 5 * 60 * 1000); // 每5分钟检查一次
+      }, 5 * 60 * 1000); // 每5分钟
     },
     
     // 禁用自动同步
@@ -3232,6 +3291,17 @@
       this.renderStudents();
       this.renderHonor();
       this.renderStore();
+      
+      // 确保新创建的班级数据同步到云端
+      if (navigator.onLine) {
+        try {
+          console.log('同步新班级数据到云端...');
+          this.syncToCloud();
+        } catch (e) {
+          console.error('同步班级数据失败:', e);
+        }
+      }
+      
       alert('班级创建成功：' + className);
     },
     deleteClass() {
@@ -3350,13 +3420,23 @@
     },
 
     renderDashboard() {
-      const total = this.students.length;
-      const withPet = this.students.filter(s => s.pet).length;
-      let badges = 0;
-      this.students.forEach(s => { badges += this.getTotalBadgesEarned(s); });
-      document.getElementById('statStudents').textContent = total;
-      document.getElementById('statPets').textContent = withPet;
-      document.getElementById('statBadges').textContent = badges;
+      try {
+        const total = this.students.length;
+        const withPet = this.students.filter(s => s.pet).length;
+        let badges = 0;
+        this.students.forEach(s => { badges += this.getTotalBadgesEarned(s); });
+        
+        // 添加DOM元素存在性检查
+        const statStudentsEl = document.getElementById('statStudents');
+        const statPetsEl = document.getElementById('statPets');
+        const statBadgesEl = document.getElementById('statBadges');
+        
+        if (statStudentsEl) statStudentsEl.textContent = total;
+        if (statPetsEl) statPetsEl.textContent = withPet;
+        if (statBadgesEl) statBadgesEl.textContent = badges;
+      } catch (e) {
+        console.error('渲染仪表盘失败:', e);
+      }
     },
 
     renderStudents() {

@@ -37,3 +37,11 @@ logs
 # 忽略临时文件
 tmp/
 temp/
+
+# 本地测试页面（不部署到 GitHub Pages）
+test_*.html
+test_*.js
+bmob_test.html
+check_bmob_versions.js
+simple_sync.js
+start_server.ps1

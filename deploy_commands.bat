@@ -1,107 +1,78 @@
 @echo off
-
-REM 部署指令 - 童心宠伴应用
-REM 本脚本包含部署到GitHub Pages的完整步骤
-
-echo ===============================
-echo 童心宠伴应用部署指令
-echo ===============================
+chcp 65001
+echo 童心宠伴 GitHub 部署指令
+echo ========================
 echo.
 
-REM 1. 初始化Git仓库
-echo 1. 初始化Git仓库...
+rem 1. 初始化 git 仓库
+echo 1. 初始化 git 仓库
 git init
+git config user.name "Your Name"
+git config user.email "your.email@example.com"
 echo.
 
-REM 2. 配置Git用户信息
-echo 2. 配置Git用户信息...
-echo 请输入您的GitHub用户名:
-set /p github_username=
-git config user.name "%github_username%"
-echo 请输入您的GitHub邮箱:
-set /p github_email=
-git config user.email "%github_email%"
-echo.
-
-REM 3. 添加远程仓库
-echo 3. 添加远程仓库...
-echo 请输入您的GitHub仓库URL (格式: https://github.com/用户名/仓库名.git):
-set /p repo_url=
-git remote add origin %repo_url%
-echo.
-
-REM 4. 创建.gitignore文件
-echo 4. 创建.gitignore文件...
-if not exist ".gitignore" (
-echo # 依赖包
+rem 2. 创建 .gitignore 文件
+echo 2. 创建 .gitignore 文件
+echo # Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# 编辑器目录和文件
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
+# Build outputs
+dist/
+build/
 
-# 操作系统文件
-Thumbs.db
-.DS_Store
-
-# 环境变量文件
+# Environment variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# 构建输出
-build/
-dist/
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# 临时文件
-*.tmp
-*.temp
-*.log
+# OS generated files
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 > .gitignore
-echo .gitignore文件创建成功！
-) else (
-echo .gitignore文件已存在，跳过创建步骤。
-)
 echo.
 
-REM 5. 添加所有文件到Git
-echo 5. 添加所有文件到Git...
+rem 3. 添加文件到仓库
+echo 3. 添加文件到仓库
 git add .
+git commit -m "初始提交 - 童心宠伴应用"
 echo.
 
-REM 6. 提交代码
-echo 6. 提交代码...
-git commit -m "初始化童心宠伴应用"
+rem 4. 创建 GitHub 仓库（需要手动在 GitHub 上创建）
+echo 4. 请在 GitHub 上创建一个新的仓库，然后复制仓库 URL
+echo.
+echo 5. 关联远程仓库
+echo 输入 GitHub 仓库 URL（例如：https://github.com/yourusername/your-repo.git）:
+set /p repo_url=
+git remote add origin %repo_url%
 echo.
 
-REM 7. 推送到GitHub
-echo 7. 推送到GitHub...
-git push -u origin main
+rem 6. 推送代码到 GitHub
+echo 6. 推送代码到 GitHub
+git push -u origin master
 echo.
 
-REM 8. 配置GitHub Pages
-echo 8. 配置GitHub Pages...
-echo 请按照以下步骤在GitHub上配置Pages:
-echo 1. 登录GitHub，进入您的仓库
-echo 2. 点击 "Settings" 选项卡
-echo 3. 找到 "Pages" 部分
-echo 4. 在 "Source" 下拉菜单中选择 "main" 分支
-echo 5. 点击 "Save" 按钮
-echo 6. 等待几分钟，GitHub Pages会自动部署您的应用
+rem 7. 配置 GitHub Pages
+echo 7. 配置 GitHub Pages
+echo 请在 GitHub 仓库设置中：
+echo - 找到 "Pages" 部分
+echo - 选择 "master" 分支作为源
+echo - 点击 "Save"
 echo.
-echo 部署完成！您的应用将在 https://%github_username%.github.io/仓库名 访问
+echo 部署完成！应用将在 https://yourusername.github.io/your-repo/ 访问
 echo.
-echo ===============================
-echo 部署指令执行完成
-echo ===============================
-
-pause
+echo 按任意键退出...
+pause > nul
