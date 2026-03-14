@@ -2503,8 +2503,8 @@
             const query = Bmob.Query('UserData');
             const results = await query.equalTo('userId', userIdStr).find();
             
-            // 尝试将数据转换为JSON字符串，解决参数类型错误
-            const dataToSync = JSON.stringify(userDataWithLicenses);
+            // 对于Bmob SDK 2.7.0，直接传递对象，而不是JSON字符串
+            const dataToSync = userDataWithLicenses;
             
             if (results.length > 0) {
               // 更新现有数据
@@ -2531,6 +2531,37 @@
               message: bmobError.message,
               stack: bmobError.stack
             });
+            // 尝试使用JSON字符串作为备选方案
+            try {
+              console.log('尝试使用JSON字符串作为备选方案');
+              const userDataWithLicenses = {
+                ...compressedData,
+                licenses: licenses
+              };
+              const userId = this.currentUserId || 'default_user';
+              const userIdStr = String(userId);
+              const query = Bmob.Query('UserData');
+              const results = await query.equalTo('userId', userIdStr).find();
+              const dataToSync = JSON.stringify(userDataWithLicenses);
+              
+              if (results.length > 0) {
+                const userDataRecord = results[0];
+                userDataRecord.set('data', dataToSync);
+                userDataRecord.set('updatedAt', now);
+                userDataRecord.set('last_sync', now);
+                await userDataRecord.save();
+              } else {
+                const userDataRecord = Bmob.Query('UserData');
+                userDataRecord.set('userId', userIdStr);
+                userDataRecord.set('data', dataToSync);
+                userDataRecord.set('updatedAt', now);
+                userDataRecord.set('last_sync', now);
+                await userDataRecord.save();
+              }
+              console.log('使用JSON字符串同步成功');
+            } catch (e) {
+              console.error('备选方案也失败:', e);
+            }
             // Bmob同步失败不影响本地存储
           }
         } else {
@@ -2673,6 +2704,7 @@
               const cloudTimestamp = userDataRecord.get('updatedAt') || '1970-01-01T00:00:00.000Z';
               
               console.log('云端数据内容:', cloudData);
+              console.log('云端数据类型:', typeof cloudData);
               console.log('云端更新时间:', cloudTimestamp);
               
               if (cloudData) {
@@ -2685,6 +2717,12 @@
                     console.error('解析云端JSON数据失败:', e);
                     return false;
                   }
+                }
+                
+                // 确保cloudData是对象
+                if (typeof cloudData !== 'object' || cloudData === null) {
+                  console.error('云端数据格式错误，不是对象:', cloudData);
+                  return false;
                 }
                 
                 const localData = getUserData();
