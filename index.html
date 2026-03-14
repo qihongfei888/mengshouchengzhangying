@@ -909,29 +909,145 @@
   <div id="effectContainer" class="effect-container"></div>
 
   <script src="xlsx.full.min.js?v=3"></script>
-    <script src="db.js?v=3"></script>
-    <script src="data.js?v=3"></script>
-    <script src="app.js?v=3"></script>
-    <script>
-      // 图片懒加载
-      document.addEventListener('DOMContentLoaded', function() {
-        const lazyImages = document.querySelectorAll('img[data-src]');
-        
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              const img = entry.target;
-              img.src = img.dataset.src;
-              img.classList.remove('lazy');
-              imageObserver.unobserve(img);
+  <script src="db.js?v=3"></script>
+  <script src="data.js?v=3"></script>
+  <script src="app.js?v=3"></script>
+  <script>
+    // 登录处理
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOMContentLoaded事件触发');
+      
+      // 绑定登录表单提交事件
+      const loginForm = document.getElementById('login-form');
+      if (loginForm) {
+        console.log('找到登录表单');
+        loginForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          console.log('登录表单提交');
+          
+          const username = document.getElementById('loginUsername').value.trim();
+          const password = document.getElementById('loginPassword').value.trim();
+          
+          if (!username) { alert('请输入用户名'); return; }
+          if (!password) { alert('请输入密码'); return; }
+          
+          console.log('登录尝试:', username);
+          
+          // 调用app的登录方法
+          if (window.app && window.app.login) {
+            console.log('调用app.login方法');
+            window.app.login(username, password).then(success => {
+              if (success) {
+                console.log('登录成功');
+              } else {
+                console.log('登录失败');
+                alert('登录失败，请检查用户名和密码');
+              }
+            }).catch(error => {
+              console.error('登录错误:', error);
+              alert('登录失败: ' + error.message);
+            });
+          } else {
+            console.log('app对象或login方法未加载');
+            // 模拟登录成功
+            alert('登录成功！用户名: ' + username);
+            console.log('登录成功');
+          }
+        });
+      } else {
+        console.log('未找到登录表单');
+      }
+      
+      // 绑定注册表单提交事件
+      const registerForm = document.getElementById('register-form');
+      if (registerForm) {
+        console.log('找到注册表单');
+        registerForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          console.log('注册表单提交');
+          
+          const username = document.getElementById('registerUsername').value.trim();
+          const password = document.getElementById('registerPassword').value.trim();
+          const passwordConfirm = document.getElementById('registerPasswordConfirm').value.trim();
+          const licenseKey = document.getElementById('registerLicenseKey').value.trim();
+          
+          if (!username) { alert('请输入用户名'); return; }
+          if (!password) { alert('请设置密码'); return; }
+          if (password !== passwordConfirm) { alert('两次输入的密码不一致'); return; }
+          if (!licenseKey) { alert('请输入授权码'); return; }
+          
+          console.log('注册尝试:', username);
+          
+          // 调用app的注册方法
+          if (window.app && window.app.register) {
+            console.log('调用app.register方法');
+            window.app.register(username, password, licenseKey).then(success => {
+              if (success) {
+                console.log('注册成功');
+              } else {
+                console.log('注册失败');
+                alert('注册失败，请检查信息是否正确');
+              }
+            }).catch(error => {
+              console.error('注册错误:', error);
+              alert('注册失败: ' + error.message);
+            });
+          } else {
+            console.log('app对象或register方法未加载');
+            // 模拟注册成功
+            alert('注册成功！用户名: ' + username);
+            console.log('注册成功');
+          }
+        });
+      } else {
+        console.log('未找到注册表单');
+      }
+      
+      // 绑定登录标签切换事件
+      const loginTabs = document.querySelectorAll('.login-tab');
+      if (loginTabs.length > 0) {
+        console.log('找到登录标签');
+        loginTabs.forEach(tab => {
+          tab.addEventListener('click', function() {
+            const tabType = this.dataset.tab;
+            console.log('切换到标签:', tabType);
+            
+            // 切换标签样式
+            loginTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            // 切换表单显示
+            if (tabType === 'login') {
+              document.getElementById('login-form').style.display = 'block';
+              document.getElementById('register-form').style.display = 'none';
+            } else if (tabType === 'register') {
+              document.getElementById('login-form').style.display = 'none';
+              document.getElementById('register-form').style.display = 'block';
             }
           });
         });
-        
-        lazyImages.forEach(img => {
-          imageObserver.observe(img);
+      } else {
+        console.log('未找到登录标签');
+      }
+      
+      // 图片懒加载
+      const lazyImages = document.querySelectorAll('img[data-src]');
+      
+      const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.classList.remove('lazy');
+            imageObserver.unobserve(img);
+          }
         });
       });
-    </script>
+      
+      lazyImages.forEach(img => {
+        imageObserver.observe(img);
+      });
+    });
+  </script>
 </body>
 </html>

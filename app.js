@@ -588,10 +588,7 @@
       }
     }
     
-    console.log('getUserData - 当前用户ID:', userId);
-    
     var key = userId ? USER_DATA_PREFIX + userId : 'class_pet_default_user';
-    console.log('getUserData - 使用的存储键:', key);
     
     // 尝试从多个来源获取数据
     let data = null;
@@ -2288,7 +2285,10 @@
     
     // 数据同步方法 - 优化版，支持2000人同时使用
     async syncData() {
-      if (!this.currentUserId) return;
+      if (!this.currentUserId) {
+        console.log('无用户ID，跳过同步');
+        return;
+      }
       
       // 防止循环调用
       if (this.isSyncingData) {
@@ -2301,6 +2301,7 @@
       try {
         // 1. 首先保存本地数据（优先本地存储）
         await this.saveUserDataInternal();
+        console.log('本地数据保存完成');
       
         // 2. 仅在特定条件下才进行云同步
         const now = Date.now();
@@ -2329,6 +2330,13 @@
               this.pendingChanges = 0;
               this.lastSyncTime = new Date().toISOString();
               console.log('云端同步完成');
+              // 同步完成后，尝试从云端拉取最新数据，确保多端数据一致
+              try {
+                await this.syncFromCloud();
+                console.log('从云端拉取最新数据完成');
+              } catch (e) {
+                console.error('从云端拉取数据失败:', e);
+              }
               break;
             } catch (e) {
               retryCount++;
@@ -2344,6 +2352,8 @@
         } else {
           console.log('仅保存到本地，跳过云端同步');
         }
+      } catch (e) {
+        console.error('同步数据失败:', e);
       } finally {
         // 释放同步锁
         this.isSyncingData = false;
@@ -3523,7 +3533,7 @@
     },
     getPetFood(s) {
       if (!s || !s.pet || !s.pet.typeId) return '🍖';
-      const type = PET_TYPES.find(t => t.id === s.pet.typeId);
+      const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
       return type && type.food ? type.food : '🍖';
     },
 
@@ -3656,10 +3666,20 @@
           petHtml = `<div class="student-pet-preview"><div class="pet-egg" style="width: 100%; height: 100%; background: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #facc15 100%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3), inset 0 -10px 15px rgba(255, 255, 255, 0.3);"><span style="font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🥚</span></div></div>`;
         } else if ((s.pet.stage || 0) >= totalStages) {
           // 已完成：成熟期 - 调用本地照片
-          petHtml = `<div class="student-pet-preview"><img src="photos/${s.pet.typeId}/mature/${s.pet.breedId}_stage3.jpg" class="pet-img-stage" onerror="this.src=''; this.onerror=null;"></div>`;
+          if (s.pet.typeId && s.pet.breedId) {
+            const photoPath = `photos/${s.pet.typeId}/mature/${s.pet.breedId}_stage3.jpg`;
+            petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class="pet-img">🐾</span>';"></div>`;
+          } else {
+            petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
+          }
         } else {
           // 中间阶段：成长期 - 调用本地照片
-          petHtml = `<div class="student-pet-preview"><img src="photos/${s.pet.typeId}/growing/${s.pet.breedId}_stage2.jpg" class="pet-img-stage" onerror="this.src=''; this.onerror=null;"></div>`;
+          if (s.pet.typeId && s.pet.breedId) {
+            const photoPath = `photos/${s.pet.typeId}/growing/${s.pet.breedId}_stage2.jpg`;
+            petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class="pet-img">🐾</span>';"></div>`;
+          } else {
+            petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
+          }
         }
       } else {
         petHtml = '<div class="student-pet-preview pet-empty"><span class="pet-img">🐣</span><small>未领养</small></div>';
@@ -3745,7 +3765,7 @@
       const totalStages = this.getTotalStages();
       let petSection = '';
       if (s.pet) {
-        const type = PET_TYPES.find(t => t.id === s.pet.typeId);
+        const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
         const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
         const icon = (breed && breed.icon) || (type && type.icon) || '🐾';
         const progress = s.pet.stageProgress || 0;
@@ -3776,7 +3796,7 @@
         if (cp.isCustom) {
           return { icon: '🐾', name: cp.customName || '自定义宠物', isCustom: true, image: cp.customImage };
         }
-        const t = PET_TYPES.find(x => x.id === cp.typeId);
+        const t = window.PET_TYPES.find(x => x.id === cp.typeId);
         const b = t && t.breeds.find(x => x.id === cp.breedId);
         return { icon: (b && b.icon) || (t && t.icon) || '🐾', name: (b && b.name) || (t && t.name) || '' };
       });
@@ -4551,7 +4571,7 @@
             petDisplay = `<img src="${s.pet.customImage}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; filter: grayscale(50%); margin-bottom: 16px;">`;
             foodStr = '🍖';
           } else {
-            const type = PET_TYPES.find(t => t.id === s.pet.typeId);
+            const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
             const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
             // 使用固定的宠物蛋样式
             petDisplay = `
@@ -4576,7 +4596,7 @@
               petDisplay = `<img src="${s.pet.customImage}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;">`;
               petName = s.pet.customName;
             } else {
-              const type = PET_TYPES.find(t => t.id === s.pet.typeId);
+              const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
               const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
               const photoPath = `photos/${type.id}/mature/${breed.id}_stage3.jpg`;
               petDisplay = `
@@ -4603,25 +4623,25 @@
               petName = s.pet.customName;
               foodStr = '🍖';
             } else {
-              const type = PET_TYPES.find(t => t.id === s.pet.typeId);
+              const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
               const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
-              let petDisplay;
+              let petDisplayContent;
               if (stage === 1) {
                 // 第一阶段：宠物蛋 - 使用固定样式
-                petDisplay = `
+                petDisplayContent = `
                   <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #facc15 100%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3), inset 0 -10px 15px rgba(255, 255, 255, 0.3); margin: 0 auto 8px;"><span style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🥚</span></div>
                 `;
               } else if (isComplete) {
                 // 已完成：成熟期 - 调用本地照片
                 const photoPath = `photos/${type.id}/mature/${breed.id}_stage3.jpg`;
-                petDisplay = `
+                petDisplayContent = `
                   <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
                 `;
               } else {
                 // 中间阶段：成长期 - 调用本地照片
                 const photoPath = `photos/${type.id}/growing/${breed.id}_stage2.jpg`;
-                petDisplay = `
+                petDisplayContent = `
                   <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
                 `;
@@ -4642,7 +4662,7 @@
               <div class="pet-growth-area">
                 <p><strong>${this.escape(s.name)}</strong> 的宠物（已领养，不可更换）</p>
                 <div class="pet-display-box" style="border: ${borderStyle}">
-                  ${petDisplay}
+                  ${petDisplayContent || petDisplay}
                   <span>${petName}</span>
                   <p>第 ${stage}/${totalStages} 阶段</p>
                   <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
@@ -4658,32 +4678,36 @@
           if (cp.isCustom) {
             return { icon: '🐾', name: cp.customName || '自定义宠物' };
           }
-          const t = PET_TYPES.find(x => x.id === cp.typeId);
+          const t = window.PET_TYPES.find(x => x.id === cp.typeId);
           const b = t && t.breeds.find(x => x.id === cp.breedId);
           return { icon: (b && b.icon) || (t && t.icon) || '🐾', name: (b && b.name) || (t && t.name) || '' };
         });
         const completedTip = completedList.length ? `<p class="completed-pets-tip">已养成宠物：${completedList.map(c => c.icon + ' ' + this.escape(c.name)).join('、')}</p>` : '';
         document.getElementById('currentStudentPetInfo').innerHTML = `<p><strong>${this.escape(s.name)}</strong> 选择要领养的新宠物</p>${completedTip}`;
         let optionsHtml = '<div class="pet-adopt-options">';
-        PET_TYPES.forEach(type => {
-          type.breeds.forEach(breed => {
-            // 从照片包读取成长期照片，格式：photos/类别ID/growing/品种ID_stage2.jpg
-            const photoPath = `photos/${type.id}/growing/${breed.id}_stage2.jpg`;
-            optionsHtml += `
-              <div class="pet-breed-option" data-type="${type.id}" data-breed="${breed.id}" data-food="${this.escape(type.food)}">
-                <img src="${photoPath}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                <span class="breed-icon" style="display:none">${breed.icon}</span>
-                <span class="breed-name">${this.escape(breed.name)}</span>
-              </div>`;
+        if (window.PET_TYPES && window.PET_TYPES.length > 0) {
+          window.PET_TYPES.forEach(type => {
+            type.breeds.forEach(breed => {
+              // 从照片包读取成长期照片，格式：photos/类别ID/growing/品种ID_stage2.jpg
+              const photoPath = `photos/${type.id}/growing/${breed.id}_stage2.jpg`;
+              optionsHtml += `
+                <div class="pet-breed-option" data-type="${type.id}" data-breed="${breed.id}" data-food="${this.escape(type.food)}">
+                  <img src="${photoPath}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                  <span class="breed-icon" style="display:none">${breed.icon}</span>
+                  <span class="breed-name">${this.escape(breed.name)}</span>
+                </div>`;
+            });
           });
-        });
+        } else {
+          optionsHtml += '<p class="placeholder-text">宠物类型数据未加载</p>';
+        }
         optionsHtml += '</div>';
         document.getElementById('petChooseSection').innerHTML = optionsHtml;
         document.getElementById('petChooseSection').querySelectorAll('.pet-breed-option').forEach(node => {
           node.addEventListener('click', () => {
             const typeId = node.dataset.type;
             const breedId = node.dataset.breed;
-            const type = PET_TYPES.find(t => t.id === typeId);
+            const type = window.PET_TYPES.find(t => t.id === typeId);
             if (!type || !s) return;
             s.pet = { typeId, breedId, stage: 1, stageProgress: 0, hatching: false, isCustom: false };
             this.saveStudents();
@@ -6896,10 +6920,29 @@
       console.log('已添加批量同步按钮（仅管理员可见）');
     },
     
-    saveStudents() { 
+    // 同步写入当前学生/班级数据到 localStorage，防止刷新前异步保存未完成导致数据丢失
+    persistToLocalStorage() {
+      try {
+        const data = getUserData();
+        if (!data || !data.classes) return;
+        const currentClass = data.classes.find(function (c) { return c.id === app.currentClassId; });
+        if (currentClass) {
+          currentClass.students = app.students || [];
+          currentClass.groups = app.groups || [];
+          currentClass.groupPointHistory = app.groupPointHistory || [];
+        }
+        data.lastModified = new Date().toISOString();
+        setUserData(data);
+      } catch (e) {
+        console.warn('persistToLocalStorage 失败:', e);
+      }
+    },
+
+    saveStudents() {
+      this.persistToLocalStorage();
       this.saveData();
     },
-    
+
     // 本地备份存储
     saveToLocalBackup() {
       try {
@@ -7068,7 +7111,7 @@
       const totalStages = this.getTotalStages();
       const headers = ['学号', '姓名', '积分', '宠物类型', '宠物品种', '阶段', '本阶段进度', '徽章数'];
       const rows = this.students.map(s => {
-        const type = s.pet ? PET_TYPES.find(t => t.id === s.pet.typeId) : null;
+        const type = s.pet ? window.PET_TYPES.find(t => t.id === s.pet.typeId) : null;
         const breed = type && s.pet ? type.breeds.find(b => b.id === s.pet.breedId) : null;
         return [
           s.id || '',
@@ -8686,6 +8729,23 @@
           }
           // 无论同步成败都按本地数据刷新一次，避免刷新页面后数据不显示
           app.loadUserData();
+          // 若主键无数据（云端失败且主键未写入），尝试从本地备份键恢复
+          if (app.currentUserId && (!app.students || app.students.length === 0)) {
+            try {
+              const backupKey = 'class_pet_local_' + app.currentUserId;
+              const raw = localStorage.getItem(backupKey);
+              if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.data && parsed.data.classes && parsed.data.classes.length > 0) {
+                  setUserData(parsed.data);
+                  app.loadUserData();
+                  console.log('已从本地备份键恢复数据');
+                }
+              }
+            } catch (e) {
+              console.warn('从备份键恢复失败:', e);
+            }
+          }
           app.showApp();
           app.enableRealtimeSync();
           app.enableAutoSync();
@@ -8723,6 +8783,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', async function () {
+    alert('DOMContentLoaded事件触发');
     var importBackupEl = document.getElementById('importBackupFile');
     if (importBackupEl) {
       importBackupEl.addEventListener('change', function (e) {
@@ -8741,7 +8802,8 @@
         reader.readAsText(file, 'UTF-8');
       });
     }
-    await bootstrap();
+    
+    // 先绑定所有事件监听器
     document.querySelectorAll('.login-tab').forEach(function (tabEl) {
       tabEl.addEventListener('click', function (e) {
         var t = e.currentTarget.dataset.tab;
@@ -8751,6 +8813,7 @@
         document.getElementById('register-form').style.display = t === 'register' ? 'block' : 'none';
       });
     });
+    
     document.getElementById('login-form').addEventListener('submit', async function (e) {
       e.preventDefault();
       var username = (document.getElementById('loginUsername').value || '').trim();
@@ -8758,6 +8821,7 @@
       if (!username) { alert('请输入用户名（手机号或邮箱）'); return; }
       if (!password) { alert('请输入密码'); return; }
       
+      alert('登录事件触发，用户名: ' + username);
       console.log('登录尝试:', username);
       
       // 检查是否为管理员账号
@@ -8867,21 +8931,21 @@
       
       // 进行登录
       console.log('开始登录验证');
-      app.login(username, password).then(function(success) {
-        if (!success) {
-          // 检查用户是否存在
-          const users = app.getUserList();
-          console.log('最终用户列表:', users);
-          const userExists = users.some(u => u.username === username);
-          console.log('最终用户是否存在:', userExists);
-          if (!userExists) {
-            alert('用户名不存在，请先注册');
-          } else {
-            alert('密码错误，请重新输入');
-          }
+      const success = await app.login(username, password);
+      if (!success) {
+        // 检查用户是否存在
+        const users = app.getUserList();
+        console.log('最终用户列表:', users);
+        const userExists = users.some(u => u.username === username);
+        console.log('最终用户是否存在:', userExists);
+        if (!userExists) {
+          alert('用户名不存在，请先注册');
+        } else {
+          alert('密码错误，请重新输入');
         }
-      });
+      }
     });
+    
     document.getElementById('register-form').addEventListener('submit', function (e) {
       e.preventDefault();
       var username = (document.getElementById('registerUsername').value || '').trim();
@@ -8897,7 +8961,6 @@
         // 注册失败，错误信息已在register函数中显示
       }
     });
-
     
     document.querySelectorAll('.groups-tab').forEach(function (tabEl) {
       tabEl.addEventListener('click', function (e) {
@@ -8910,5 +8973,8 @@
         if (tab === 'ungrouped') app.renderUngroupedStudents();
       });
     });
+    
+    // 最后调用bootstrap()
+    await bootstrap();
   });
 })();
