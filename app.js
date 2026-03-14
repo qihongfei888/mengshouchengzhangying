@@ -44,19 +44,22 @@
     window.storageInfo = info;
   });
   
-  // 初始化 Bmob
+  // 初始化 Bmob（2.0+：参数1=密匙 Secret Key，参数2=API 安全码）
+  var BMOB_KEY1 = "bb6c964e005fd8fc";   // 密匙
+  var BMOB_KEY2 = "QPALZMwoskxneicn";   // 安全码
   function initBmob() {
     try {
       if (typeof Bmob !== 'undefined') {
-        // 检查Bmob版本
         console.log('Bmob SDK版本:', Bmob.version || '未知');
-        // 初始化Bmob - 使用正确的格式
         try {
-          Bmob.initialize("055bbfab769cf4ca035e9a97bdd2a015", "8f55b66963acf2810512a244e17d7b79");
+          Bmob.initialize(BMOB_KEY1, BMOB_KEY2);
           console.log('✅ Bmob 初始化成功');
           return true;
         } catch (e) {
           console.error('❌ Bmob 初始化失败:', e);
+          if (e && (e.message || '').indexOf('API') !== -1) {
+            console.warn('若安全验证页没有「API安全码」：请到 Bmob 控制台把「安全认证开关」设为 关闭，并确认 app.js 中 BMOB_KEY1/BMOB_KEY2 为 应用密钥 里的 Application ID 和 REST API Key');
+          }
           return false;
         }
       } else {
@@ -2066,26 +2069,22 @@
       try {
         const userData = getUserData();
         const now = new Date().toISOString();
+        const userIdStr = String(this.currentUserId);
+        const versionStr = String(userData.version || '1.0.0');
+        const dataStr = typeof userData === 'string' ? userData : JSON.stringify(userData);
         
-        // 创建备份数据
         const backupRecord = Bmob.Query('Backups');
-        backupRecord.set('userId', this.currentUserId);
-        backupRecord.set('data', userData);
+        backupRecord.set('userId', userIdStr);
+        backupRecord.set('data', dataStr);
         backupRecord.set('timestamp', now);
-        backupRecord.set('version', userData.version || '1.0.0');
+        backupRecord.set('version', versionStr);
         
-        // 保存备份
         await backupRecord.save();
-        
         console.log('数据备份成功');
-        
-        // 清理旧备份，保留最近5个
         await this.cleanupOldBackups();
-        
         return true;
       } catch (e) {
         console.error('备份失败:', e);
-        // 备份失败不影响主功能，继续执行
         return false;
       }
     },
@@ -2489,50 +2488,33 @@
           console.error('本地存储失败:', localError);
         }
         
-        // 6. 使用Bmob进行云同步 - 简化版
-        if (typeof Bmob !== 'undefined') {
-          console.log('开始上传到Bmob...');
-          
+        // 6. 优先用 REST 上传，避免 SDK 触发 415；失败再尝试 SDK
+        const userId = this.currentUserId || 'default_user';
+        const userIdStr = String(userId);
+        let uploadOk = await this.syncToCloudViaRest(userIdStr, compressedData, now);
+        if (!uploadOk && typeof Bmob !== 'undefined') {
+          console.log('REST 上传未成功，尝试 SDK 上传...');
           try {
-            // 对于Bmob SDK 1.7.1，使用简单的方式
-            const userId = this.currentUserId || 'default_user';
-            const userIdStr = String(userId);
-            
-            // 创建一个简单的数据结构
-            const simpleData = {
-              userId: userIdStr,
-              data: JSON.stringify(compressedData),
-              updatedAt: now
-            };
-            
-            console.log('准备同步的数据:', simpleData);
-            
-            // 直接创建新记录，不查询现有数据
             const userDataRecord = Bmob.Query('UserData');
-            userDataRecord.set('userId', simpleData.userId);
-            userDataRecord.set('data', simpleData.data);
-            userDataRecord.set('updatedAt', simpleData.updatedAt);
-            
-            const result = await userDataRecord.save();
-            console.log('✅ 数据已同步到Bmob云存储', result);
+            userDataRecord.set('userId', userIdStr);
+            userDataRecord.set('data', typeof compressedData === 'string' ? compressedData : JSON.stringify(compressedData));
+            userDataRecord.set('updatedAt', now);
+            await userDataRecord.save();
+            uploadOk = true;
+            console.log('✅ 数据已通过 SDK 同步到 Bmob');
           } catch (bmobError) {
             console.error('Bmob同步失败:', bmobError);
-            console.error('错误详情:', {
-              code: bmobError.code,
-              message: bmobError.message,
-              stack: bmobError.stack
-            });
-            // Bmob同步失败不影响本地存储
+            if (bmobError.code === 415) {
+              console.warn('SDK 415，云端上传失败，数据已保存在本地，多端请依赖 REST 拉取');
+            }
           }
-        } else {
-          console.log('Bmob SDK未加载，跳过云端同步');
-          // 尝试重新初始化Bmob
-          initBmob();
+        }
+        if (!uploadOk) {
+          console.log('Bmob SDK未加载或上传失败，数据已保存在本地');
         }
         
-        // 同步成功后更新本地数据的lastModified
+        // 无论是否上传成功，都更新本地并重载，确保刷新不丢数据
         setUserData(compressedData);
-        // 同步成功后重新加载用户数据，确保应用界面显示最新数据
         this.loadUserData();
         
       } catch (e) {
@@ -2647,6 +2629,37 @@
       return null;
     },
     
+    // 使用 Bmob REST API 上传 UserData，绕过 SDK 的 415 参数类型问题
+    async syncToCloudViaRest(userIdStr, compressedData, now) {
+      const appId = '055bbfab769cf4ca035e9a97bdd2a015';
+      const restKey = '8f55b66963acf2810512a244e17d7b79';
+      const url = 'https://api2.bmob.cn/1/classes/UserData';
+      const body = {
+        userId: userIdStr,
+        data: typeof compressedData === 'string' ? compressedData : JSON.stringify(compressedData),
+        updatedAt: now
+      };
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-Bmob-Application-Id': appId,
+            'X-Bmob-REST-API-Key': restKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+        if (res.ok) {
+          console.log('✅ 已通过 REST 上传到 Bmob');
+          return true;
+        }
+        return false;
+      } catch (e) {
+        console.warn('Bmob REST 上传失败:', e);
+        return false;
+      }
+    },
+
     // 使用 Bmob REST API 拉取 UserData，绕过 SDK 的 415 参数类型问题
     async fetchUserDataViaRest(userIdStr) {
       const appId = '055bbfab769cf4ca035e9a97bdd2a015';
@@ -8545,22 +8558,15 @@
           if (navigator.onLine) {
             try {
               console.log('自动登录时从云端同步数据...');
-              const syncResult = await app.syncFromCloud();
-              if (syncResult) {
-                console.log('从云端同步成功，使用云端数据');
-                // 同步成功后重新加载用户数据
-                app.loadUserData();
-              } else {
-                console.log('云端数据较旧或没有数据，使用本地数据');
-              }
+              await app.syncFromCloud();
             } catch (e) {
               console.error('云端同步失败，使用本地数据:', e);
             }
           } else {
-            // 无网时直接使用本地数据
             console.log('无网络连接，直接使用本地数据');
           }
-          
+          // 无论同步成败都按本地数据刷新一次，避免刷新页面后数据不显示
+          app.loadUserData();
           app.showApp();
           app.enableRealtimeSync();
           app.enableAutoSync();
