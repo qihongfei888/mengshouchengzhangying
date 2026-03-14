@@ -2647,15 +2647,45 @@
       return null;
     },
     
+    // 使用 Bmob REST API 拉取 UserData，绕过 SDK 的 415 参数类型问题
+    async fetchUserDataViaRest(userIdStr) {
+      const appId = '055bbfab769cf4ca035e9a97bdd2a015';
+      const restKey = '8f55b66963acf2810512a244e17d7b79';
+      const base = 'https://api2.bmob.cn/1/classes/UserData';
+      const where = userIdStr ? encodeURIComponent(JSON.stringify({ userId: userIdStr })) : '';
+      const url = where ? base + '?where=' + where : base + '?limit=100';
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'X-Bmob-Application-Id': appId,
+            'X-Bmob-REST-API-Key': restKey,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!res.ok) return null;
+        const json = await res.json();
+        const list = json.results || [];
+        if (list.length > 1) {
+          list.sort(function (a, b) {
+            const t1 = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+            const t2 = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+            return t2 - t1;
+          });
+        }
+        return list;
+      } catch (e) {
+        console.warn('Bmob REST 拉取失败:', e);
+        return null;
+      }
+    },
+
     // 从云存储同步
     async syncFromCloud() {
-      // 无网时不进行云同步
       if (!navigator.onLine) {
         console.log('无网络连接，跳过云端同步');
         return false;
       }
-      
-      // 防止重复同步
       if (this.syncing) {
         console.log('正在同步中，跳过重复同步');
         return false;
@@ -2663,46 +2693,66 @@
       
       this.syncing = true;
       let syncSuccess = false;
+      const userIdStr = this.currentUserId ? String(this.currentUserId).trim() : '';
+      console.log('开始从Bmob同步数据，用户ID:', userIdStr || '(无)');
       
       try {
-        // 1. 优先从云存储同步（确保多端数据一致）
-        console.log('开始从Bmob同步数据，用户ID:', this.currentUserId);
+        // 1) 优先用 REST API 拉取，避免 SDK 在部分环境触发 415
+        let results = await this.fetchUserDataViaRest(userIdStr);
+        if (results && results.length > 0) {
+          if (userIdStr && results.length > 1) {
+            results = results.slice(0, 1);
+          }
+          const row = results[0];
+          let cloudData = row.data;
+          const cloudLicenses = row.licenses;
+          const cloudTimestamp = String(row.updatedAt || '1970-01-01T00:00:00.000Z');
+          if (cloudData) {
+            if (typeof cloudData === 'string') {
+              try { cloudData = JSON.parse(cloudData); } catch (e) {}
+            }
+            if (cloudData && typeof cloudData === 'object') {
+              let updatedData = this.migrateUserData(cloudData);
+              if (this.validateUserData(updatedData)) {
+                updatedData.lastModified = cloudTimestamp;
+                if (cloudLicenses) {
+                  try {
+                    const licenses = typeof cloudLicenses === 'string' ? JSON.parse(cloudLicenses) : cloudLicenses;
+                    if (licenses && Array.isArray(licenses)) setLicenses(licenses);
+                  } catch (e) {}
+                }
+                setUserData(updatedData);
+                syncSuccess = true;
+                console.log('从Bmob REST同步成功，数据已更新');
+              }
+            }
+          }
+        }
         
-        if (typeof Bmob !== 'undefined') {
-          let results = [];
-          
+        // 2) REST 无数据或失败时，再用 SDK 尝试
+        if (!syncSuccess && typeof Bmob !== 'undefined') {
+          let sdkResults = [];
           try {
-            const userIdStr = this.currentUserId ? String(this.currentUserId).trim() : '';
-            console.log('查询用户ID:', userIdStr || '(无)', '类型:', typeof userIdStr);
-            // 仅使用 equalTo + find，避免 order/limit 在 Bmob 2.7.0 下触发 415
             if (userIdStr) {
               const query = Bmob.Query('UserData');
               query.equalTo('userId', userIdStr);
-              results = await query.find();
-              if (results.length > 1) {
-                results.sort(function (a, b) {
-                  const t1 = (a.get && a.get('updatedAt')) ? new Date(a.get('updatedAt')).getTime() : 0;
-                  const t2 = (b.get && b.get('updatedAt')) ? new Date(b.get('updatedAt')).getTime() : 0;
-                  return t2 - t1;
-                });
-                results = results.slice(0, 1);
-              }
+              sdkResults = await query.find();
             } else {
               const query = Bmob.Query('UserData');
-              results = await query.limit(50).find();
-              if (results.length > 1) {
-                results.sort(function (a, b) {
-                  const t1 = (a.get && a.get('updatedAt')) ? new Date(a.get('updatedAt')).getTime() : 0;
-                  const t2 = (b.get && b.get('updatedAt')) ? new Date(b.get('updatedAt')).getTime() : 0;
-                  return t2 - t1;
-                });
-                results = results.slice(0, 1);
-              }
+              sdkResults = await query.find();
+            }
+            if (sdkResults.length > 1) {
+              sdkResults.sort(function (a, b) {
+                const t1 = (a.get && a.get('updatedAt')) ? new Date(a.get('updatedAt')).getTime() : 0;
+                const t2 = (b.get && b.get('updatedAt')) ? new Date(b.get('updatedAt')).getTime() : 0;
+                return t2 - t1;
+              });
+              sdkResults = sdkResults.slice(0, 1);
             }
             
-            console.log('Bmob返回数据:', results);
+            console.log('Bmob SDK返回数据:', sdkResults);
             
-            if (results.length === 0) {
+            if (sdkResults.length === 0) {
               console.log('云端没有数据记录，准备上传本地数据');
               const localData = getUserData();
               if (Object.keys(localData).length > 0) {
@@ -2713,7 +2763,7 @@
                 console.log('本地也没有数据，跳过同步');
               }
             } else {
-              const userDataRecord = results[0];
+              const userDataRecord = sdkResults[0];
               let cloudData = userDataRecord.get('data');
               const cloudLicenses = userDataRecord.get('licenses');
               const cloudTimestamp = String(userDataRecord.get('updatedAt') || '1970-01-01T00:00:00.000Z');
@@ -2801,11 +2851,11 @@
               message: bmobError.message,
               stack: bmobError.stack
             });
-            // 415 时降级：不传 where，拉取列表后本地按 userId 过滤（兼容 Bmob 2.7 / GitHub 部署）
+            // 415 时降级：仅 find() 不传 where/limit，拉取后本地按 userId 过滤（limit 也可能触发 415）
             if (bmobError.code === 415 && userIdStr) {
               try {
                 const fallbackQuery = Bmob.Query('UserData');
-                const list = await fallbackQuery.limit(100).find();
+                const list = await fallbackQuery.find();
                 const filtered = list.filter(function (r) {
                   return (r.get && r.get('userId')) === userIdStr;
                 });
