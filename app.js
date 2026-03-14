@@ -2490,36 +2490,42 @@
           console.log('开始上传到Bmob...');
           
           try {
-            // 将授权码存储在data字段中
-            const userDataWithLicenses = {
-              ...compressedData,
-              licenses: licenses // 将授权码存储在data中
+            // 对于Bmob SDK 2.7.0，使用更简单的方式
+            const userId = this.currentUserId || 'default_user';
+            const userIdStr = String(userId);
+            
+            // 先检查是否存在该用户的数据
+            const query = Bmob.Query('UserData');
+            query.equalTo('userId', userIdStr);
+            const results = await query.find();
+            
+            // 创建一个简单的数据结构，只包含必要的字段
+            const simpleData = {
+              userId: userIdStr,
+              data: JSON.stringify(compressedData),
+              licenses: JSON.stringify(licenses),
+              updatedAt: now,
+              last_sync: now
             };
             
-            // 上传用户数据到云端
-            const userId = this.currentUserId || 'default_user';
-            // 确保userId是字符串类型
-            const userIdStr = String(userId);
-            const query = Bmob.Query('UserData');
-            const results = await query.equalTo('userId', userIdStr).find();
-            
-            // 对于Bmob SDK 2.7.0，直接传递对象，而不是JSON字符串
-            const dataToSync = userDataWithLicenses;
+            console.log('准备同步的数据:', simpleData);
             
             if (results.length > 0) {
               // 更新现有数据
               const userDataRecord = results[0];
-              userDataRecord.set('data', dataToSync);
-              userDataRecord.set('updatedAt', now);
-              userDataRecord.set('last_sync', now);
+              userDataRecord.set('data', simpleData.data);
+              userDataRecord.set('licenses', simpleData.licenses);
+              userDataRecord.set('updatedAt', simpleData.updatedAt);
+              userDataRecord.set('last_sync', simpleData.last_sync);
               await userDataRecord.save();
             } else {
               // 创建新数据
               const userDataRecord = Bmob.Query('UserData');
-              userDataRecord.set('userId', userIdStr);
-              userDataRecord.set('data', dataToSync);
-              userDataRecord.set('updatedAt', now);
-              userDataRecord.set('last_sync', now);
+              userDataRecord.set('userId', simpleData.userId);
+              userDataRecord.set('data', simpleData.data);
+              userDataRecord.set('licenses', simpleData.licenses);
+              userDataRecord.set('updatedAt', simpleData.updatedAt);
+              userDataRecord.set('last_sync', simpleData.last_sync);
               await userDataRecord.save();
             }
             
@@ -2531,37 +2537,43 @@
               message: bmobError.message,
               stack: bmobError.stack
             });
-            // 尝试使用JSON字符串作为备选方案
+            
+            // 尝试使用更简单的方式
             try {
-              console.log('尝试使用JSON字符串作为备选方案');
-              const userDataWithLicenses = {
-                ...compressedData,
-                licenses: licenses
-              };
+              console.log('尝试使用更简单的同步方式');
               const userId = this.currentUserId || 'default_user';
               const userIdStr = String(userId);
+              
+              // 创建一个非常简单的数据结构
+              const minimalData = {
+                userId: userIdStr,
+                data: '{}',
+                updatedAt: now
+              };
+              
               const query = Bmob.Query('UserData');
-              const results = await query.equalTo('userId', userIdStr).find();
-              const dataToSync = JSON.stringify(userDataWithLicenses);
+              query.equalTo('userId', userIdStr);
+              const results = await query.find();
               
               if (results.length > 0) {
                 const userDataRecord = results[0];
-                userDataRecord.set('data', dataToSync);
-                userDataRecord.set('updatedAt', now);
-                userDataRecord.set('last_sync', now);
+                userDataRecord.set('userId', minimalData.userId);
+                userDataRecord.set('data', minimalData.data);
+                userDataRecord.set('updatedAt', minimalData.updatedAt);
                 await userDataRecord.save();
               } else {
                 const userDataRecord = Bmob.Query('UserData');
-                userDataRecord.set('userId', userIdStr);
-                userDataRecord.set('data', dataToSync);
-                userDataRecord.set('updatedAt', now);
-                userDataRecord.set('last_sync', now);
+                userDataRecord.set('userId', minimalData.userId);
+                userDataRecord.set('data', minimalData.data);
+                userDataRecord.set('updatedAt', minimalData.updatedAt);
                 await userDataRecord.save();
               }
-              console.log('使用JSON字符串同步成功');
+              
+              console.log('使用最小数据结构同步成功');
             } catch (e) {
-              console.error('备选方案也失败:', e);
+              console.error('最小数据结构同步也失败:', e);
             }
+            
             // Bmob同步失败不影响本地存储
           }
         } else {
@@ -2701,10 +2713,12 @@
             } else {
               const userDataRecord = results[0];
               let cloudData = userDataRecord.get('data');
+              const cloudLicenses = userDataRecord.get('licenses');
               const cloudTimestamp = userDataRecord.get('updatedAt') || '1970-01-01T00:00:00.000Z';
               
               console.log('云端数据内容:', cloudData);
               console.log('云端数据类型:', typeof cloudData);
+              console.log('云端授权码:', cloudLicenses);
               console.log('云端更新时间:', cloudTimestamp);
               
               if (cloudData) {
@@ -2746,14 +2760,22 @@
                 // 更新时间戳
                 updatedData.lastModified = cloudTimestamp;
                 
+                // 同步授权码
+                if (cloudLicenses) {
+                  try {
+                    const licenses = typeof cloudLicenses === 'string' ? JSON.parse(cloudLicenses) : cloudLicenses;
+                    if (licenses && Array.isArray(licenses)) {
+                      console.log('同步云端授权码，数量:', licenses.length);
+                      setLicenses(licenses);
+                      updatedData.licenses = licenses;
+                    }
+                  } catch (e) {
+                    console.error('解析云端授权码失败:', e);
+                  }
+                }
+                
                 // 保存数据
                 setUserData(updatedData);
-                
-                // 同步授权码
-                if (updatedData.licenses) {
-                  console.log('同步云端授权码，数量:', updatedData.licenses.length);
-                  setLicenses(updatedData.licenses);
-                }
                 
                 // 同时更新本地备份
                 try {
