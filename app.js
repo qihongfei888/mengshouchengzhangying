@@ -4529,7 +4529,7 @@
               </div>`;
             document.getElementById('petChooseSection').innerHTML = '';
           } else {
-            let petDisplay, petName, foodStr;
+            let petDisplay, petDisplayContent = '', petName, foodStr;
             if (s.pet.isCustom && s.pet.customImage) {
               petDisplay = `<img src="${s.pet.customImage}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;">`;
               petName = s.pet.customName;
