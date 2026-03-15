@@ -2694,7 +2694,7 @@
             objectId: row.id,
             data: row.data,
             licenses: row.licenses,
-            sessionId: row.session_id,
+            sessionId: null,
             updatedAt: row.updated_at
           }];
         } else {
@@ -2711,7 +2711,7 @@
             objectId: row.id,
             data: row.data,
             licenses: row.licenses,
-            sessionId: row.session_id,
+            sessionId: null,
             updatedAt: row.updated_at
           }));
         }
