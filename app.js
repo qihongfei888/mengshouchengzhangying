@@ -4475,7 +4475,13 @@
       document.getElementById('petAdoptContent').style.display = 'block';
       const totalStages = this.getTotalStages();
       const stagePoints = this.getStagePoints();
-      if (s.pet) {
+
+      // 只有当宠物信息是“完整”的时候才视为已领养：
+      // 1) 自定义宠物：isCustom = true
+      // 2) 预置宠物：同时存在 typeId 和 breedId
+      const hasStructuredPet = !!(s.pet && (s.pet.isCustom || (s.pet.typeId && s.pet.breedId)));
+
+      if (hasStructuredPet) {
         if (s.pet.hatching) {
           const canFeed = (s.points || 0) >= 1;
           let petDisplay, foodStr;
