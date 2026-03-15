@@ -43,56 +43,36 @@
   checkStorageSpace().then(info => {
     window.storageInfo = info;
   });
-  
-  // 初始化 Bmob（2.0+：参数1=密匙 Secret Key，参数2=API 安全码）
-  var BMOB_KEY1 = "bb6c964e005fd8fc";   // 密匙
-  var BMOB_KEY2 = "QPALZMwoskxneicn";   // 安全码
+
+  // Bmob 已弃用：保留空实现避免旧代码报错，不再做任何初始化或日志输出
   function initBmob() {
+    return false;
+  }
+
+  // Supabase 客户端（唯一云同步后端）
+  let supabaseClient = null;
+  function ensureSupabaseClient() {
+    if (!navigator.onLine) return null;
+    if (supabaseClient) return supabaseClient;
+    if (typeof window === 'undefined' ||
+        !window.supabase ||
+        !window.SUPABASE_URL ||
+        !window.SUPABASE_KEY ||
+        typeof window.supabase.createClient !== 'function') {
+      console.warn('Supabase 未配置或 SDK 未加载，当前仅使用本地/IndexedDB 存储');
+      return null;
+    }
     try {
-      if (typeof Bmob !== 'undefined') {
-        console.log('Bmob SDK版本:', Bmob.version || '未知');
-        try {
-          Bmob.initialize(BMOB_KEY1, BMOB_KEY2);
-          console.log('✅ Bmob 初始化成功');
-          return true;
-        } catch (e) {
-          console.error('❌ Bmob 初始化失败:', e);
-          if (e && (e.message || '').indexOf('API') !== -1) {
-            console.warn('若安全验证页没有「API安全码」：请到 Bmob 控制台把「安全认证开关」设为 关闭，并确认 app.js 中 BMOB_KEY1/BMOB_KEY2 为 应用密钥 里的 Application ID 和 REST API Key');
-          }
-          return false;
-        }
-      } else {
-        console.error('❌ Bmob SDK 未加载');
-        return false;
-      }
+      supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+      console.log('✅ 云同步: Supabase 客户端已初始化');
+      return supabaseClient;
     } catch (e) {
-      console.error('❌ Bmob 初始化失败:', e);
-      return false;
+      console.error('❌ 初始化 Supabase 客户端失败:', e);
+      supabaseClient = null;
+      return null;
     }
   }
-  
-  // 尝试初始化Bmob，如果失败则延迟重试
-  if (!initBmob()) {
-    let retryCount = 0;
-    const maxRetries = 5;
-    const retryInterval = 1000;
-    
-    const retryInit = setInterval(() => {
-      retryCount++;
-      console.log(`🔄 尝试重新初始化Bmob (${retryCount}/${maxRetries})`);
-      
-      if (initBmob() || retryCount >= maxRetries) {
-        clearInterval(retryInit);
-        if (retryCount >= maxRetries) {
-          console.error('❌ 多次尝试后Bmob仍未加载，将使用本地存储模式');
-        }
-      }
-    }, retryInterval);
-  }
-  
 
-  
   // 实时同步管理类
   class RealtimeSync {
     constructor() {
@@ -2557,204 +2537,159 @@
       }
     },
     
-    // 从云存储同步授权码（无需用户ID）
+    // 从云存储同步授权码（无需用户ID），使用 Supabase
     async syncLicensesFromCloud() {
       if (!navigator.onLine) {
-        console.log('无网络连接，跳过云端同步');
+        console.log('无网络连接，跳过云端同步授权码');
         return null;
       }
-      
-      // 检查Bmob是否加载
-      if (typeof Bmob === 'undefined') {
-        console.error('Bmob SDK未加载，无法从云端同步授权码');
-        return null;
-      }
-      
+      const client = ensureSupabaseClient();
+      if (!client) return null;
+
       try {
-        console.log('开始从Bmob同步授权码...');
-        
-        // 首先尝试查询管理员用户的数据（管理员用户ID通常包含admin）
-        const adminQuery = Bmob.Query('UserData');
-        adminQuery.equalTo('userId', 'user_list_global');
-        const adminResults = await adminQuery.find();
-        
-        console.log('查询全局用户列表数据:', adminResults);
-        
-        if (adminResults.length > 0) {
-          const adminData = adminResults[0].get('data');
-          const adminLicenses = adminResults[0].get('licenses');
-          
-          // 尝试从licenses字段获取授权码
-          if (adminLicenses) {
-            try {
-              const licenses = typeof adminLicenses === 'string' ? JSON.parse(adminLicenses) : adminLicenses;
-              if (licenses && Array.isArray(licenses)) {
-                console.log('从全局用户列表licenses字段同步授权码，数量:', licenses.length);
-                setLicenses(licenses);
-                return licenses;
-              }
-            } catch (e) {
-              console.error('解析全局用户列表licenses字段失败:', e);
-            }
-          }
-          
-          // 尝试从data字段获取授权码
-          if (adminData) {
-            try {
-              const parsedData = typeof adminData === 'string' ? JSON.parse(adminData) : adminData;
-              if (parsedData && parsedData.licenses) {
-                console.log('从全局用户列表data字段同步授权码，数量:', parsedData.licenses.length);
-                setLicenses(parsedData.licenses);
-                return parsedData.licenses;
-              }
-            } catch (e) {
-              console.error('解析全局用户列表data字段失败:', e);
-            }
-          }
+        console.log('开始从 Supabase 同步授权码...');
+        let { data: rows, error } = await client
+          .from('users')
+          .select('id, data, updated_at')
+          .eq('id', 'user_list_global')
+          .limit(1);
+
+        if (error) {
+          console.error('从 Supabase 查询授权码失败:', error);
+          rows = null;
         }
-        
-        // 如果没有全局数据，查询最近更新的用户数据
-        const query = Bmob.Query('UserData');
-        query.order('updatedAt', { descending: true });
-        query.limit(1);
-        const results = await query.find();
-        
-        console.log('查询最近更新的用户数据:', results);
-        
-        if (results.length > 0) {
-          const userData = results[0].get('data');
-          const userLicenses = results[0].get('licenses');
-          
-          // 尝试从licenses字段获取授权码
-          if (userLicenses) {
-            try {
-              const licenses = typeof userLicenses === 'string' ? JSON.parse(userLicenses) : userLicenses;
-              if (licenses && Array.isArray(licenses)) {
-                console.log('从用户licenses字段同步授权码，数量:', licenses.length);
-                setLicenses(licenses);
-                return licenses;
-              }
-            } catch (e) {
-              console.error('解析用户licenses字段失败:', e);
-            }
+
+        if (!rows || rows.length === 0) {
+          const result = await client
+            .from('users')
+            .select('id, data, updated_at')
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          if (result.error) {
+            console.error('从 Supabase 查询最近用户授权码失败:', result.error);
+            return null;
           }
-          
-          // 尝试从data字段获取授权码
-          if (userData) {
-            try {
-              const parsedData = typeof userData === 'string' ? JSON.parse(userData) : userData;
-              if (parsedData && parsedData.licenses) {
-                console.log('从用户data字段同步授权码，数量:', parsedData.licenses.length);
-                setLicenses(parsedData.licenses);
-                return parsedData.licenses;
-              }
-            } catch (e) {
-              console.error('解析用户data字段失败:', e);
-            }
-          }
+          rows = result.data || [];
+        }
+
+        if (!rows || rows.length === 0) return null;
+
+        const row = rows[0];
+        const payload = row.data || {};
+        const licenses = payload.licenses;
+
+        if (licenses && Array.isArray(licenses)) {
+          console.log('从 Supabase 同步授权码，数量:', licenses.length);
+          setLicenses(licenses);
+          return licenses;
         }
       } catch (e) {
         console.error('同步授权码失败:', e);
       }
-      
+
       return null;
     },
     
-    // 使用 Bmob REST API 上传 UserData（与 SDK 使用同一套密匙/安全码）
+    // 使用 Supabase 上传 UserData（替代原 Bmob REST）
     async syncToCloudViaRest(userIdStr, compressedData, now, sessionId) {
-      const url = 'https://api2.bmob.cn/1/classes/UserData';
-      const body = {
-        userId: userIdStr,
-        data: typeof compressedData === 'string' ? compressedData : JSON.stringify(compressedData)
-      };
-      if (sessionId) {
-        body.sessionId = sessionId;
-        body.sessionUpdatedAt = now || new Date().toISOString();
-      }
+      const client = ensureSupabaseClient();
+      if (!client) return false;
       try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'X-Bmob-Application-Id': BMOB_KEY1,
-            'X-Bmob-REST-API-Key': BMOB_KEY2,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(body)
-        });
-        if (res.ok) {
-          console.log('✅ 已通过 REST 上传到 Bmob');
-          return true;
+        const payload = {
+          id: userIdStr,
+          data: compressedData,
+          updated_at: now || new Date().toISOString()
+        };
+        if (sessionId) {
+          payload.session_id = sessionId;
         }
-        return false;
+        const { error } = await client
+          .from('users')
+          .upsert(payload, { onConflict: 'id' });
+        if (error) {
+          console.error('Supabase 上传用户数据失败:', error);
+          return false;
+        }
+        console.log('✅ 已通过 Supabase 上传用户数据');
+        return true;
       } catch (e) {
-        console.warn('Bmob REST 上传失败:', e);
+        console.warn('Supabase 上传失败:', e);
         return false;
       }
     },
-
+    
     // 仅更新云端 data 字段（不更新 sessionId），用于强制下线前保存本端数据
     async pushDataOnlyToCloud(objectId, userData) {
-      if (!objectId || !navigator.onLine) return false;
+      if (!navigator.onLine) return false;
+      const client = ensureSupabaseClient();
+      if (!client) return false;
       try {
         let data = this.migrateUserData(userData || getUserData());
         if (!this.validateUserData(data)) return false;
         const compressed = this.compressUserData(data);
         const now = new Date().toISOString();
         compressed.lastModified = now;
-        const url = 'https://api2.bmob.cn/1/classes/UserData/' + encodeURIComponent(objectId);
-        const res = await fetch(url, {
-          method: 'PUT',
-          headers: {
-            'X-Bmob-Application-Id': BMOB_KEY1,
-            'X-Bmob-REST-API-Key': BMOB_KEY2,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            data: typeof compressed === 'string' ? compressed : JSON.stringify(compressed)
-          })
-        });
-        if (res.ok) {
-          console.log('强制下线前已保存数据到云端');
-          return true;
+
+        const { error } = await client
+          .from('users')
+          .update({ data: compressed, updated_at: now })
+          .eq('id', objectId);
+        if (error) {
+          console.error('Supabase 保存数据失败:', error);
+          return false;
         }
-        return false;
+        console.log('强制下线前已保存数据到 Supabase');
+        return true;
       } catch (e) {
-        console.warn('强制下线前保存到云端失败:', e);
+        console.warn('强制下线前保存到 Supabase 失败:', e);
         return false;
       }
     },
-
-    // 使用 Bmob REST API 拉取 UserData（与 SDK 使用同一套密匙/安全码）
+    
+    // 使用 Supabase 拉取 UserData（替代原 Bmob REST）
     async fetchUserDataViaRest(userIdStr) {
-      const base = 'https://api2.bmob.cn/1/classes/UserData';
-      const where = userIdStr ? encodeURIComponent(JSON.stringify({ userId: userIdStr })) : '';
-      const url = where ? base + '?where=' + where : base + '?limit=100';
+      const client = ensureSupabaseClient();
+      if (!client) return null;
       try {
-        const res = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'X-Bmob-Application-Id': BMOB_KEY1,
-            'X-Bmob-REST-API-Key': BMOB_KEY2,
-            'Content-Type': 'application/json'
+        if (userIdStr) {
+          const { data, error } = await client
+            .from('users')
+            .select('id, data, updated_at, session_id, licenses')
+            .eq('id', userIdStr)
+            .limit(1);
+          if (error) {
+            console.error('从 Supabase 拉取用户数据失败:', error);
+            return null;
           }
-        });
-        if (!res.ok) return null;
-        const json = await res.json();
-        const list = json.results || [];
-        if (list.length > 1) {
-          list.sort(function (a, b) {
-            const t1 = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-            const t2 = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-            return t2 - t1;
-          });
-        }
-        return list;
-      } catch (e) {
-        if (e && e.message === 'Failed to fetch') {
-          console.warn('REST 拉取失败(多为跨域或网络)，已改用 SDK 或本地数据');
+          if (!data || data.length === 0) return [];
+          const row = data[0];
+          return [{
+            objectId: row.id,
+            data: row.data,
+            licenses: row.licenses,
+            sessionId: row.session_id,
+            updatedAt: row.updated_at
+          }];
         } else {
-          console.warn('Bmob REST 拉取失败:', e);
+          const { data, error } = await client
+            .from('users')
+            .select('id, data, updated_at, session_id, licenses')
+            .order('updated_at', { ascending: false })
+            .limit(100);
+          if (error) {
+            console.error('从 Supabase 拉取多用户数据失败:', error);
+            return null;
+          }
+          return (data || []).map(row => ({
+            objectId: row.id,
+            data: row.data,
+            licenses: row.licenses,
+            sessionId: row.session_id,
+            updatedAt: row.updated_at
+          }));
         }
+      } catch (e) {
+        console.warn('Supabase 拉取用户数据异常:', e);
         return null;
       }
     },
