@@ -2630,9 +2630,6 @@
           data: compressedData,
           updated_at: now || new Date().toISOString()
         };
-        if (sessionId) {
-          payload.session_id = sessionId;
-        }
         const { error } = await client
           .from('users')
           .upsert(payload, { onConflict: 'id' });
@@ -2684,7 +2681,7 @@
         if (userIdStr) {
           const { data, error } = await client
             .from('users')
-            .select('id, data, updated_at, session_id, licenses')
+            .select('id, data, updated_at, licenses')
             .eq('id', userIdStr)
             .limit(1);
           if (error) {
@@ -2703,7 +2700,7 @@
         } else {
           const { data, error } = await client
             .from('users')
-            .select('id, data, updated_at, session_id, licenses')
+            .select('id, data, updated_at, licenses')
             .order('updated_at', { ascending: false })
             .limit(100);
           if (error) {
