@@ -1077,73 +1077,10 @@
             console.error('数据迁移失败:', e);
           }
           
-          // 登录时先拉取云端最新数据（skipSessionCheck=true 避免被误判为“其他设备登录”）
-          let syncSuccess = false;
-          try {
-            console.log('登录时从云端同步最新数据...');
-            let retryCount = 0;
-            const maxRetries = 3;
-            const retryDelay = 2000;
-            
-            while (retryCount < maxRetries) {
-              try {
-                syncSuccess = await this.syncFromCloud(true);
-                if (syncSuccess) {
-                  console.log('从云端同步成功，使用云端数据');
-                  break;
-                } else {
-                  console.log('云端数据较旧或没有数据，使用本地数据');
-                  // 只有当本地确实有有效数据时，才把本地同步到云端，避免“空白端”把云端数据清空
-                  if (navigator.onLine) {
-                    try {
-                      const localDataAfterLogin = getUserData();
-                      const localClassesAfterLogin = (localDataAfterLogin && Array.isArray(localDataAfterLogin.classes))
-                        ? localDataAfterLogin.classes
-                        : [];
-                      if (localClassesAfterLogin.length > 0) {
-                        console.log('本地存在有效数据，尝试将本地数据同步到云端...');
-                        await this.syncToCloud();
-                      } else {
-                        console.log('本地没有有效数据，不执行同步到云端，避免覆盖云端已有数据');
-                      }
-                    } catch (checkErr) {
-                      console.warn('检查本地数据是否存在时出错，跳过登录阶段的上行同步:', checkErr);
-                    }
-                  }
-                  break;
-                }
-              } catch (e) {
-                retryCount++;
-                console.error(`登录时云端同步失败 (${retryCount}/${maxRetries}):`, e);
-                if (retryCount < maxRetries) {
-                  console.log(`等待 ${retryDelay}ms 后重试...`);
-                  await new Promise(resolve => setTimeout(resolve, retryDelay));
-                } else {
-                  console.error('登录时云端同步多次失败，使用本地数据');
-                }
-              }
-            }
-          } catch (e) {
-            console.error('云端同步失败，使用本地数据:', e);
-            // 即使同步失败，也要确保本地数据可用
-            console.log('使用本地数据，确保应用正常运行');
-          }
-          
-          // 登录时确保界面展示云端最新数据（syncFromCloud 已写入本地，此处刷新到界面）
+          // 登录成功后，仅使用本地数据初始化界面，不在登录流程中自动与云端互相覆盖，
+          // 避免误操作导致云端或本地数据被清空。
+          console.log('登录成功，使用本地数据初始化界面（登录阶段不自动与云端读写）');
           this.loadUserData();
-          
-          // 对于新用户，确保默认数据结构同步到云端
-          if (navigator.onLine) {
-            try {
-              const userData = getUserData();
-              if (userData && (userData.classes && userData.classes.length > 0)) {
-                console.log('确保默认数据同步到云端...');
-                await this.syncToCloud();
-              }
-            } catch (e) {
-              console.error('同步默认数据到云端失败:', e);
-            }
-          }
           
           // 显示应用界面（init中会调用loadUserData加载最新数据）
           this.showApp();
