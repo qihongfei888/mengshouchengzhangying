@@ -1038,6 +1038,15 @@
           this.currentUserId = user.id;
           this.currentUsername = user.username;
           
+          // 登录成功后，确保账号信息写入 Supabase（用于老账号自动补建 accounts 映射）
+          if (navigator.onLine) {
+            try {
+              await supabaseUpsertAccount(user.username, user.password, user.id);
+            } catch (e) {
+              console.warn('登录后同步账号到 Supabase 失败（不影响本地登录）:', e);
+            }
+          }
+          
           // 保存当前用户信息
           try {
             localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({ 
