@@ -2486,7 +2486,7 @@
         // 4. 更新数据的最后修改时间
         compressedData.lastModified = now;
         
-        // 5. 优先使用本地存储
+        // 5. 优先使用本地存储（云端用精简版，本地继续保存完整数据）
         try {
           const backupKey = this.currentUserId ? `class_pet_local_${this.currentUserId}` : 'class_pet_local_default';
           localStorage.setItem(backupKey, JSON.stringify({
@@ -2533,8 +2533,8 @@
           if (statusEl) statusEl.textContent = '云同步状态：✅ 上传成功';
         }
         
-        // 无论是否上传成功，都更新本地并重载，确保刷新不丢数据
-        setUserData(compressedData);
+        // 无论是否上传成功，都用「完整数据」更新本地并重载，避免被精简版覆盖
+        setUserData(userData);
         this.loadUserData();
         
       } catch (e) {
@@ -2755,27 +2755,10 @@
       const userIdStr = this.currentUserId ? String(this.currentUserId).trim() : '';
       console.log('开始从Bmob同步数据，用户ID:', userIdStr || '(无)');
 
-      // 前端体验优化：设置超时与阶段提示
-      const TIMEOUT_MS = 60000; // 60 秒超时
-      let timedOut = false;
-      const timeoutId = setTimeout(() => {
-        timedOut = true;
-        console.warn('从云端拉取数据超时，可能是网络较慢');
-        if (!skipSessionCheck && statusEl) {
-          statusEl.textContent = '云同步状态：网络较慢或 Supabase 响应超时，请稍后重试。';
-        }
-        if (!skipSessionCheck && btnUpload) btnUpload.disabled = false;
-        if (!skipSessionCheck && btnDownload) btnDownload.disabled = false;
-      }, TIMEOUT_MS);
-
       try {
         // 1) 优先用 REST API 拉取，避免 SDK 在部分环境触发 415
         if (!skipSessionCheck && statusEl) statusEl.textContent = '云同步状态：已发送请求，等待 Supabase 响应…';
         let results = await this.fetchUserDataViaRest(userIdStr);
-        if (timedOut) {
-          // 已经超时，直接放弃后续处理，交给用户稍后重试
-          return false;
-        }
         if (results && results.length > 0) {
           if (userIdStr && results.length > 1) {
             results = results.slice(0, 1);
