@@ -1643,45 +1643,60 @@
       return true;
     },
     
-    // 数据压缩函数 - 减少数据传输量
+    // 数据压缩函数 - 减少数据传输量，只保留云端需要的关键信息
     compressUserData(data) {
       // 创建数据的深拷贝
       const compressed = JSON.parse(JSON.stringify(data));
       
-      // 1. 清理历史数据
+      // 1. 仅保留班级及学生的关键信息，裁剪冗余字段
       if (compressed.classes) {
-        for (const cls of compressed.classes) {
-          // 限制历史记录长度
-          if (cls.groupPointHistory && cls.groupPointHistory.length > 100) {
-            cls.groupPointHistory = cls.groupPointHistory.slice(-100); // 只保留最近100条
+        compressed.classes = compressed.classes.map(cls => {
+          const slimClass = {
+            id: cls.id,
+            name: cls.name,
+            stagePoints: cls.stagePoints,
+            totalStages: cls.totalStages,
+            // 与教学配置强相关的几块保留：自定义加/扣分项、奖品、抽奖奖品、广播配置、宠物照片配置
+            plusItems: cls.plusItems,
+            minusItems: cls.minusItems,
+            prizes: cls.prizes,
+            lotteryPrizes: cls.lotteryPrizes,
+            broadcastMessages: cls.broadcastMessages,
+            petCategoryPhotos: cls.petCategoryPhotos
+          };
+
+          // 学生列表：只保留与教学密切相关的字段（姓名、学号、积分、宠物状态等）
+          if (Array.isArray(cls.students)) {
+            slimClass.students = cls.students.map(stu => {
+              const slimStudent = {
+                id: stu.id,
+                name: stu.name,
+                // 当前积分与历史徽章
+                points: stu.points || 0,
+                badgesSpent: stu.badgesSpent || 0,
+                badgesEarned: stu.badgesEarned || 0,
+                // 宠物当前状态及已养成记录、装扮
+                pet: stu.pet || null,
+                completedPets: stu.completedPets || [],
+                accessories: stu.accessories || [],
+                // 基本展示信息
+                avatar: stu.avatar || null
+              };
+
+              // 最近的加减分记录保留少量，方便撤回/查看（最多 50 条）
+              if (Array.isArray(stu.scoreHistory) && stu.scoreHistory.length > 0) {
+                slimStudent.scoreHistory = stu.scoreHistory.slice(-50);
+              }
+
+              return slimStudent;
+            });
           }
-          
-          // 清理空数组和对象
-          if (cls.groups && cls.groups.length === 0) {
-            delete cls.groups;
-          }
-          if (cls.plusItems && cls.plusItems.length === 0) {
-            delete cls.plusItems;
-          }
-          if (cls.minusItems && cls.minusItems.length === 0) {
-            delete cls.minusItems;
-          }
-          if (cls.prizes && cls.prizes.length === 0) {
-            delete cls.prizes;
-          }
-          if (cls.lotteryPrizes && cls.lotteryPrizes.length === 0) {
-            delete cls.lotteryPrizes;
-          }
-          if (cls.broadcastMessages && cls.broadcastMessages.length === 0) {
-            delete cls.broadcastMessages;
-          }
-          if (cls.petCategoryPhotos && Object.keys(cls.petCategoryPhotos).length === 0) {
-            delete cls.petCategoryPhotos;
-          }
-        }
+
+          return slimClass;
+        });
       }
       
-      // 2. 移除不必要的字段
+      // 2. 清理全局上的临时字段
       delete compressed.tempData;
       delete compressed.uploading;
       
