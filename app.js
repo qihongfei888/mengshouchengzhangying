@@ -519,6 +519,8 @@
       
       // 同时保存到内存
       memoryStorage[USER_LIST_KEY] = list;
+      // 用户列表变化时也写入磁盘快照
+      persistLocalStorageToDisk();
       return true;
     } catch (e) {
       console.error('localStorage 写入失败:', e);
@@ -549,6 +551,42 @@
       throw new Error('存储空间不足，请清理浏览器数据后重试');
     }
   }
+  // ===== 离线桌面版：将 localStorage 快照同步到磁盘（通过 Electron preload 暴露的 offlineStorage）=====
+  async function restoreLocalStorageFromDisk() {
+    try {
+      if (!window.offlineStorage || !window.offlineStorage.loadLocal) return;
+      const snapshot = await window.offlineStorage.loadLocal();
+      if (!snapshot || typeof snapshot !== 'object') return;
+      Object.keys(snapshot).forEach((key) => {
+        try {
+          localStorage.setItem(key, snapshot[key]);
+        } catch (e) {}
+      });
+      console.log('已从本地磁盘快照恢复数据');
+    } catch (e) {
+      console.warn('从本地磁盘快照恢复数据失败:', e);
+    }
+  }
+
+  async function persistLocalStorageToDisk() {
+    try {
+      if (!window.offlineStorage || !window.offlineStorage.saveLocal) return;
+      const snapshot = {};
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          snapshot[key] = localStorage.getItem(key);
+        }
+      } catch (e) {
+        console.warn('收集 localStorage 快照失败:', e);
+      }
+      await window.offlineStorage.saveLocal(snapshot);
+      console.log('已将本地数据写入磁盘快照');
+    } catch (e) {
+      console.warn('写入本地磁盘快照失败:', e);
+    }
+  }
+
   var useIndexedDB = typeof IndexedDBManager !== 'undefined' && IndexedDBManager.isSupported();
   var indexedDBReady = false;
   
@@ -733,6 +771,8 @@
         const timestamp = (data && data.lastModified) || new Date().toISOString();
         localStorage.setItem(backupKey, JSON.stringify({ data: data, timestamp: timestamp }));
       }
+      // 关键数据变更后，同步一份 localStorage 快照到磁盘（仅离线桌面版生效）
+      persistLocalStorageToDisk();
       // 如果没有用户ID但有保存的用户ID，也更新用户特定的键
       if (!userId) {
         const currentUserStr = localStorage.getItem(CURRENT_USER_KEY);
@@ -3283,13 +3323,53 @@
     },
     getPlusItems() {
       const data = getUserData();
-      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
-      return currentClass ? (currentClass.plusItems || DEFAULT_PLUS_ITEMS) : DEFAULT_PLUS_ITEMS;
+      const currentClass = data.classes && this.currentClassId
+        ? data.classes.find(c => c.id === this.currentClassId)
+        : null;
+
+      // 优先使用班级内自定义加分项
+      let plusItems = currentClass && Array.isArray(currentClass.plusItems)
+        ? currentClass.plusItems
+        : null;
+
+      // 如果班级里还没有配置，但旧版全局存储里有自定义加分项，则做一次迁移并使用它
+      if ((!plusItems || plusItems.length === 0)) {
+        const globalPlus = getStorage(STORAGE_KEYS.plusItems, []);
+        if (globalPlus && globalPlus.length > 0) {
+          plusItems = globalPlus;
+          if (currentClass) {
+            currentClass.plusItems = [...globalPlus];
+            setUserData(data);
+          }
+        }
+      }
+
+      return plusItems && plusItems.length > 0 ? plusItems : DEFAULT_PLUS_ITEMS;
     },
     getMinusItems() {
       const data = getUserData();
-      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
-      return currentClass ? (currentClass.minusItems || DEFAULT_MINUS_ITEMS) : DEFAULT_MINUS_ITEMS;
+      const currentClass = data.classes && this.currentClassId
+        ? data.classes.find(c => c.id === this.currentClassId)
+        : null;
+
+      // 优先使用班级内自定义扣分项
+      let minusItems = currentClass && Array.isArray(currentClass.minusItems)
+        ? currentClass.minusItems
+        : null;
+
+      // 如果班级里还没有配置，但旧版全局存储里有自定义扣分项，则做一次迁移并使用它
+      if ((!minusItems || minusItems.length === 0)) {
+        const globalMinus = getStorage(STORAGE_KEYS.minusItems, []);
+        if (globalMinus && globalMinus.length > 0) {
+          minusItems = globalMinus;
+          if (currentClass) {
+            currentClass.minusItems = [...globalMinus];
+            setUserData(data);
+          }
+        }
+      }
+
+      return minusItems && minusItems.length > 0 ? minusItems : DEFAULT_MINUS_ITEMS;
     },
     getPrizes() {
       const data = getUserData();
@@ -4986,7 +5066,21 @@
           icon: accessory.icon
         });
       }
-      
+
+      // 自动为当前宠物装备新获得的装扮，确保学生卡片上可以立即看到
+      if (s.pet) {
+        if (!Array.isArray(s.pet.accessories)) {
+          s.pet.accessories = [];
+        }
+        if (!s.pet.accessories.some(a => a.id === accessory.id)) {
+          s.pet.accessories.push({
+            id: accessory.id,
+            name: accessory.name,
+            icon: accessory.icon
+          });
+        }
+      }
+
       this.saveStudents();
       this.renderStudents();
       this.renderStore();
@@ -8732,7 +8826,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', async function () {
-    alert('DOMContentLoaded事件触发');
+    // 离线桌面版：优先从磁盘恢复 localStorage 快照
+    await restoreLocalStorageFromDisk();
     var importBackupEl = document.getElementById('importBackupFile');
     if (importBackupEl) {
       importBackupEl.addEventListener('change', function (e) {

@@ -1,6 +1,6 @@
 // 运行模式：'online' 用 Supabase 云同步；'offline' 只用本地存储
-// 拷贝整包到无网电脑时，可以把这里改成 'offline'
-window.RUN_MODE = 'online';
+// 随身U盘版默认使用离线模式
+window.RUN_MODE = 'offline';
 
 // Supabase 配置（与你 Supabase 项目一致）
 window.SUPABASE_URL = 'https://cuipqszkjsxixmbrvwdg.supabase.co';

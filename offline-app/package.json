@@ -1,0 +1,16 @@
+{
+  "name": "tongxinchongban-offline",
+  "version": "1.0.0",
+  "description": "童心宠伴 无网版（桌面离线版）",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . tongxinchongban-offline --platform=win32 --arch=x64 --out=dist --overwrite"
+  },
+  "dependencies": {
+    "electron": "^31.0.0"
+  },
+  "devDependencies": {
+    "electron-packager": "^17.1.2"
+  }
+}
