@@ -73,6 +73,58 @@
     }
   }
 
+  // Supabase 账户相关辅助方法（accounts 表）
+  async function supabaseUpsertAccount(username, password, userId) {
+    const client = ensureSupabaseClient();
+    if (!client || !navigator.onLine) return false;
+    try {
+      const payload = {
+        username: String(username).trim(),
+        password: String(password),
+        user_id: String(userId).trim()
+      };
+      const { error } = await client
+        .from('accounts')
+        .upsert(payload, { onConflict: 'username' });
+      if (error) {
+        console.error('Supabase 账号写入失败:', error);
+        return false;
+      }
+      console.log('Supabase 账号已写入/更新:', payload.username);
+      return true;
+    } catch (e) {
+      console.error('Supabase 账号写入异常:', e);
+      return false;
+    }
+  }
+
+  async function supabaseFetchAccount(username, password) {
+    const client = ensureSupabaseClient();
+    if (!client || !navigator.onLine) return null;
+    try {
+      const { data, error } = await client
+        .from('accounts')
+        .select('username,password,user_id')
+        .eq('username', String(username).trim())
+        .limit(1);
+      if (error) {
+        console.error('Supabase 查询账号失败:', error);
+        return null;
+      }
+      if (!data || data.length === 0) return null;
+
+      const row = data[0];
+      if (row.password !== password) {
+        console.warn('Supabase 账号密码不匹配');
+        return null;
+      }
+      return row; // { username, password, user_id }
+    } catch (e) {
+      console.error('Supabase 查询账号异常:', e);
+      return null;
+    }
+  }
+
   // 实时同步管理类
   class RealtimeSync {
     constructor() {
@@ -908,8 +960,33 @@
           }
         }
         
-        const users = getUserList();
-        const user = users.find(u => u.username === username && u.password === password);
+        let users = getUserList();
+        let user = users.find(u => u.username === username && u.password === password);
+
+        // 如果本地未找到用户，尝试从 Supabase 账户表查询
+        if (!user && navigator.onLine) {
+          try {
+            console.log('本地未找到账号，尝试从 Supabase 查询账户...');
+            const account = await supabaseFetchAccount(username, password);
+            if (account && account.user_id) {
+              const userId = account.user_id;
+              user = {
+                id: userId,
+                username,
+                password,
+                devices: [],
+                maxDevices: 1
+              };
+              users.push(user);
+              setUserList(users);
+              console.log('从 Supabase 导入账号到本地，userId:', userId);
+            } else {
+              console.log('Supabase 中未找到该账号或密码不匹配');
+            }
+          } catch (e) {
+            console.error('从 Supabase 查询账号时出错:', e);
+          }
+        }
         if (user) {
           // 记录成功登录
           recordLoginAttempt(username, true);
@@ -1159,6 +1236,16 @@
           console.error('同步授权码状态到云端失败:', e);
           // 即使同步失败，也要确保用户信息已保存到本地
           console.log('用户信息已保存到本地');
+        }
+
+        // 将账号写入 Supabase，支持跨设备登录
+        try {
+          const accountOk = await supabaseUpsertAccount(newUser.username, newUser.password, newUser.id);
+          if (!accountOk && navigator.onLine) {
+            console.warn('账号未同步到 Supabase，手机端可能无法登录该账号');
+          }
+        } catch (e) {
+          console.warn('写入 Supabase 账号异常:', e);
         }
         
         this.currentUserId = newUser.id;
