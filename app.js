@@ -2100,10 +2100,14 @@
       };
     },
     
-    // 备份云端数据
+    // 备份云端数据（旧 Bmob 方案，当前若无 Bmob 则直接跳过）
     async backupCloudData() {
       if (!navigator.onLine || !this.currentUserId) {
         console.log('无网络连接或无用户ID，跳过备份');
+        return false;
+      }
+      if (typeof Bmob === 'undefined') {
+        console.log('当前未配置 Bmob，跳过云端备份（已改用 Supabase 同步）');
         return false;
       }
       
@@ -2130,9 +2134,12 @@
       }
     },
     
-    // 清理旧备份
+    // 清理旧备份（旧 Bmob 方案，当前若无 Bmob 则直接跳过）
     async cleanupOldBackups() {
       if (!navigator.onLine || !this.currentUserId) {
+        return false;
+      }
+      if (typeof Bmob === 'undefined') {
         return false;
       }
       
@@ -2159,10 +2166,14 @@
       }
     },
     
-    // 从备份恢复数据
+    // 从备份恢复数据（旧 Bmob 方案，当前若无 Bmob 则直接跳过）
     async restoreFromBackup(backupId) {
       if (!navigator.onLine || !this.currentUserId) {
         console.log('无网络连接或无用户ID，跳过恢复');
+        return false;
+      }
+      if (typeof Bmob === 'undefined') {
+        console.log('当前未配置 Bmob，跳过从云端备份恢复（已改用 Supabase 同步）');
         return false;
       }
       
