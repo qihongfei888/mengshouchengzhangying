@@ -569,117 +569,62 @@
   }
   
   function getUserData() {
-    // 首先尝试获取当前用户ID
+    // 按当前登录用户隔离数据，不再把“默认用户”的数据复制给新账号
     let userId = app.currentUserId;
     if (!userId) {
-      // 如果没有用户ID，尝试从localStorage中获取
       try {
         const currentUserStr = localStorage.getItem(CURRENT_USER_KEY);
         if (currentUserStr) {
           const currentUser = JSON.parse(currentUserStr);
-          if (currentUser.id) {
-            userId = currentUser.id;
-          }
+          if (currentUser.id) userId = currentUser.id;
         }
       } catch (e) {
-        // 尝试从内存存储中获取
-        try {
-          const currentUserStr = memoryStorage[CURRENT_USER_KEY];
-          if (currentUserStr) {
-            const currentUser = JSON.parse(currentUserStr);
-            if (currentUser.id) {
-              userId = currentUser.id;
-            }
-          }
-        } catch (e) {
-          console.error('读取当前用户ID失败:', e);
-        }
+        console.error('读取当前用户ID失败:', e);
       }
     }
-    
-    var key = userId ? USER_DATA_PREFIX + userId : 'class_pet_default_user';
-    
-    // 尝试从多个来源获取数据
-    let data = null;
-    
+
+    // 未登录用户：返回一份临时数据结构，不写入任何账号，避免污染
+    if (!userId) {
+      console.warn('未找到当前用户ID，返回临时数据结构（不会写入其它账号）');
+      return {
+        version: '1.0.0',
+        classes: [],
+        currentClassId: null,
+        systemName: '童心宠伴',
+        theme: 'coral',
+        lastModified: new Date().toISOString()
+      };
+    }
+
+    const key = USER_DATA_PREFIX + userId;
+
     // 1. 尝试从内存存储获取
     try {
-      data = memoryStorage[key];
-      if (data) {
+      const cached = memoryStorage[key];
+      if (cached) {
         console.log('从内存存储获取数据成功');
-        return data;
+        return cached;
       }
     } catch (e) {
       console.error('从内存存储获取数据失败:', e);
     }
-    
-    // 2. 尝试从localStorage获取
+
+    // 2. 尝试从 localStorage 获取
     try {
-      var v = localStorage.getItem(key);
+      const v = localStorage.getItem(key);
       if (v) {
-        data = JSON.parse(v);
+        const data = JSON.parse(v);
         console.log('从localStorage获取数据成功');
-        // 更新内存存储
         memoryStorage[key] = data;
         return data;
       }
     } catch (e) {
       console.error('从localStorage获取数据失败:', e);
     }
-    
-    // 3. 如果当前用户有ID但没有数据，尝试从默认键获取
-    if (userId) {
-      try {
-        var defaultData = localStorage.getItem('class_pet_default_user');
-        if (defaultData) {
-          data = JSON.parse(defaultData);
-          console.log('从默认键获取数据成功');
-          // 更新用户特定的存储
-          memoryStorage[key] = data;
-          try {
-            localStorage.setItem(key, JSON.stringify(data));
-          } catch (e) {
-            console.error('更新用户特定存储失败:', e);
-          }
-          return data;
-        }
-      } catch (e) {
-        console.error('从默认键获取数据失败:', e);
-      }
-    }
-    
-    // 4. 如果没有用户ID但有保存的用户ID，尝试从用户特定的键中读取
-    if (!userId) {
-      try {
-        const currentUserStr = localStorage.getItem(CURRENT_USER_KEY);
-        if (currentUserStr) {
-          const currentUser = JSON.parse(currentUserStr);
-          if (currentUser.id) {
-            const userKey = USER_DATA_PREFIX + currentUser.id;
-            const userV = localStorage.getItem(userKey);
-            if (userV) {
-              data = JSON.parse(userV);
-              console.log('从用户特定键获取数据成功');
-              // 更新内存存储和默认键
-              memoryStorage[userKey] = data;
-              memoryStorage['class_pet_default_user'] = data;
-              try {
-                localStorage.setItem('class_pet_default_user', userV);
-              } catch (e) {
-                console.error('更新默认键存储失败:', e);
-              }
-              return data;
-            }
-          }
-        }
-      } catch (e) {
-        console.error('读取用户特定数据失败:', e);
-      }
-    }
-    
-    // 5. 如果都没有数据，返回默认数据结构，而不是空对象
-    console.log('所有存储都没有数据，返回默认数据结构');
-    data = {
+
+    // 3. 当前用户完全没有历史数据：为该用户创建一份全新的默认数据结构
+    console.log('当前用户无任何历史数据，为该用户创建全新的默认数据结构');
+    const data = {
       version: '1.0.0',
       classes: [],
       currentClassId: null,
@@ -687,16 +632,15 @@
       theme: 'coral',
       lastModified: new Date().toISOString()
     };
-    
-    // 保存默认数据到存储
+
     try {
       memoryStorage[key] = data;
       localStorage.setItem(key, JSON.stringify(data));
-      console.log('默认数据已保存到存储');
+      console.log('已为当前用户保存默认数据结构');
     } catch (e) {
-      console.error('保存默认数据失败:', e);
+      console.error('保存当前用户默认数据失败:', e);
     }
-    
+
     return data;
   }
   
