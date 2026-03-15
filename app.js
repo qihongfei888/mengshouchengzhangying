@@ -2764,6 +2764,20 @@
         console.log('无网络连接，跳过云端同步');
         return false;
       }
+      
+      // 登录场景优先保护本地完整数据：
+      // 如果本地已经有班级/学生等数据，则认为本地是“权威源”，
+      // 直接返回 false，让上层逻辑走“使用本地数据并尝试上传到云端”的分支，避免被不完整的云端数据覆盖。
+      try {
+        const localData = getUserData();
+        const localClasses = (localData && Array.isArray(localData.classes)) ? localData.classes : [];
+        if (skipSessionCheck && localClasses.length > 0) {
+          console.log('登录场景下本地已有数据，跳过从云端覆盖本地，后续将以本地为准同步到云端');
+          return false;
+        }
+      } catch (e) {
+        console.warn('检查本地数据是否存在时出错，继续执行云端同步:', e);
+      }
       if (this.syncing) {
         console.log('正在同步中，跳过重复同步');
         return false;
