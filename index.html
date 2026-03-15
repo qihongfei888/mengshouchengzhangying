@@ -534,16 +534,17 @@
             <p class="setting-hint">推荐做法：在【有数据的设备】点击「上传到云端」，在【新设备】登录后点击「从云端恢复到本机」，这样可安全完成多端同步。</p>
             <div id="backupStatus" class="backup-status"></div>
             <div class="export-buttons">
-              <button type="button" class="btn btn-primary btn-cute" onclick="app.syncToCloud()">
+              <button type="button" id="btnSyncToCloud" class="btn btn-primary btn-cute" onclick="app.syncToCloud()">
                 <svg class="btn-icon" aria-hidden="true"><use href="#icon-upload"/></svg>
                 上传到云端（Supabase）
               </button>
-              <button type="button" class="btn btn-secondary btn-cute" onclick="app.syncFromCloud()">
+              <button type="button" id="btnSyncFromCloud" class="btn btn-secondary btn-cute" onclick="app.syncFromCloud()">
                 <svg class="btn-icon" aria-hidden="true"><use href="#icon-download"/></svg>
                 从云端恢复到本机
               </button>
               <button type="button" class="btn btn-secondary btn-cute" onclick="app.exportAllData()">📦 导出本地备份（JSON）</button>
             </div>
+            <p id="cloudSyncStatus" class="setting-hint" style="margin-top:8px;color:#888;">云同步状态：等待操作</p>
             <div class="import-section" style="margin-top: 20px; padding-top: 20px; border-top: 2px dashed var(--border);">
               <h4>📥 从文件导入本地数据</h4>
               <p class="setting-hint">适用于离线备份。支持导入备份文件(.json)或学生名单(.xlsx/.csv)</p>

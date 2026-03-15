@@ -2446,19 +2446,27 @@
     
     // 同步到云存储 - 优化版，支持2000人同时使用
     async syncToCloud() {
+      const statusEl = document.getElementById('cloudSyncStatus');
+      const btnUpload = document.getElementById('btnSyncToCloud');
+      const btnDownload = document.getElementById('btnSyncFromCloud');
       // 无网时不进行云同步
       if (!navigator.onLine) {
         console.log('无网络连接，跳过云端同步');
-        return;
+        if (statusEl) statusEl.textContent = '云同步状态：当前无网络，未上传';
+        return false;
       }
       
       // 防止重复同步
       if (this.syncing) {
         console.log('正在同步中，跳过重复同步');
-        return;
+        if (statusEl) statusEl.textContent = '云同步状态：正在进行中，请稍候…';
+        return false;
       }
       
       this.syncing = true;
+      if (statusEl) statusEl.textContent = '云同步状态：正在上传到 Supabase…';
+      if (btnUpload) btnUpload.disabled = true;
+      if (btnDownload) btnDownload.disabled = true;
       
       try {
         // 1. 获取并迁移数据
@@ -2469,7 +2477,8 @@
         // 2. 数据验证
         if (!this.validateUserData(userData)) {
           console.error('数据验证失败，跳过同步');
-          return;
+          if (statusEl) statusEl.textContent = '云同步状态：数据格式不合法，未上传';
+          return false;
         }
         
         // 3. 数据压缩（减少传输量）
@@ -2524,6 +2533,9 @@
         }
         if (!uploadOk) {
           console.log('云端上传失败或未配置，数据已保存在本地');
+          if (statusEl) statusEl.textContent = '云同步状态：上传失败，数据已保存在本地';
+        } else {
+          if (statusEl) statusEl.textContent = '云同步状态：✅ 上传成功';
         }
         
         // 无论是否上传成功，都更新本地并重载，确保刷新不丢数据
@@ -2532,11 +2544,15 @@
         
       } catch (e) {
         console.error('云同步失败:', e);
+        if (statusEl) statusEl.textContent = '云同步状态：上传异常，数据已保存在本地';
         // 异常时不再自动恢复，避免过多API请求
         // 数据已保存到本地，下次同步时会重试
       } finally {
         this.syncing = false;
+        if (btnUpload) btnUpload.disabled = false;
+        if (btnDownload) btnDownload.disabled = false;
       }
+      return true;
     },
     
     // 从云存储同步授权码（无需用户ID），使用 Supabase
@@ -2709,8 +2725,12 @@
 
     // 从云存储同步。skipSessionCheck=true 表示本次是登录流程，不校验“其他设备登录”
     async syncFromCloud(skipSessionCheck) {
+      const statusEl = document.getElementById('cloudSyncStatus');
+      const btnUpload = document.getElementById('btnSyncToCloud');
+      const btnDownload = document.getElementById('btnSyncFromCloud');
       if (!navigator.onLine) {
         console.log('无网络连接，跳过云端同步');
+        if (!skipSessionCheck && statusEl) statusEl.textContent = '云同步状态：当前无网络，无法从云端恢复';
         return false;
       }
       
@@ -2733,6 +2753,9 @@
       }
       
       this.syncing = true;
+      if (!skipSessionCheck && statusEl) statusEl.textContent = '云同步状态：正在从 Supabase 拉取数据…';
+      if (!skipSessionCheck && btnUpload) btnUpload.disabled = true;
+      if (!skipSessionCheck && btnDownload) btnDownload.disabled = true;
       let syncSuccess = false;
       const userIdStr = this.currentUserId ? String(this.currentUserId).trim() : '';
       console.log('开始从Bmob同步数据，用户ID:', userIdStr || '(无)');
@@ -3026,6 +3049,11 @@
         console.error('从云存储同步失败:', e);
       } finally {
         this.syncing = false;
+        if (!skipSessionCheck && btnUpload) btnUpload.disabled = false;
+        if (!skipSessionCheck && btnDownload) btnDownload.disabled = false;
+        if (!skipSessionCheck && statusEl && !syncSuccess) {
+          statusEl.textContent = '云同步状态：未从云端加载任何数据（可能云端暂无数据）';
+        }
       }
       
       // 2. 云存储没有数据或同步失败，尝试从本地备份加载（不允许多端空备份覆盖本地有效数据）
