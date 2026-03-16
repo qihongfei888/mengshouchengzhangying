@@ -126,12 +126,6 @@
         <button class="nav-btn" data-page="students"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 学生管理</button>
         <button class="nav-btn" data-page="groups"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 小组管理</button>
         <button class="nav-btn" data-page="pets"><svg class="nav-icon" aria-hidden="true"><use href="#icon-pet"/></svg> 领养宠物</button>
-        <div class="nav-tools">
-          <button type="button" class="nav-btn nav-tools-btn" onclick="app.toggleToolsMenu(event)"><span class="nav-icon" aria-hidden="true">🧰</span> 小工具</button>
-          <div class="nav-tools-menu" id="toolsMenu" style="display:none">
-            <button type="button" class="nav-tools-item" onclick="app.randomRollCall(); app.closeToolsMenu()">🎲 随机点名</button>
-          </div>
-        </div>
         <button class="nav-btn" data-page="honor"><svg class="nav-icon" aria-hidden="true"><use href="#icon-trophy"/></svg> 光荣榜</button>
         <button class="nav-btn" data-page="store"><svg class="nav-icon" aria-hidden="true"><use href="#icon-cart"/></svg> 勋章商店</button>
         <button class="nav-btn" data-page="settings"><svg class="nav-icon" aria-hidden="true"><use href="#icon-settings"/></svg> 系统设置</button>
@@ -168,6 +162,32 @@
           <button class="btn btn-primary btn-cute" onclick="app.showPage('students')">👥 管理学生</button>
           <button class="btn btn-secondary btn-cute" onclick="app.showPage('pets')">🐣 领养宠物</button>
           <button class="btn btn-secondary btn-cute" onclick="app.showPage('honor')">🏆 查看光荣榜</button>
+        </div>
+        <!-- 小工具面板 -->
+        <div class="tool-grid">
+          <h3 class="tool-grid-title">班级小工具</h3>
+          <div class="tool-grid-list">
+            <button class="tool-card" onclick="app.showPage('students')">
+              <div class="tool-card-icon">👥</div>
+              <div class="tool-card-main">管理学生</div>
+              <div class="tool-card-sub">添加学生 / 导入花名册</div>
+            </button>
+            <button class="tool-card" onclick="app.randomRollCall()">
+              <div class="tool-card-icon">🎲</div>
+              <div class="tool-card-main">随机点名</div>
+              <div class="tool-card-sub">螺旋滚动 + 语音播报</div>
+            </button>
+            <button class="tool-card" onclick="app.openSeatArrangeTool()">
+              <div class="tool-card-icon">🪑</div>
+              <div class="tool-card-main">排座位</div>
+              <div class="tool-card-sub">随机/按视力，支持手动调整</div>
+            </button>
+            <button class="tool-card" onclick="app.openTermCommentTool()">
+              <div class="tool-card-icon">📝</div>
+              <div class="tool-card-main">期末评语</div>
+              <div class="tool-card-sub">自动生成 + 卡片导出</div>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -729,10 +749,178 @@
         <input type="text" id="addStudentName" class="login-input" placeholder="请输入姓名">
       </div>
       <div class="form-group">
+        <label>身高（cm，可选）</label>
+        <input type="number" id="addStudentHeight" class="login-input" placeholder="如：160" min="0" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>视力（可选）</label>
+        <div class="form-row">
+          <input type="number" id="addStudentVisionLeft" class="login-input" placeholder="左眼 如：4.8" step="0.1" min="0">
+          <input type="number" id="addStudentVisionRight" class="login-input" placeholder="右眼 如：4.9" step="0.1" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>家长电话（可选）</label>
+        <input type="text" id="addStudentParentPhone" class="login-input" placeholder="如：138xxxxxxx">
+      </div>
+      <div class="form-group">
+        <label>家庭情况备注（可选）</label>
+        <textarea id="addStudentFamilyNote" class="login-input" placeholder="如：过敏/留守/特殊情况..." rows="3"></textarea>
+      </div>
+      <div class="form-group">
         <label>头像（可选）</label>
         <div id="addStudentAvatarOptions" class="score-btns"></div>
       </div>
       <button type="button" class="btn btn-primary btn-block" onclick="app.saveAddStudent()">保存</button>
+    </div>
+  </div>
+
+  <!-- 排座位弹窗 -->
+  <div id="seatArrangeModal" class="modal">
+    <div class="modal-content modal-content-large">
+      <button class="modal-close" onclick="app.closeSeatArrangeModal()">&times;</button>
+      <h3>🪑 排座位小工具</h3>
+      <div class="seat-toolbar">
+        <div class="seat-toolbar-row">
+          <label>列</label>
+          <input type="number" id="seatCols" class="login-input seat-small" value="8" min="1" max="20">
+          <label>行</label>
+          <input type="number" id="seatRows" class="login-input seat-small" value="6" min="1" max="20">
+          <button class="btn btn-secondary" onclick="app.generateSeatPlan(false)">随机分座</button>
+          <button class="btn btn-outline" onclick="app.generateSeatPlan(true)">按身高/视力分座</button>
+          <button class="btn btn-primary" onclick="app.saveSeatPlan()">保存座位</button>
+        </div>
+        <div class="seat-toolbar-row">
+          <label><input type="checkbox" id="seatRuleLowVisionFront" checked> 视力较差优先前排</label>
+          <label>阈值</label>
+          <input type="number" id="seatVisionThreshold" class="login-input seat-small" value="4.8" step="0.1" min="0">
+          <label>前排行数</label>
+          <input type="number" id="seatFrontRows" class="login-input seat-small" value="2" min="0" max="10">
+          <span class="seat-tip">提示：点击座位可“锁定/解锁”，锁定后随机不会移动。</span>
+        </div>
+      </div>
+      <div class="seat-stage">
+        <div class="seat-board" id="seatBoard"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 选座学生弹窗 -->
+  <div id="seatStudentPickerModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeSeatStudentPicker()">&times;</button>
+      <h3>选择学生坐这个座位</h3>
+      <input type="hidden" id="seatPickerRow" value="">
+      <input type="hidden" id="seatPickerCol" value="">
+      <div class="form-group">
+        <label>学生</label>
+        <select id="seatStudentSelect" class="login-input"></select>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="seatPickerLock"> 锁定该座位（下次随机不改变）</label>
+      </div>
+      <div class="form-group">
+        <button class="btn btn-primary" onclick="app.assignStudentToSeat()">确定</button>
+        <button class="btn btn-secondary" onclick="app.clearSeatStudent()">清空此座位</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 期末评语弹窗 -->
+  <div id="termCommentModal" class="modal">
+    <div class="modal-content modal-content-large">
+      <button class="modal-close" onclick="app.closeTermCommentTool()">&times;</button>
+      <h3>📝 期末评语生成器</h3>
+      <div class="term-layout">
+        <div class="term-left">
+          <div class="form-group">
+            <label>选择学生</label>
+            <select id="termCommentStudentSelect" class="login-input">
+              <option value="">-- 请选择学生 --</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>评语风格</label>
+              <select id="termCommentStyle" class="login-input">
+                <option value="encourage">鼓励型</option>
+                <option value="objective">客观型</option>
+                <option value="strict">严格型</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>卡片抬头</label>
+              <input id="termCommentTitle" class="login-input" value="期末评语">
+            </div>
+          </div>
+          <div class="term-teacher-settings">
+            <h4>📚 教师设置</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label>平时表现</label>
+                <select id="termPerf" class="login-input">
+                  <option value="优秀">优秀</option>
+                  <option value="良好">良好</option>
+                  <option value="一般">一般</option>
+                  <option value="需努力">需努力</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>学习态度</label>
+                <select id="termStudy" class="login-input">
+                  <option value="积极">积极</option>
+                  <option value="认真">认真</option>
+                  <option value="尚可">尚可</option>
+                  <option value="需加强自律">需加强自律</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>课堂参与</label>
+                <select id="termClass" class="login-input">
+                  <option value="活跃">活跃</option>
+                  <option value="正常">正常</option>
+                  <option value="稍显内向">稍显内向</option>
+                  <option value="需要更多参与">需要更多参与</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>作业完成</label>
+                <select id="termHomework" class="login-input">
+                  <option value="完成良好">完成良好</option>
+                  <option value="基本按时完成">基本按时完成</option>
+                  <option value="偶有拖欠">偶有拖欠</option>
+                  <option value="需要家校共同督促">需要家校共同督促</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>特别备注（可选）</label>
+              <textarea id="termRemark" class="login-input" rows="3" placeholder="如：在某方面有突出进步/需要重点关注的习惯等…"></textarea>
+            </div>
+          </div>
+          <div class="term-actions">
+            <button class="btn btn-primary" onclick="app.generateTermComment()">✨ 生成评语</button>
+            <button class="btn btn-secondary" onclick="app.generateTermComment(true)">重新生成</button>
+            <button class="btn btn-outline" onclick="app.saveTermComment()">💾 保存评语</button>
+          </div>
+          <div class="form-group">
+            <label>评语内容（可手动修改）</label>
+            <textarea id="termCommentContent" class="login-input" rows="6" placeholder="点击「生成评语」按钮，系统将根据学生表现自动生成评语…"></textarea>
+          </div>
+        </div>
+        <div class="term-right">
+          <h4>🖼 卡片预览</h4>
+          <div id="termCommentCard" class="term-card">
+            <!-- JS 渲染 -->
+          </div>
+          <div class="term-card-actions">
+            <button class="btn btn-secondary" onclick="app.openTermCommentPrint()">🖨 打印卡片</button>
+            <button class="btn btn-outline" onclick="app.openTermCommentPreviewWindow()">🖼 导出图片</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
