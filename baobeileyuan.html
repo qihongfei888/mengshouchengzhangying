@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>宝贝乐园 · Baby Paradise</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #fef6ff;
+      --card-bg: #ffffff;
+      --accent: #ff9a9e;
+      --accent-2: #fecf73;
+      --accent-3: #a0e7e5;
+      --accent-4: #b4f8c8;
+      --text-main: #333333;
+      --text-soft: #777777;
+      --danger: #ff6b81;
+      --success: #2ecc71;
+      --shadow: rgba(0, 0, 0, 0.09);
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(circle at top left, #ffe9f3 0, #fef6ff 40%, #ffffff 100%);
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(255,230,109,0.2) 0%, transparent 55%),
+        radial-gradient(circle at 80% 15%, rgba(255,107,107,0.18) 0%, transparent 55%),
+        radial-gradient(circle at 50% 40%, rgba(255,255,255,0.6) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .app-shell {
+      max-width: 480px;
+      margin: 12px auto 32px;
+      padding: 0 10px 70px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #ff9a9e, #fecf73);
+      color: #fff;
+      box-shadow: 0 16px 40px var(--shadow);
+    }
+
+    header h1 {
+      font-size: 22px;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    header h1 span.badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.25);
+    }
+
+    .kid-avatar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .kid-avatar-main {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 20%, #fff 0, #ffd4e3 45%, #ff9a9e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 8px 24px rgba(255, 112, 147, 0.7);
+    }
+
+    .kid-avatar-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 12px;
+    }
+
+    .kid-avatar-info strong {
+      font-size: 13px;
+    }
+
+    .kid-avatar-info span {
+      opacity: 0.9;
+    }
+
+    .tag-pill {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: rgba(255,255,255,0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .top-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      margin-bottom: 12px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .xp-bar {
+      flex: 1;
+      min-width: 220px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 999px;
+      padding: 8px 10px;
+      box-shadow: 0 10px 24px var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .xp-label {
+      font-size: 13px;
+      color: var(--text-soft);
+      white-space: nowrap;
+    }
+
+    .xp-fill-wrap {
+      position: relative;
+      flex: 1;
+      height: 12px;
+      border-radius: 999px;
+      background: #f5f5f5;
+      overflow: hidden;
+    }
+
+    .xp-fill {
+      position: absolute;
+      inset: 0;
+      width: 40%;
+      background: linear-gradient(90deg, #fecf73, #ff9a9e);
+      border-radius: inherit;
+      box-shadow: 0 0 16px rgba(255, 154, 158, 0.9);
+    }
+
+    .xp-text {
+      font-size: 12px;
+      color: var(--text-soft);
+      white-space: nowrap;
+      padding-left: 4px;
+    }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* 生日提醒条 */
+    .birthday-strip {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 16px;
+      background: linear-gradient(120deg, rgba(255,255,255,0.9), #ffe9f6);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .birthday-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .birthday-main-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: #ff9a9e;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 14px rgba(255,154,158,0.6);
+      font-size: 16px;
+    }
+
+    .birthday-title {
+      font-weight: 600;
+    }
+
+    .birthday-sub {
+      font-size: 11px;
+      color: var(--text-soft);
+      margin-top: 2px;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px dashed rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.5);
+      color: #a64254;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff9a9e;
+    }
+
+    nav.tabs {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scrollbar-width: none;
+    }
+
+    nav.tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      border: none;
+      outline: none;
+      background: rgba(255,255,255,0.9);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-soft);
+      box-shadow: 0 8px 20px var(--shadow);
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, color 0.12s ease;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 600px) {
+      nav.tabs {
+        position: fixed;
+        bottom: 6px;
+        left: 0;
+        right: 0;
+        padding: 6px 10px;
+        margin-top: 0;
+        background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.96));
+        backdrop-filter: blur(12px);
+        justify-content: space-between;
+        z-index: 20;
+      }
+      .tab-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 6px 4px;
+        font-size: 12px;
+      }
+      .tab-btn span.icon {
+        font-size: 17px;
+      }
+      .tab-btn span:nth-child(2) {
+        display: none;
+      }
+      main {
+        margin-top: 10px;
+      }
+    }
+
+    .tab-btn span.icon {
+      font-size: 15px;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(120deg, #ff9a9e, #fecf73);
+      color: #fff;
+      box-shadow: 0 12px 26px rgba(255, 154, 158, 0.7);
+      transform: translateY(-1px);
+    }
+
+    .tab-btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    main {
+      margin-top: 12px;
+    }
+
+    .page {
+      display: none;
+      animation: fadeInUp 0.25s ease;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    @media (min-width: 840px) {
+      .grid-2 {
+        grid-template-columns: 2fr 1.4fr;
+      }
+      .grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 839px) {
+      .grid-2,
+      .grid-3 {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      background: rgba(255,255,255,0.96);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      box-shadow: 0 12px 30px var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-subtitle {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(160,231,229,0.3);
+      color: #197278;
+    }
+
+    .card-bg-bubbles::before {
+      content: "";
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.55), rgba(255,255,255,0));
+      top: -40px;
+      right: -20px;
+      opacity: 0.9;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      background: linear-gradient(120deg, #fecf73, #ff9a9e);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(255, 154, 158, 0.7);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+      white-space: nowrap;
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(0.97);
+      box-shadow: 0 5px 14px rgba(0,0,0,0.22);
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.9);
+      color: var(--text-main);
+      box-shadow: 0 6px 16px var(--shadow);
+    }
+
+    .btn-danger {
+      background: linear-gradient(120deg, #ff6b81, #ff9a9e);
+      box-shadow: 0 10px 24px rgba(255, 107, 129, 0.7);
+    }
+
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 11px;
+      box-shadow: 0 5px 12px var(--shadow);
+    }
+
+    .btn-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn[disabled] {
+      opacity: 0.55;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .score-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .score-badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(180,248,200,0.8);
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-badge span.value {
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .tiny-label {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .habit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .habit-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(250,250,250,0.96);
+      border: 1px dashed rgba(255,154,158,0.4);
+    }
+
+    .habit-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .habit-main span.icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff2f6;
+    }
+
+    .habit-meta {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .habit-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .habit-score-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #ff6b81;
+    }
+
+    /* 加减分浮动特效 */
+    .score-float {
+      position: fixed;
+      left: 50%;
+      top: 52%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      font-size: 26px;
+      font-weight: 800;
+      color: #ff9a9e;
+      text-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      pointer-events: none;
+      animation: scorePop 0.9s ease-out forwards;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-float span {
+      display: inline-block;
+    }
+
+    @keyframes scorePop {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 20px) scale(0.6);
+      }
+      35% {
+        opacity: 1;
+        transform: translate(-50%, -6px) scale(1.05);
+      }
+      75% {
+        opacity: 1;
+        transform: translate(-50%, -28px) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -54px) scale(0.9);
+      }
+    }
+
+    .pet-layout {
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (min-width: 840px) {
+      .pet-layout {
+        grid-template-columns: 1.4fr 1.6fr;
+      }
+    }
+
+    .pet-stage-card {
+      background: linear-gradient(135deg, #a0e7e5, #b4f8c8);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+      color: #14524d;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(160,231,229,0.6);
+    }
+
+    .pet-stage-card::before {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.7), transparent);
+      right: -60px;
+      top: -40px;
+      opacity: 0.8;
+    }
+
+    .pet-main-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .pet-avatar {
+      width: 90px;
+      height: 90px;
+      border-radius: 30px;
+      border: 3px solid rgba(255,255,255,0.9);
+      background: radial-gradient(circle at 35% 25%, #fff 0, #fee 40%, #ff9a9e 100%);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pet-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .pet-info {
+      flex: 1;
+      position: relative;
+      z-index: 2;
+    }
+
+    .pet-info h3 {
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+
+    .pet-info small {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .pet-progress-wrap {
+      margin-top: 8px;
+    }
+
+    .pet-progress-label {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    .pet-progress-bar {
+      margin-top: 4px;
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.6);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pet-progress-fill {
+      position: absolute;
+      inset: 0;
+      width: 65%;
+      background: linear-gradient(90deg, #ffeaa7, #ff7675);
+      box-shadow: 0 0 12px rgba(255,118,117,0.9);
+    }
+
+    .pet-stage-tags {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .pet-stage-pill {
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.9);
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pet-stage-pill span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff9a9e;
+    }
+
+    .pet-store-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    @media (min-width: 720px) {
+      .pet-store-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .store-item {
+      padding: 8px 9px;
+      border-radius: 12px;
+      background: #fef9e7;
+      border: 1px solid rgba(254,207,115,0.45);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .store-line1 {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .store-name {
+      font-weight: 600;
+    }
+
+    .store-badge {
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.9);
+    }
+
+    .store-price {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .store-tags {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .store-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      gap: 6px;
+    }
+
+    .store-actions .btn {
+      box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+    }
+
+    .lottery-layout {
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (min-width: 840px) {
+      .lottery-layout {
+        grid-template-columns: 1.7fr 1.3fr;
+      }
+    }
+
+    .lottery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .lottery-cell {
+      height: 64px;
+      border-radius: 15px;
+      background: #fffbee;
+      border: 2px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      gap: 2px;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+    }
+
+    .lottery-cell span.icon {
+      font-size: 16px;
+    }
+
+    .lottery-cell.active {
+      border-color: #ff9a9e;
+      background: #fff0f6;
+      box-shadow: 0 0 0 2px rgba(255,154,158,0.3);
+      transform: translateY(-2px);
+    }
+
+    .lottery-log {
+      max-height: 200px;
+      overflow-y: auto;
+      padding-right: 4px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .lottery-log-item {
+      padding: 4px 0;
+      border-bottom: 1px dashed rgba(0,0,0,0.06);
+    }
+
+    /* 成绩对比 */
+    .grade-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .grade-table th,
+    .grade-table td {
+      padding: 4px 6px;
+      border-bottom: 1px dashed rgba(0,0,0,0.06);
+      text-align: left;
+    }
+
+    .grade-table th {
+      color: var(--text-soft);
+      font-weight: 500;
+    }
+
+    .grade-up {
+      color: #2ecc71;
+      font-weight: 600;
+    }
+
+    .grade-down {
+      color: #ff6b81;
+      font-weight: 600;
+    }
+
+    .behavior-layout {
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (min-width: 840px) {
+      .behavior-layout {
+        grid-template-columns: 1.7fr 1.3fr;
+      }
+    }
+
+    .behavior-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 11px;
+    }
+
+    .behavior-tag {
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px dashed rgba(0,0,0,0.08);
+      background: #fafafa;
+    }
+
+    .behavior-config-list {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .report-card-preview {
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      background: linear-gradient(135deg, #fef9e7, #ffe6f7);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .report-header-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .report-tags {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      font-size: 10px;
+      margin-top: 4px;
+    }
+
+    .report-tag {
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.9);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.08);
+      padding: 8px 10px;
+      font-size: 13px;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #ff9a9e;
+      box-shadow: 0 0 0 2px rgba(255, 154, 158, 0.25);
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    @media (min-width: 720px) {
+      .settings-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .setting-item {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fafbff;
+      border: 1px dashed rgba(0,0,0,0.06);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .setting-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .setting-label span {
+      font-size: 13px;
+    }
+
+    .setting-label small {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      border-radius: 999px;
+      background: #e0e4f5;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: transform 0.15s ease;
+    }
+
+    .toggle.on {
+      background: linear-gradient(120deg, #ff9a9e, #fecf73);
+    }
+
+    .toggle.on .toggle-thumb {
+      transform: translateX(20px);
+    }
+
+    footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: var(--text-soft);
+      text-align: center;
+      opacity: 0.75;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <div>
+        <h1>宝贝乐园 <span class="badge">家长版 · 行为激励</span></h1>
+        <div class="chips-row">
+          <div class="chip">
+            <span class="dot"></span>
+            <span>今天已经表扬了 <strong id="todayPraiseCount">2</strong> 次</span>
+          </div>
+          <div class="chip">
+            <span class="dot" style="background:#b4f8c8;"></span>
+            <span>目标：每天累计 5 颗星星</span>
+          </div>
+        </div>
+      </div>
+      <div class="kid-avatar">
+        <div class="kid-avatar-main" id="kidAvatarCircle">
+          <span id="kidAvatarInitial">乐</span>
+        </div>
+        <div class="kid-avatar-info">
+          <strong id="kidName">乐乐</strong>
+          <span id="kidAge">7 岁 · 小学一年级</span>
+          <div class="tag-pill">
+            当前心情：<span id="kidMoodText">小太阳</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="top-strip">
+      <div class="xp-bar">
+        <div class="xp-label">今日表现积分</div>
+        <div class="xp-fill-wrap">
+          <div class="xp-fill" id="xpFill"></div>
+        </div>
+        <div class="xp-text">
+          <span id="todayScore">36</span> / <span id="todayTarget">50</span>
+        </div>
+      </div>
+      <div class="chips-row">
+        <div class="chip">
+          <span class="dot" style="background:#a0e7e5;"></span>
+          <span>总星星：<strong id="totalStars">128</strong></span>
+        </div>
+        <div class="chip">
+          <span class="dot" style="background:#ff9a9e;"></span>
+          <span>宠物等级：<strong id="petLevelLabel">Lv.3 小勇士</strong></span>
+        </div>
+      </div>
+      <div class="birthday-strip" id="birthdayStrip" style="display:none;">
+        <div class="birthday-main">
+          <div class="birthday-main-icon">🎂</div>
+          <div>
+            <div class="birthday-title" id="childBirthdayText">距离宝贝生日还有 30 天</div>
+            <div class="birthday-sub" id="familyBirthdayText">本周还有：妈妈生日倒计时 5 天</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-page="dashboard">
+        <span class="icon">🏠</span><span>今天</span>
+      </button>
+      <button class="tab-btn" data-page="behavior">
+        <span class="icon">⭐</span><span>行为&任务</span>
+      </button>
+      <button class="tab-btn" data-page="pet">
+        <span class="icon">🐾</span><span>宠物乐园</span>
+      </button>
+      <button class="tab-btn" data-page="lottery">
+        <span class="icon">🎁</span><span>积分商店&转盘</span>
+      </button>
+      <button class="tab-btn" data-page="report">
+        <span class="icon">📜</span><span>成长报告</span>
+      </button>
+      <button class="tab-btn" data-page="settings">
+        <span class="icon">⚙️</span><span>家长设置</span>
+      </button>
+    </nav>
+
+    <main>
+      <section class="page active" id="page-dashboard">
+        <div class="grid grid-2">
+          <div class="card card-bg-bubbles">
+            <div class="card-header">
+              <div>
+                <div class="card-title">
+                  <span>✨ 今日小目标</span>
+                  <span class="pill">家长一键加减分</span>
+                </div>
+                <div class="card-subtitle">根据孩子表现，点击对应按钮，系统会自动累计积分并记录。</div>
+              </div>
+              <button class="btn btn-sm btn-ghost" id="btnQuickPraise">一键表扬</button>
+            </div>
+
+            <div class="score-row">
+              <div class="score-badge">
+                <span>今日总积分</span>
+                <span class="value" id="todayScoreBadge">36</span>
+                <span class="tiny-label">分</span>
+              </div>
+              <div class="tiny-label">连续达标天数：<strong id="streakDays">3</strong> 天</div>
+            </div>
+
+            <div class="habit-list">
+              <div class="habit-item">
+                <div class="habit-main">
+                  <span class="icon">📚</span>
+                  <div>
+                    <div>按时完成作业</div>
+                    <div class="habit-meta">+5 分 · 每天一次</div>
+                  </div>
+                </div>
+                <div class="habit-actions">
+                  <span class="habit-score-label">+5</span>
+                  <button class="btn btn-sm btn-ghost" data-delta="+5" data-reason="按时完成作业">完成</button>
+                </div>
+              </div>
+              <div class="habit-item">
+                <div class="habit-main">
+                  <span class="icon">🧹</span>
+                  <div>
+                    <div>主动帮忙做家务</div>
+                    <div class="habit-meta">+3 分 · 可多次</div>
+                  </div>
+                </div>
+                <div class="habit-actions">
+                  <span class="habit-score-label">+3</span>
+                  <button class="btn btn-sm btn-ghost" data-delta="+3" data-reason="主动帮忙做家务">完成</button>
+                </div>
+              </div>
+              <div class="habit-item">
+                <div class="habit-main">
+                  <span class="icon">🕊️</span>
+                  <div>
+                    <div>顶嘴/发脾气</div>
+                    <div class="habit-meta">-2 分 · 帮助孩子学会情绪管理</div>
+                  </div>
+                </div>
+                <div class="habit-actions">
+                  <span class="habit-score-label" style="color:#555;">-2</span>
+                  <button class="btn btn-sm btn-danger" data-delta="-2" data-reason="顶嘴/发脾气">记录</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📓 今日事件时间线</div>
+              <button class="btn btn-sm btn-ghost" id="btnClearTimeline">清空</button>
+            </div>
+            <div id="timelineList" style="max-height:260px;overflow-y:auto;font-size:12px;color:var(--text-soft);padding-right:4px;">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-behavior">
+        <div class="behavior-layout">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">⭐ 行为清单</div>
+                <div class="card-subtitle">把最想培养的 3~5 个习惯放在这里，便于每天坚持。</div>
+              </div>
+              <button class="btn btn-sm btn-ghost" id="btnAddHabit">自定义</button>
+            </div>
+            <div class="behavior-tags">
+              <span class="behavior-tag">早睡早起</span>
+              <span class="behavior-tag">写作业不拖拉</span>
+              <span class="behavior-tag">主动问好</span>
+              <span class="behavior-tag">少看视频</span>
+            </div>
+            <div class="habit-list" style="margin-top:10px;">
+              <div class="habit-item">
+                <div class="habit-main">
+                  <span class="icon">🌙</span>
+                  <div>
+                    <div>21:30 前上床</div>
+                    <div class="habit-meta">+4 分 · 每天一次</div>
+                  </div>
+                </div>
+                <div class="habit-actions">
+                  <span class="habit-score-label">+4</span>
+                  <button class="btn btn-sm btn-ghost" data-delta="+4" data-reason="按时睡觉">完成</button>
+                </div>
+              </div>
+              <div class="habit-item">
+                <div class="habit-main">
+                  <span class="icon">💬</span>
+                  <div>
+                    <div>今天主动说“谢谢”“对不起”</div>
+                    <div class="habit-meta">+2 分 · 每天一次</div>
+                  </div>
+                </div>
+                <div class="habit-actions">
+                  <span class="habit-score-label">+2</span>
+                  <button class="btn btn-sm btn-ghost" data-delta="+2" data-reason="礼貌用语">完成</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">🎯 今日小任务</div>
+                <div class="card-subtitle">适合写作业、阅读、练琴、运动等番茄钟式任务。</div>
+              </div>
+              <button class="btn btn-sm btn-ghost" id="btnStartFocus">开始 15 分钟专注</button>
+            </div>
+            <div class="behavior-config-list">
+              <p>示例任务：</p>
+              <ul style="margin-left:16px;margin-top:4px;line-height:1.6;">
+                <li>阅读绘本 15 分钟：+3 分</li>
+                <li>练琴 20 分钟：+4 分</li>
+                <li>运动/跳绳 15 分钟：+3 分</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-pet">
+        <div class="pet-layout">
+          <div>
+            <div class="pet-stage-card">
+              <div class="pet-main-row">
+                <div class="pet-avatar" id="petAvatar">
+                  <span id="petAvatarEmoji">🐱</span>
+                  <img id="petImage" alt="pet">
+                </div>
+                <div class="pet-info">
+                  <h3 id="petName">阳光小猫咪</h3>
+                  <small id="petStageText">阶段 3 · 正在变成超级守护者</small>
+                  <div class="pet-progress-wrap">
+                    <div class="pet-progress-label">
+                      距离下一级还差 <strong id="petXpToNext">24</strong> 颗星星
+                    </div>
+                    <div class="pet-progress-bar">
+                      <div class="pet-progress-fill" id="petXpFill"></div>
+                    </div>
+                  </div>
+              <div class="pet-stage-tags">
+                <span class="pet-stage-pill" id="petStageBadge">
+                  <span class="dot"></span>
+                  <span id="petStageLabel">阶段 3 · 小勇士</span>
+                </span>
+                <span class="report-tag" id="petHint1">每天达到 40 分就喂食一次</span>
+                <span class="report-tag" id="petHint2">连续 7 天达标自动进化</span>
+              </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:10px;">
+              <div class="card-header">
+                <div class="card-title">🍬 宠物道具栏</div>
+                <button class="btn btn-sm btn-ghost" id="btnEquipRandom">一键装扮</button>
+              </div>
+              <div class="pet-store-grid">
+                <div class="store-item" data-item-id="glasses" data-price="15">
+                  <div class="store-line1">
+                    <span class="store-name">星星眼镜</span>
+                    <span class="store-badge">已拥有</span>
+                  </div>
+                  <div class="store-price">消耗：15 分</div>
+                  <div class="store-tags">佩戴后，宝贝完成任务会有闪闪发光的特效。</div>
+                  <div class="store-actions">
+                    <span class="tiny-label">已解锁</span>
+                    <button class="btn btn-sm btn-ghost store-buy" data-item-id="glasses" disabled>已拥有</button>
+                  </div>
+                </div>
+                <div class="store-item" data-item-id="tail" data-price="30">
+                  <div class="store-line1">
+                    <span class="store-name">彩虹尾巴</span>
+                    <span class="store-badge">未解锁</span>
+                  </div>
+                  <div class="store-price">消耗：30 分</div>
+                  <div class="store-tags">解锁后，连续 3 天达标会出现彩虹特效。</div>
+                  <div class="store-actions">
+                    <span class="tiny-label">适合作为中等奖励</span>
+                    <button class="btn btn-sm store-buy" data-item-id="tail">用 30 分购买</button>
+                  </div>
+                </div>
+                <div class="store-item" data-item-id="cape" data-price="60">
+                  <div class="store-line1">
+                    <span class="store-name">超级守护披风</span>
+                    <span class="store-badge">未解锁</span>
+                  </div>
+                  <div class="store-price">消耗：60 分</div>
+                  <div class="store-tags">适合设为“大目标”，达成一次孩子特别有成就感。</div>
+                  <div class="store-actions">
+                    <span class="tiny-label">建议达成一项【大任务】后购买</span>
+                    <button class="btn btn-sm store-buy" data-item-id="cape">用 60 分购买</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">💬 宠物对话</div>
+              <button class="btn btn-sm btn-ghost" id="btnPetSpeak">说一句鼓励</button>
+            </div>
+            <div id="petDialog" style="font-size:13px;color:var(--text-soft);line-height:1.7;min-height:120px;">
+              今天的你，已经比昨天更棒啦！继续加油，小小守护者正在偷偷帮你积攒力量～
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-lottery">
+        <div class="lottery-layout">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">🎡 幸运转盘</div>
+                <div class="card-subtitle">用 <strong>10 分</strong> 换一次抽奖机会，奖励可设置为亲子活动/小礼物等。</div>
+              </div>
+              <button class="btn btn-sm" id="btnSpin">立即抽一次（-10 分）</button>
+            </div>
+            <div class="lottery-grid" id="lotteryGrid">
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🎁 奖励记录</div>
+              <button class="btn btn-sm btn-ghost" id="btnClearLotteryLog">清空</button>
+            </div>
+            <div class="lottery-log" id="lotteryLog">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-report">
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📜 一键生成成长评语</div>
+              <button class="btn btn-sm btn-ghost" id="btnGenerateReport">自动生成</button>
+            </div>
+            <div style="font-size:12px;color:var(--text-soft);margin-bottom:6px;">
+              根据最近一周的表现，自动帮你生成一段温暖的评语，家长可以随时修改再发送给孩子。
+            </div>
+            <textarea id="reportText"></textarea>
+            <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-sm" id="btnCopyReport">复制文字</button>
+              <button class="btn btn-sm btn-ghost" id="btnFakePrint">预览为卡片</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">💌 评语预览卡片</div>
+            </div>
+            <div class="report-card-preview" id="reportPreview">
+              <div class="report-header-line">
+                <span>宝贝：<strong id="previewKidName">乐乐</strong></span>
+                <span>本周小结</span>
+              </div>
+              <div id="previewText" style="margin-top:4px;">
+                本周的你像一颗小太阳，认真完成任务，也在学习如何管理自己的小情绪，爸爸妈妈为你感到骄傲。
+              </div>
+              <div class="report-tags">
+                <span class="report-tag">坚持</span>
+                <span class="report-tag">勇敢表达</span>
+                <span class="report-tag">爱学习</span>
+              </div>
+              <div style="text-align:right;margin-top:8px;font-size:11px;">
+                家长签名：________
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:12px;">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">📊 成绩记录与对比</div>
+                <div class="card-subtitle">记录每次考试成绩，对比同一科目不同时间的变化趋势。</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;margin-bottom:6px;">
+              <input id="inputGradeSubject" type="text" placeholder="科目，如 数学" style="flex:1 1 90px;min-width:90px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;">
+              <input id="inputGradeTerm" type="text" placeholder="学期/考试，如 期中" style="flex:1 1 90px;min-width:90px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;">
+              <input id="inputGradeScore" type="number" min="0" max="150" placeholder="分数" style="width:80px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;">
+              <input id="inputGradeDate" type="date" style="width:130px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;">
+              <button class="btn btn-sm" id="btnAddGrade">添加记录</button>
+            </div>
+            <table class="grade-table" id="gradeTable">
+              <thead>
+                <tr>
+                  <th>科目</th>
+                  <th>考试/时间</th>
+                  <th>分数</th>
+                  <th>对比上次</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">🌈 大事件纪念册</div>
+                <div class="card-subtitle">记录孩子成长中的重要时刻，配上照片更有仪式感。</div>
+              </div>
+              <button class="btn btn-sm btn-ghost" id="btnAddBigEvent">添加一条</button>
+            </div>
+            <div style="font-size:12px;color:var(--text-soft);margin-bottom:4px;">
+              示例：今天学会自己系鞋带、第一次参加演出、今年 8 岁生日、一次特别的旅行等。
+            </div>
+            <div id="bigEventForm" style="display:none;margin-bottom:8px;">
+              <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;margin-bottom:4px;">
+                <input id="inputEventTitle" type="text" placeholder="标题，如 今天满 8 岁啦！" style="flex:1 1 140px;min-width:140px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;">
+                <input id="inputEventDate" type="date" style="width:130px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;">
+              </div>
+              <textarea id="inputEventDesc" placeholder="简单描述这个重要时刻，比如：今天我们一起去动物园庆祝生日，宝贝特别喜欢长颈鹿……" style="min-height:60px;"></textarea>
+              <input id="inputEventImageUrl" type="text" placeholder="可选：事件照片 URL（支持你自己上传的图片地址）" style="margin-top:4px;width:100%;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;font-size:12px;">
+              <div style="margin-top:6px;display:flex;gap:6px;justify-content:flex-end;">
+                <button class="btn btn-sm btn-ghost" id="btnCancelEvent">取消</button>
+                <button class="btn btn-sm" id="btnSaveEvent">保存</button>
+              </div>
+            </div>
+            <div id="bigEventList" style="max-height:260px;overflow-y:auto;padding-right:4px;font-size:12px;color:var(--text-soft);">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-settings">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">⚙️ 家长设置</div>
+            <button class="btn btn-sm btn-ghost" id="btnResetAll">全部重置</button>
+          </div>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <div class="setting-label">
+                <span>每日目标分数</span>
+                <small>达到后可以喂宠物一次、抽奖一次等。</small>
+              </div>
+              <input id="inputDailyTarget" type="number" min="10" max="200" value="50" style="width:70px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;font-size:12px;">
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-label">
+                <span>是否允许负分</span>
+                <small>关闭后，只能加分，不会出现“扣分”字样。</small>
+              </div>
+              <div class="toggle" id="toggleNegative">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-label">
+                <span>语音鼓励</span>
+                <small>完成任务时，自动播放一句小小鼓励。</small>
+              </div>
+              <div class="toggle on" id="toggleVoice">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-label">
+                <span>简化模式</span>
+                <small>只保留“今天”和“宠物”两个页面，适合年纪更小的孩子。</small>
+              </div>
+              <div class="toggle" id="toggleSimpleMode">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;border-top:1px dashed rgba(0,0,0,0.06);padding-top:10px;">
+            <div class="card-header" style="padding:0 0 6px 0;">
+              <div class="card-title">🎂 生日与家人提醒</div>
+            </div>
+            <div class="settings-grid">
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>主题风格</span>
+                  <small>根据孩子喜好切换颜色风格，适配手机端。</small>
+                </div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+                  <button class="btn btn-sm btn-ghost" id="btnThemeCandy" style="font-size:11px;">糖果</button>
+                  <button class="btn btn-sm btn-ghost" id="btnThemeForest" style="font-size:11px;">森林</button>
+                  <button class="btn btn-sm btn-ghost" id="btnThemeSpace" style="font-size:11px;">星空</button>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>自定义主色</span>
+                  <small>高级选项：可选择一个自己喜欢的主色。</small>
+                </div>
+                <input id="inputThemeAccent" type="color" value="#ff9a9e" style="width:52px;height:28px;border-radius:999px;border:none;padding:0;cursor:pointer;">
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>宝贝生日</span>
+                  <small>用于计算每年的生日倒计时。</small>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                  <input id="inputChildName" type="text" placeholder="宝贝称呼，如 乐乐" style="width:120px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;font-size:12px;margin-bottom:2px;">
+                  <input id="inputChildBirthday" type="date" style="width:140px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;font-size:12px;">
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>家人生日 1</span>
+                  <small>例如 妈妈 / 爸爸 / 爷爷 等。</small>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                  <input id="inputFamily1Name" type="text" placeholder="称呼，如 妈妈" style="width:120px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;font-size:12px;margin-bottom:2px;">
+                  <input id="inputFamily1Birthday" type="date" style="width:140px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;font-size:12px;">
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>家人生日 2</span>
+                  <small>可以留空，不强制填写。</small>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                  <input id="inputFamily2Name" type="text" placeholder="称呼，如 爸爸" style="width:120px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;font-size:12px;margin-bottom:2px;">
+                  <input id="inputFamily2Birthday" type="date" style="width:140px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;font-size:12px;">
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>宠物图片地址</span>
+                  <small>支持填入你准备好的主流动漫人物图片 URL。</small>
+                </div>
+                <input id="inputPetImageUrl" type="text" placeholder="https://...jpg / .png" style="width:210px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);padding:4px 6px;font-size:12px;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>当前为原型预览版本 · 所有数据仅保存在本地浏览器中</footer>
+  </div>
+
+  <script>
+    const state = {
+      todayScore: 36,
+      todayTarget: 50,
+      totalStars: 128,
+      kidName: "乐乐",
+      timeline: [],
+      lotteryItems: [
+        { label: "一起看电影", icon: "🎬" },
+        { label: "晚睡 30 分钟", icon: "🌙" },
+        { label: "亲子游戏 30 分钟", icon: "🧩" },
+        { label: "选择晚餐菜单", icon: "🍽️" },
+        { label: "双倍星星卡", icon: "✨" },
+        { label: "讲一个新故事", icon: "📖" },
+        { label: "周末小礼物", icon: "🎁" },
+        { label: "拥抱 10 秒钟", icon: "🤗" },
+        { label: "再抽一次", icon: "🔁" }
+      ],
+      allowNegative: true,
+      voiceOn: true,
+      petLevel: 3,
+      petXp: 36,
+      storeOwned: {
+        glasses: true,
+        tail: false,
+        cape: false
+      },
+      birthdays: {
+        childName: "乐乐",
+        childDate: "",
+        family: [
+          { name: "", date: "" },
+          { name: "", date: "" }
+        ]
+      },
+      petImageUrl: "",
+      grades: [],
+      bigEvents: [],
+      themeMode: "candy",
+      accentColor: ""
+    };
+
+    const themePresets = {
+      candy: {
+        "--bg": "linear-gradient(180deg,#ffe9f3 0,#fef6ff 40%,#ffffff 100%)",
+        "--accent": "#ff9a9e",
+        "--accent-2": "#fecf73",
+        "--accent-3": "#a0e7e5",
+        "--accent-4": "#b4f8c8",
+        "--text-main": "#333333",
+        "--text-soft": "#777777"
+      },
+      forest: {
+        "--bg": "linear-gradient(180deg,#e0f7ec 0,#f6fffb 40%,#ffffff 100%)",
+        "--accent": "#34c759",
+        "--accent-2": "#a3e635",
+        "--accent-3": "#4ade80",
+        "--accent-4": "#bbf7d0",
+        "--text-main": "#1b3523",
+        "--text-soft": "#5b7261"
+      },
+      space: {
+        "--bg": "radial-gradient(circle at top,#1e293b 0,#020617 55%,#020617 100%)",
+        "--accent": "#38bdf8",
+        "--accent-2": "#6366f1",
+        "--accent-3": "#4f46e5",
+        "--accent-4": "#22c55e",
+        "--text-main": "#e5e7eb",
+        "--text-soft": "#9ca3af"
+      }
+    };
+
+    function applyThemeFromState() {
+      const preset = themePresets[state.themeMode] || themePresets.candy;
+      Object.entries(preset).forEach(([k, v]) => {
+        document.documentElement.style.setProperty(k, v);
+      });
+      if (state.accentColor) {
+        document.documentElement.style.setProperty("--accent", state.accentColor);
+      }
+    }
+
+    function $(id) { return document.getElementById(id); }
+
+    function refreshHeader() {
+      $("todayScore").textContent = state.todayScore;
+      $("todayTarget").textContent = state.todayTarget;
+      $("todayScoreBadge").textContent = state.todayScore;
+      $("totalStars").textContent = state.totalStars;
+      $("previewKidName").textContent = state.kidName;
+      $("kidName").textContent = state.kidName;
+      $("kidAvatarInitial").textContent = state.kidName[0] || "";
+      const fill = Math.max(0, Math.min(1, state.todayScore / state.todayTarget));
+      $("xpFill").style.width = (fill * 100) + "%";
+      applyThemeFromState();
+      refreshPetStage();
+      refreshStoreUI();
+      refreshBirthdays();
+    }
+
+    // 根据总星星和宠物经验，展示阶段感更强的宠物成长
+    function refreshPetStage() {
+      const total = state.totalStars;
+      let level = 1;
+      let label = "阶段 1 · 小种子";
+      let avatar = "🌱";
+      let hint1 = "每天坚持完成 1~2 个小任务，就能慢慢发芽。";
+      let hint2 = "累计 20 颗星星后，宠物会变成萌萌幼崽。";
+
+      if (total >= 20 && total < 60) {
+        level = 2;
+        label = "阶段 2 · 萌芽崽";
+        avatar = "🐾";
+        hint1 = "你已经有不少星星啦，再多坚持几天就能长成小勇士。";
+        hint2 = "累计 60 颗星星后，就会进化为小勇士。";
+      } else if (total >= 60 && total < 150) {
+        level = 3;
+        label = "阶段 3 · 小勇士";
+        avatar = "🐱";
+        hint1 = "再继续加油，宠物会获得更多华丽装扮。";
+        hint2 = "累计 150 颗星星后，将解锁守护者形态。";
+      } else if (total >= 150) {
+        level = 4;
+        label = "阶段 4 · 守护者";
+        avatar = "🦄";
+        hint1 = "你已经让宠物完成了最终进化，太厉害啦！";
+        hint2 = "可以把星星设置成长期目标，比如旅行、小礼物等。";
+      }
+
+      state.petLevel = level;
+      $("petAvatar").textContent = avatar;
+      $("petAvatarEmoji").textContent = avatar;
+      $("petLevelLabel").textContent = `Lv.${level} ${label.split("·")[1].trim()}`;
+      $("petStageLabel").textContent = label;
+      $("petStageText").textContent = label + " · 正在陪你一起成长";
+      $("petHint1").textContent = hint1;
+      $("petHint2").textContent = hint2;
+
+      const nextThreshold = level === 1 ? 20 : level === 2 ? 60 : level === 3 ? 150 : 200;
+      const prevThreshold = level === 1 ? 0 : level === 2 ? 20 : level === 3 ? 60 : 150;
+      const progress = Math.max(0, Math.min(1, (total - prevThreshold) / (nextThreshold - prevThreshold)));
+      $("petXpFill").style.width = (progress * 100) + "%";
+      $("petXpToNext").textContent = Math.max(0, nextThreshold - total);
+
+      // 应用自定义宠物图片
+      const img = $("petImage");
+      const emojiEl = $("petAvatarEmoji");
+      if (state.petImageUrl && img) {
+        img.src = state.petImageUrl;
+        img.style.display = "block";
+        if (emojiEl) emojiEl.style.display = "none";
+      } else {
+        if (img) img.style.display = "none";
+        if (emojiEl) emojiEl.style.display = "block";
+      }
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const pageId = "page-" + btn.dataset.page;
+        document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+        const page = $(pageId);
+        if (page) page.classList.add("active");
+      });
+    });
+
+    $("btnQuickPraise").addEventListener("click", () => {
+      applyDelta(3, "一键表扬：今天整体表现很好");
+    });
+
+    document.querySelectorAll(".habit-item button[data-delta]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const delta = parseInt(btn.dataset.delta, 10);
+        const reason = btn.dataset.reason || "行为记录";
+        if (delta < 0 && !state.allowNegative) return;
+        applyDelta(delta, reason);
+      });
+    });
+
+    function applyDelta(delta, reason) {
+      state.todayScore += delta;
+      if (state.todayScore < 0) state.todayScore = 0;
+      if (delta > 0) state.totalStars += delta;
+      addTimelineEntry(delta, reason);
+      refreshHeader();
+      playScoreEffect(delta);
+      if (state.voiceOn && window.speechSynthesis) {
+        const zhText = delta >= 0
+          ? `奖励 ${delta} 分，因为：${reason}`
+          : `扣除 ${Math.abs(delta)} 分，因为：${reason}。我们一起想想下次怎么做得更好。`;
+        speak(zhText);
+      }
+    }
+
+    function addTimelineEntry(delta, reason) {
+      const time = new Date();
+      const hh = String(time.getHours()).padStart(2, "0");
+      const mm = String(time.getMinutes()).padStart(2, "0");
+      const sign = delta >= 0 ? "+" : "";
+      const color = delta > 0 ? "#2ecc71" : (delta < 0 ? "#ff6b81" : "#555");
+      state.timeline.unshift({ time: hh + ":" + mm, delta, reason, color });
+      state.timeline = state.timeline.slice(0, 30);
+      renderTimeline();
+      $("todayPraiseCount").textContent = state.timeline.filter(e => e.delta > 0).length;
+    }
+
+    function renderTimeline() {
+      const list = $("timelineList");
+      list.innerHTML = state.timeline.map(item => {
+        return `<div class="lottery-log-item">
+          <span style="color:#999;">${item.time}</span>
+          <span style="margin-left:6px;">${item.reason}</span>
+          <span style="margin-left:6px;color:${item.color};font-weight:600;">${item.delta > 0 ? "+" + item.delta : item.delta}</span>
+        </div>`;
+      }).join("") || "<div style='color:#bbb;'>今天还没有记录，可以从左侧点击任意行为按钮开始。</div>";
+    }
+
+    $("btnClearTimeline").addEventListener("click", () => {
+      if (!confirm("确定要清空今日时间线吗？")) return;
+      state.timeline = [];
+      renderTimeline();
+    });
+
+    function renderLotteryGrid() {
+      const grid = $("lotteryGrid");
+      grid.innerHTML = "";
+      state.lotteryItems.forEach((item, idx) => {
+        const cell = document.createElement("div");
+        cell.className = "lottery-cell";
+        cell.innerHTML = `<span class="icon">${item.icon}</span><span>${item.label}</span>`;
+        grid.appendChild(cell);
+      });
+    }
+
+    let spinning = false;
+    $("btnSpin").addEventListener("click", () => {
+      if (spinning) return;
+      if (state.todayScore < 10) {
+        alert("今日积分不足 10 分，建议先完成一些任务再来抽奖～");
+        return;
+      }
+      spinning = true;
+      state.todayScore -= 10;
+      refreshHeader();
+
+      const cells = Array.from(document.querySelectorAll(".lottery-cell"));
+      let index = 0;
+      let cycle = 24 + Math.floor(Math.random() * 12);
+      const interval = setInterval(() => {
+        cells.forEach(c => c.classList.remove("active"));
+        cells[index % cells.length].classList.add("active");
+        index++;
+        cycle--;
+        if (cycle <= 0) {
+          clearInterval(interval);
+          spinning = false;
+          const finalIdx = (index - 1) % cells.length;
+          const reward = state.lotteryItems[finalIdx];
+          addLotteryLog(`抽到：${reward.icon} ${reward.label}`);
+          if (reward.label === "再抽一次") {
+            setTimeout(() => $("btnSpin").click(), 600);
+          } else if (state.voiceOn) {
+            speak(`恭喜你获得奖励：${reward.label}`);
+          }
+        }
+      }, 100);
+    });
+
+    function addLotteryLog(text) {
+      const wrap = $("lotteryLog");
+      const time = new Date();
+      const t = time.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+      const div = document.createElement("div");
+      div.className = "lottery-log-item";
+      div.textContent = `[${t}] ${text}`;
+      wrap.prepend(div);
+    }
+
+    $("btnClearLotteryLog").addEventListener("click", () => {
+      if (!confirm("确定要清空奖励记录吗？")) return;
+      $("lotteryLog").innerHTML = "";
+    });
+
+    const petSentences = [
+      "今天的你好认真，我都快被你照亮啦～",
+      "有时候犯小错误也没关系，愿意改就是最棒的勇气。",
+      "坚持完成一件小事，就是在为自己的梦想加油。",
+      "谢谢你照顾我这个小宠物，我也会默默守护你噢。"
+    ];
+    $("btnPetSpeak").addEventListener("click", () => {
+      const text = petSentences[Math.floor(Math.random() * petSentences.length)];
+      $("petDialog").textContent = text;
+      if (state.voiceOn) speak(text);
+    });
+
+    $("btnEquipRandom").addEventListener("click", () => {
+      alert("在正式版中，这里会切换宠物的装扮形象，让孩子直观看到奖励效果。");
+    });
+
+    // 积分商店：根据当前积分和已拥有道具刷新 UI，并支持购买
+    function refreshStoreUI() {
+      document.querySelectorAll(".store-item").forEach(itemEl => {
+        const id = itemEl.dataset.itemId;
+        if (!id) return;
+        const price = parseInt(itemEl.dataset.price || "0", 10);
+        const owned = !!state.storeOwned[id];
+        const badge = itemEl.querySelector(".store-badge");
+        const btn = itemEl.querySelector(".store-buy");
+        if (badge) {
+          badge.textContent = owned ? "已解锁" : "未解锁";
+        }
+        if (btn) {
+          if (owned) {
+            btn.textContent = "已拥有";
+            btn.disabled = true;
+            btn.classList.add("btn-ghost");
+          } else {
+            btn.disabled = state.todayScore < price;
+            btn.textContent = state.todayScore >= price ? `用 ${price} 分购买` : `需要 ${price} 分`;
+          }
+        }
+      });
+    }
+
+    document.querySelectorAll(".store-buy").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.itemId;
+        const itemEl = btn.closest(".store-item");
+        if (!itemEl || !id) return;
+        const price = parseInt(itemEl.dataset.price || "0", 10);
+        if (state.storeOwned[id]) return;
+        if (state.todayScore < price) {
+          alert("当前积分不够，可以先多完成几个任务再来购买～");
+          return;
+        }
+        if (!confirm(`确认使用 ${price} 分购买这个道具吗？`)) return;
+        state.todayScore -= price;
+        state.storeOwned[id] = true;
+        addTimelineEntry(-price, `购买道具：${itemEl.querySelector(".store-name")?.textContent || ""}`);
+        refreshHeader();
+        playScoreEffect(-price);
+      });
+    });
+
+    // 生日计算：返回距离下一次生日还有几天
+    function daysUntilNextBirthday(dateStr) {
+      if (!dateStr) return null;
+      const parts = dateStr.split("-");
+      if (parts.length !== 3) return null;
+      const today = new Date();
+      const year = today.getFullYear();
+      let target = new Date(year, parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      if (target < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+        target = new Date(year + 1, parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      }
+      const diffMs = target.getTime() - today.getTime();
+      const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      return days;
+    }
+
+    function refreshBirthdays() {
+      const strip = $("birthdayStrip");
+      if (!strip) return;
+      const b = state.birthdays;
+      const childName = b.childName || state.kidName || "宝贝";
+      const dChild = daysUntilNextBirthday(b.childDate);
+      const familyInfos = [];
+      b.family.forEach(f => {
+        if (!f.name || !f.date) return;
+        const days = daysUntilNextBirthday(f.date);
+        if (days == null) return;
+        familyInfos.push({ name: f.name, days });
+      });
+      familyInfos.sort((a, b) => a.days - b.days);
+
+      if (dChild == null && familyInfos.length === 0) {
+        strip.style.display = "none";
+        return;
+      }
+      strip.style.display = "block";
+
+      if (dChild != null) {
+        if (dChild === 0) {
+          $("childBirthdayText").textContent = `今天是 ${childName} 的生日，送上最特别的祝福！`;
+        } else if (dChild === 1) {
+          $("childBirthdayText").textContent = `明天就是 ${childName} 的生日啦，准备一个小惊喜吧～`;
+        } else {
+          $("childBirthdayText").textContent = `距离 ${childName} 生日还有 ${dChild} 天`;
+        }
+      } else {
+        $("childBirthdayText").textContent = "可以在设置里填写宝贝生日，系统会自动倒计时提醒。";
+      }
+
+      if (familyInfos.length === 0) {
+        $("familyBirthdayText").textContent = "可以在设置里填写家人生日，和宝贝一起期待重要的日子。";
+      } else {
+        const first = familyInfos[0];
+        const label = first.days === 0
+          ? `${first.name} 今天过生日！`
+          : first.days === 1
+            ? `${first.name} 明天过生日`
+            : `${first.name} 生日还有 ${first.days} 天`;
+        $("familyBirthdayText").textContent = `最近：${label}`;
+      }
+    }
+
+    $("btnGenerateReport").addEventListener("click", () => {
+      const goodCount = state.timeline.filter(e => e.delta > 0).length;
+      const badCount = state.timeline.filter(e => e.delta < 0).length;
+      const base = `${state.kidName} 这段时间整体表现很棒，能够在很多小事情上坚持努力。`;
+      let middle = "";
+      if (goodCount >= 5) {
+        middle += "你已经养成了不少好习惯，比如主动完成任务、懂得和家人合作，这些都让爸爸妈妈非常惊喜。";
+      } else {
+        middle += "虽然还有不少提升空间，但你已经在慢慢尝试改变，这是最重要的一步。";
+      }
+      if (badCount > 0) {
+        middle += " 有时候也会出现小情绪或小粗心，不过没关系，我们会一起想办法，让下一次做得更好。";
+      }
+      const tail = "希望你继续用自己的方式发光，相信你一定可以变成自己心中想要成为的大孩子。";
+      const text = base + "\n\n" + middle + "\n\n" + tail;
+      $("reportText").value = text;
+      updateReportPreview();
+    });
+
+    $("reportText").addEventListener("input", updateReportPreview);
+
+    function updateReportPreview() {
+      $("previewText").textContent = $("reportText").value.trim() ||
+        "本周的你像一颗小太阳，认真完成任务，也在学习如何管理自己的小情绪，爸爸妈妈为你感到骄傲。";
+    }
+
+    $("btnCopyReport").addEventListener("click", async () => {
+      const text = $("reportText").value || $("previewText").textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("已复制到剪贴板，可以粘贴到微信/QQ 发送给孩子～");
+      } catch {
+        alert("复制失败，可以手动全选文字复制。");
+      }
+    });
+
+    $("btnFakePrint").addEventListener("click", () => {
+      alert("正式版中，可以将这张卡片导出为图片/打印。当前为原型预览。");
+    });
+
+    function toggleElem(elem, key) {
+      elem.addEventListener("click", () => {
+        elem.classList.toggle("on");
+        state[key] = elem.classList.contains("on");
+      });
+    }
+
+    toggleElem($("toggleNegative"), "allowNegative");
+    toggleElem($("toggleVoice"), "voiceOn");
+
+    $("toggleSimpleMode").addEventListener("click", () => {
+      $("toggleSimpleMode").classList.toggle("on");
+      const simple = $("toggleSimpleMode").classList.contains("on");
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        const page = btn.dataset.page;
+        if (page === "dashboard" || page === "pet") {
+          btn.style.display = "";
+        } else {
+          btn.style.display = simple ? "none" : "";
+        }
+      });
+    });
+
+    $("btnResetAll").addEventListener("click", () => {
+      if (!confirm("确定要把所有设置和今日积分恢复为默认吗？")) return;
+      state.todayScore = 0;
+      state.totalStars = 0;
+      state.timeline = [];
+      $("inputDailyTarget").value = 50;
+      state.todayTarget = 50;
+      $("toggleNegative").classList.add("on");
+      state.allowNegative = true;
+      $("toggleVoice").classList.add("on");
+      state.voiceOn = true;
+      $("toggleSimpleMode").classList.remove("on");
+      state.birthdays = {
+        childName: state.kidName,
+        childDate: "",
+        family: [
+          { name: "", date: "" },
+          { name: "", date: "" }
+        ]
+      };
+      state.petImageUrl = "";
+      if ($("inputChildName")) $("inputChildName").value = state.kidName;
+      if ($("inputChildBirthday")) $("inputChildBirthday").value = "";
+      if ($("inputFamily1Name")) $("inputFamily1Name").value = "";
+      if ($("inputFamily1Birthday")) $("inputFamily1Birthday").value = "";
+      if ($("inputFamily2Name")) $("inputFamily2Name").value = "";
+      if ($("inputFamily2Birthday")) $("inputFamily2Birthday").value = "";
+      if ($("inputPetImageUrl")) $("inputPetImageUrl").value = "";
+      state.themeMode = "candy";
+      state.accentColor = "";
+      if ($("inputThemeAccent")) $("inputThemeAccent").value = "#ff9a9e";
+      applyThemeFromState();
+      renderTimeline();
+      refreshHeader();
+    });
+
+    $("inputDailyTarget").addEventListener("change", () => {
+      const v = parseInt($("inputDailyTarget").value || "50", 10);
+      state.todayTarget = Math.max(10, Math.min(200, v));
+      $("todayTarget").textContent = state.todayTarget;
+      $("inputDailyTarget").value = state.todayTarget;
+      refreshHeader();
+    });
+
+    $("btnStartFocus").addEventListener("click", () => {
+      alert("专注计时器将在正式版本中加入，这里会显示倒计时并在结束时给出加分建议。");
+    });
+
+    $("btnAddHabit").addEventListener("click", () => {
+      alert("正式版本中，家长可以自定义行为名称和对应分值。");
+    });
+
+    // 绑定生日和宠物图片输入框
+    function bindBirthdayInputs() {
+      const b = state.birthdays;
+      if ($("inputChildName")) $("inputChildName").value = b.childName || state.kidName;
+      if ($("inputChildBirthday")) $("inputChildBirthday").value = b.childDate || "";
+      if ($("inputFamily1Name")) $("inputFamily1Name").value = b.family[0]?.name || "";
+      if ($("inputFamily1Birthday")) $("inputFamily1Birthday").value = b.family[0]?.date || "";
+      if ($("inputFamily2Name")) $("inputFamily2Name").value = b.family[1]?.name || "";
+      if ($("inputFamily2Birthday")) $("inputFamily2Birthday").value = b.family[1]?.date || "";
+      if ($("inputPetImageUrl")) $("inputPetImageUrl").value = state.petImageUrl || "";
+
+      $("inputChildName")?.addEventListener("input", e => {
+        state.birthdays.childName = e.target.value.trim() || state.kidName;
+        refreshBirthdays();
+      });
+      $("inputChildBirthday")?.addEventListener("change", e => {
+        state.birthdays.childDate = e.target.value;
+        refreshBirthdays();
+      });
+      $("inputFamily1Name")?.addEventListener("input", e => {
+        state.birthdays.family[0].name = e.target.value.trim();
+        refreshBirthdays();
+      });
+      $("inputFamily1Birthday")?.addEventListener("change", e => {
+        state.birthdays.family[0].date = e.target.value;
+        refreshBirthdays();
+      });
+      $("inputFamily2Name")?.addEventListener("input", e => {
+        state.birthdays.family[1].name = e.target.value.trim();
+        refreshBirthdays();
+      });
+      $("inputFamily2Birthday")?.addEventListener("change", e => {
+        state.birthdays.family[1].date = e.target.value;
+        refreshBirthdays();
+      });
+
+      $("inputPetImageUrl")?.addEventListener("change", e => {
+        state.petImageUrl = e.target.value.trim();
+        refreshPetStage();
+      });
+    }
+
+    function bindThemeControls() {
+      $("btnThemeCandy")?.addEventListener("click", () => {
+        state.themeMode = "candy";
+        applyThemeFromState();
+      });
+      $("btnThemeForest")?.addEventListener("click", () => {
+        state.themeMode = "forest";
+        applyThemeFromState();
+      });
+      $("btnThemeSpace")?.addEventListener("click", () => {
+        state.themeMode = "space";
+        applyThemeFromState();
+      });
+      $("inputThemeAccent")?.addEventListener("input", e => {
+        state.accentColor = e.target.value;
+        applyThemeFromState();
+      });
+    }
+
+    // 加减分粒子/飘字效果
+    function playScoreEffect(delta) {
+      const el = document.createElement("div");
+      el.className = "score-float";
+      const sign = delta > 0 ? "+" : delta < 0 ? "-" : "";
+      const abs = Math.abs(delta);
+      const icon = delta > 0 ? "⭐" : delta < 0 ? "💧" : "✨";
+      el.innerHTML = `<span>${icon}</span><span>${sign}${abs}</span>`;
+      document.body.appendChild(el);
+      setTimeout(() => {
+        el.remove();
+      }, 900);
+    }
+
+    function speak(text) {
+      try {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = "zh-CN";
+        utter.rate = 1.05;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utter);
+      } catch (e) {
+        console.warn("speech error", e);
+      }
+    }
+
+    renderLotteryGrid();
+    bindBirthdayInputs();
+    bindThemeControls();
+    refreshHeader();
+    renderTimeline();
+    renderGrades();
+    renderBigEvents();
+  </script>
+</body>
+</html>
+

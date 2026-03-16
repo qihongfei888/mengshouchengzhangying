@@ -197,6 +197,11 @@
               <div class="tool-card-main">声贝管理</div>
               <div class="tool-card-sub">观察自习噪声情况</div>
             </button>
+            <button class="tool-card" onclick="app.openGachaMachine()">
+              <div class="tool-card-icon">🥚</div>
+              <div class="tool-card-main">班级扭蛋机</div>
+              <div class="tool-card-sub">积分 / 勋章扭蛋抽奖</div>
+            </button>
           </div>
         </div>
       </section>
@@ -330,23 +335,9 @@
         <div class="store-tabs">
           <button class="store-tab active" data-tab="goods">商品列表</button>
           <button class="store-tab" data-tab="accessories">宠物装扮</button>
-          <button class="store-tab" data-tab="lottery">勋章转盘抽奖</button>
         </div>
         <div id="storeGoods" class="store-goods-grid"></div>
         <div id="storeAccessories" class="store-goods-grid" style="display:none"></div>
-        <div id="storeLottery" class="lottery-section" style="display:none">
-          <div class="lottery-layout">
-            <div class="lottery-student-select">
-              <h4>👤 选择抽奖学生</h4>
-              <div id="lotteryStudentList" class="lottery-student-list"></div>
-            </div>
-            <div class="lottery-wheel-container">
-              <div id="lotteryWheel" class="lottery-wheel"></div>
-              <button class="btn btn-primary lottery-spin-btn" id="lotterySpinBtn">转动抽奖</button>
-              <p class="lottery-hint">消耗 1 枚徽章可抽奖一次，奖品由教师设置</p>
-            </div>
-          </div>
-        </div>
       </section>
 
       <!-- 系统设置 -->
@@ -853,6 +844,68 @@
       </div>
       <div class="attendance-body" id="attendanceList">
         <!-- JS 渲染 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 班级扭蛋机弹窗 -->
+  <div id="gachaModal" class="modal">
+    <div class="modal-content modal-content-large gacha-modal">
+      <button class="modal-close" onclick="app.closeGachaMachine()">&times;</button>
+      <h3>🥚 班级扭蛋机</h3>
+      <div class="gacha-layout">
+        <div class="gacha-left">
+          <div class="form-group">
+            <label>抽奖学生</label>
+            <select id="gachaStudentSelect" class="login-input"></select>
+          </div>
+          <div class="form-group">
+            <label>消耗方式</label>
+            <select id="gachaModeSelect" class="login-input">
+              <option value="points">积分扭蛋（消耗积分）</option>
+              <option value="badges">勋章扭蛋（消耗徽章）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>每次消耗数量</label>
+            <input type="number" id="gachaCostInput" class="login-input" value="1" min="1" max="10">
+            <p class="form-hint">例如：每次抽奖消耗 1 积分或 1 枚勋章。</p>
+          </div>
+          <p class="form-hint">奖品列表在「系统设置 → 🎡 转盘奖品」中设置，与原转盘共享配置。</p>
+        </div>
+        <div class="gacha-right">
+          <div class="gacha-machine" id="gachaMachine">
+            <div class="gacha-top">
+              <div class="gacha-globe">
+                <div class="gacha-glare"></div>
+                <div class="gacha-balls" id="gachaBalls">
+                  <div class="gacha-mini-ball c1" style="--a: 210deg;"><i></i></div>
+                  <div class="gacha-mini-ball c2" style="--a: 245deg;"><i></i></div>
+                  <div class="gacha-mini-ball c3" style="--a: 285deg;"><i></i></div>
+                  <div class="gacha-mini-ball c4" style="--a: 325deg;"><i></i></div>
+                  <div class="gacha-mini-ball c5" style="--a:   5deg;"><i></i></div>
+                  <div class="gacha-mini-ball c6" style="--a:  45deg;"><i></i></div>
+                  <div class="gacha-mini-ball c7" style="--a:  85deg;"><i></i></div>
+                  <div class="gacha-mini-ball c8" style="--a: 125deg;"><i></i></div>
+                  <div class="gacha-mini-ball c9" style="--a: 165deg;"><i></i></div>
+                </div>
+              </div>
+              <div class="gacha-knob" aria-hidden="true"></div>
+            </div>
+            <div class="gacha-base">
+              <div class="gacha-chute" id="gachaChute">
+                <div class="gacha-door left" aria-hidden="true"></div>
+                <div class="gacha-door right" aria-hidden="true"></div>
+                <div class="gacha-dispense-ball" id="gachaDispenseBall">
+                  <div class="gacha-dispense-ball-inner"></div>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary gacha-spin-btn" id="gachaSpinBtn">扭一个蛋</button>
+            <p id="gachaResultText" class="gacha-result-text">点击「扭一个蛋」开始抽奖</p>
+            <div id="gachaResultCard"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

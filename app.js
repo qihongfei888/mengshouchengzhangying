@@ -5294,116 +5294,194 @@
       this.saveStudents();
     },
 
-    renderLotteryWheel() {
-      const prizes = getStorage(STORAGE_KEYS.lotteryPrizes, []);
-      const wheel = document.getElementById('lotteryWheel');
-      if (!wheel) return;
-      if (!prizes.length) { 
-        wheel.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">请先在设置中添加转盘奖品</div>'; 
-        return; 
+    // 班级扭蛋机
+    openGachaMachine() {
+      const modal = document.getElementById('gachaModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      this.renderGachaStudentList();
+      const resultEl = document.getElementById('gachaResultText');
+      if (resultEl) resultEl.textContent = '点击「扭一个蛋」开始抽奖';
+      const machine = document.getElementById('gachaMachine');
+      if (machine) {
+        machine.classList.remove('spinning');
+        machine.classList.remove('sinking');
       }
-      
-      // 渲染转盘上的奖品
-      const segmentAngle = 360 / prizes.length;
-      let gradientColors = [];
-      const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#FFFFD2'];
-      
-      for (let i = 0; i < prizes.length; i++) {
-        const startAngle = i * segmentAngle;
-        const endAngle = (i + 1) * segmentAngle;
-        const color = colors[i % colors.length];
-        gradientColors.push(`${color} ${startAngle}deg ${endAngle}deg`);
+      const chute = document.getElementById('gachaChute');
+      if (chute) chute.classList.remove('open');
+      const dispenseBall = document.getElementById('gachaDispenseBall');
+      if (dispenseBall) dispenseBall.classList.remove('show');
+      const btn = document.getElementById('gachaSpinBtn');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '扭一个蛋';
+        btn.onclick = () => this.spinGacha();
       }
-      
-      wheel.style.background = `conic-gradient(from 0deg, ${gradientColors.join(', ')})`;
-      
-      // 渲染奖品标签
-      let labelsHtml = '';
-      for (let i = 0; i < prizes.length; i++) {
-        const angle = i * segmentAngle + segmentAngle / 2;
-        const radian = (angle - 90) * Math.PI / 180;
-        const x = 50 + 35 * Math.cos(radian);
-        const y = 50 + 35 * Math.sin(radian);
-        labelsHtml += `<div class="lottery-prize-label" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${angle}deg)">${this.escape(prizes[i].name)}</div>`;
-      }
-      
-      wheel.innerHTML = labelsHtml;
-      
-      const btn = document.getElementById('lotterySpinBtn');
-      if (btn) btn.onclick = () => this.spinLottery();
     },
 
-    spinLottery() {
-      // 检查当前学生
-      if (!this._lotteryStudentId) {
-        alert('请先选择要抽奖的学生！');
+    closeGachaMachine() {
+      const modal = document.getElementById('gachaModal');
+      if (modal) modal.style.display = 'none';
+    },
+
+    renderGachaStudentList() {
+      const select = document.getElementById('gachaStudentSelect');
+      if (!select) return;
+      select.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = '-- 请选择学生 --';
+      select.appendChild(placeholder);
+      this.students.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.name}（积分 ${s.points ?? 0} / 勋章 ${this.getAvailableBadges(s)}）`;
+        select.appendChild(opt);
+      });
+    },
+
+    spinGacha() {
+      const select = document.getElementById('gachaStudentSelect');
+      const modeEl = document.getElementById('gachaModeSelect');
+      const costInput = document.getElementById('gachaCostInput');
+      const resultEl = document.getElementById('gachaResultText');
+      const cardEl = document.getElementById('gachaResultCard');
+      const btn = document.getElementById('gachaSpinBtn');
+      const machine = document.getElementById('gachaMachine');
+      const dispenseBall = document.getElementById('gachaDispenseBall');
+      const chute = document.getElementById('gachaChute');
+      if (!select || !modeEl || !costInput || !btn) return;
+
+      const studentId = select.value;
+      if (!studentId) {
+        alert('请先选择要抽奖的学生');
         return;
       }
-      
-      const student = this.students.find(s => s.id === this._lotteryStudentId);
+      const student = this.students.find(s => s.id === studentId);
       if (!student) {
-        alert('学生信息错误！');
+        alert('未找到该学生');
         return;
       }
-      
-      // 检查勋章数量
-      const availableBadges = this.getAvailableBadges(student);
-      if (availableBadges < 1) {
-        alert(`${student.name} 的勋章数量不足！需要 1 枚勋章才能抽奖。`);
-        return;
-      }
-      
+
+      const mode = modeEl.value === 'badges' ? 'badges' : 'points';
+      const cost = Math.max(1, parseInt(costInput.value || '1', 10));
+
       const prizes = getStorage(STORAGE_KEYS.lotteryPrizes, []);
       if (!prizes.length) {
-        alert('暂无奖品，请教师先设置奖品！');
+        alert('暂无奖品，请在「系统设置 → 转盘奖品」中先添加奖品');
         return;
       }
-      
-      const wheel = document.getElementById('lotteryWheel');
-      const btn = document.getElementById('lotterySpinBtn');
-      if (!wheel || !btn) return;
-      
-      // 禁用按钮
+
+      if (mode === 'points') {
+        const currentPoints = student.points ?? 0;
+        if (currentPoints < cost) {
+          alert(`${student.name} 的积分不足，需要至少 ${cost} 分才能抽奖`);
+          return;
+        }
+      } else {
+        const availableBadges = this.getAvailableBadges(student);
+        if (availableBadges < cost) {
+          alert(`${student.name} 的勋章不足，需要至少 ${cost} 枚勋章才能抽奖`);
+          return;
+        }
+      }
+
       btn.disabled = true;
-      btn.textContent = '抽奖中...';
-      
-      // 随机选择奖品
+      btn.textContent = '扭蛋中...';
+      if (cardEl) cardEl.innerHTML = '';
+      if (machine) {
+        machine.classList.remove('spinning');
+        machine.classList.remove('sinking');
+        void machine.offsetWidth;
+        machine.classList.add('spinning');
+      }
+      if (dispenseBall) {
+        dispenseBall.classList.remove('show');
+      }
+      if (chute) {
+        chute.classList.remove('open');
+      }
+
+      // 简单随机
       const idx = Math.floor(Math.random() * prizes.length);
-      const segmentAngle = 360 / prizes.length;
-      const targetAngle = idx * segmentAngle + segmentAngle / 2;
-      
-      // 计算旋转角度（多圈 + 目标角度）
-      const spins = 5 + Math.floor(Math.random() * 3); // 5-7圈
-      const finalAngle = spins * 360 + (360 - targetAngle);
-      
-      // 执行旋转动画
-      wheel.style.transform = `rotate(${finalAngle}deg)`;
-      
-      // 动画结束后显示结果
+      const prize = prizes[idx] || prizes[0];
+
       setTimeout(() => {
-        const prize = prizes[idx];
-        
-        // 扣除勋章
-        student.badgesSpent = (student.badgesSpent || 0) + 1;
-        this.saveStudents();
-        
-        // 显示结果
-        alert(`🎉 恭喜 ${student.name} 抽中：${prize.name}！\n\n已消耗 1 枚勋章，剩余 ${this.getAvailableBadges(student)} 枚。`);
-        
-        // 重置转盘
-        wheel.style.transition = 'none';
-        wheel.style.transform = 'rotate(0deg)';
-        setTimeout(() => {
-          wheel.style.transition = 'transform 3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        }, 50);
-        
-        // 恢复按钮
-        btn.disabled = false;
-        btn.textContent = '转动抽奖';
-        
-        // 更新显示
-        this.renderLotteryStudentList();
-      }, 3000);
+        try {
+          // 旋转结束：整体轻轻下沉一下
+          if (machine) {
+            machine.classList.remove('sinking');
+            void machine.offsetWidth;
+            machine.classList.add('sinking');
+          }
+          // 出蛋口开门
+          if (chute) {
+            chute.classList.add('open');
+          }
+          if (dispenseBall) {
+            void dispenseBall.offsetWidth;
+            dispenseBall.classList.add('show');
+          }
+          if (mode === 'points') {
+            student.points = (student.points ?? 0) - cost;
+          } else {
+            student.badgesSpent = (student.badgesSpent || 0) + cost;
+          }
+          this.saveStudents();
+          this.renderStore();
+          this.renderHonor();
+
+          if (resultEl) {
+            const unit = mode === 'points' ? '积分' : '枚勋章';
+            const prizeName = prize && prize.name ? prize.name : '神秘奖品';
+            resultEl.textContent = `🎉 恭喜 ${student.name} 抽中：${prizeName}！（本次消耗 ${cost} ${unit}）`;
+          }
+
+          if (cardEl) {
+            const avatar = student.avatar || '👦';
+            cardEl.innerHTML = `
+              <div class="gacha-card">
+                <div class="gacha-card-avatar">${avatar}</div>
+                <div class="gacha-card-main">
+                  <div class="gacha-card-name">${this.escape(student.name)}</div>
+                  <div class="gacha-card-prize">获得奖品：${this.escape(prize && prize.name ? prize.name : '神秘奖品')}</div>
+                </div>
+              </div>
+            `;
+          }
+
+          // 中奖语音播报
+          try {
+            const speakText = `恭喜 ${student.name} 抽中 ${prize && prize.name ? prize.name : '神秘奖品'}`;
+            this.speak(speakText);
+          } catch (e) {
+            console.warn('扭蛋机语音播报失败:', e);
+          }
+
+          // 烟花闪光特效
+          try {
+            this.showFireworksEffect();
+          } catch (e) {
+            console.warn('扭蛋机烟花特效失败:', e);
+          }
+        } catch (e) {
+          console.error('扭蛋机结算出错:', e);
+          if (resultEl) {
+            resultEl.textContent = '结算奖品时出错，请检查控制台日志。';
+          }
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '再扭一个';
+          this.renderGachaStudentList();
+          if (machine) machine.classList.remove('spinning');
+        }
+      }, 900);
+    },
+
+    // 兼容旧逻辑：商店渲染里曾调用该函数
+    // 现在抽奖已迁移到「班级小工具 → 扭蛋机」，此处保留为空实现避免报错中断
+    renderLotteryWheel() {
+      return;
     },
 
     // 渲染抽奖学生列表（只显示有勋章的学生）
