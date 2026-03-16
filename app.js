@@ -311,6 +311,19 @@
     return 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 12);
   }
 
+  // 判断当前用户数据是否“明显有内容”（至少有一个班级且该班级有学生）
+  function hasMeaningfulUserData() {
+    try {
+      const data = getUserData();
+      if (!data || !Array.isArray(data.classes)) return false;
+      const nonEmptyClasses = data.classes.filter(c => Array.isArray(c.students) && c.students.length > 0);
+      return nonEmptyClasses.length > 0;
+    } catch (e) {
+      console.warn('检查本地数据是否为空时出错:', e);
+      return false;
+    }
+  }
+
   // 授权码管理
   const LICENSE_KEY = 'class_pet_licenses';
   const ACTIVATED_DEVICES_KEY = 'class_pet_activated_devices';
@@ -2485,6 +2498,15 @@
       if (!navigator.onLine) {
         console.log('无网络连接，跳过云端同步');
         if (statusEl) statusEl.textContent = '云同步状态：当前无网络，未上传';
+        return false;
+      }
+
+      // 本地数据为空时，出于安全考虑禁止上传，避免把有数据的云端覆盖成空
+      if (!hasMeaningfulUserData()) {
+        console.log('本地没有任何班级或学生数据，出于安全考虑不上传到云端');
+        if (statusEl) {
+          statusEl.textContent = '云同步状态：本机暂无班级/学生数据，已阻止空数据上传云端';
+        }
         return false;
       }
       
