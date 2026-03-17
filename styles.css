@@ -2155,7 +2155,13 @@ body::before {
 
 /* 学生弹窗内：加分减分喂食 */
 .score-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-.score-btns .btn { flex: 1; min-width: 100px; }
+/* 让“加分/扣分项”在同一行显示更多按钮，避免看起来“数量太少” */
+.score-btns .btn {
+  flex: 0 0 auto;
+  min-width: unset;
+  padding: 8px 10px;
+  font-size: 0.95rem;
+}
 .add-student-avatar-btn.selected { border: 2px solid var(--primary); background: var(--bg); }
 .required { color: var(--danger); }
 .modal-feed-section { margin-top: 20px; padding-top: 20px; border-top: 2px dashed var(--border); }
