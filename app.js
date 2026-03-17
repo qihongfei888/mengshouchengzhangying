@@ -5659,9 +5659,10 @@
         return;
       }
 
-      // 如果只有一个班级但 currentClassId 为空，自动选中它，避免“添加无反应”
-      if (!this.currentClassId && data.classes.length === 1 && data.classes[0] && data.classes[0].id) {
+      // 如果 currentClassId 为空，自动选中一个班级，避免“添加无反应/看起来没添加上”
+      if (!this.currentClassId && data.classes.length > 0 && data.classes[0] && data.classes[0].id) {
         this.currentClassId = data.classes[0].id;
+        data.currentClassId = this.currentClassId;
       }
 
       const currentClass = this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
