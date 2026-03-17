@@ -1285,6 +1285,14 @@
         // 加载班级列表
         this.classes = data.classes || [];
         this.currentClassId = data.currentClassId || null;
+        // 修复：只有一个班级时，如果没有 currentClassId，会导致刷新后“有班级但无当前班级”，
+        // 从而 students 不会被持久化进该班级，表现为“导入后刷新消失/上传后消失”。
+        if (!this.currentClassId && this.classes.length === 1 && this.classes[0] && this.classes[0].id) {
+          this.currentClassId = this.classes[0].id;
+          data.currentClassId = this.currentClassId;
+          try { setUserData(data); } catch (e) {}
+          console.log('已自动选择唯一班级为当前班级:', this.currentClassId);
+        }
         
         // 加载当前班级数据
         const currentClass = this.classes.find(c => c.id === this.currentClassId);
@@ -7802,7 +7810,15 @@
       try {
         const data = getUserData();
         if (!data || !data.classes) return;
-        const currentClass = data.classes.find(function (c) { return c.id === app.currentClassId; });
+        // 使用 this.currentClassId，避免全局 app.currentClassId 未更新导致找不到班级
+        const classId = this.currentClassId || app.currentClassId || data.currentClassId || null;
+        let currentClass = classId ? data.classes.find(function (c) { return c.id === classId; }) : null;
+        // 如果还没选中班级且只有一个班级，默认使用唯一班级
+        if (!currentClass && data.classes.length === 1) {
+          currentClass = data.classes[0];
+          data.currentClassId = currentClass.id;
+          this.currentClassId = currentClass.id;
+        }
         if (currentClass) {
           currentClass.students = app.students || [];
           currentClass.groups = app.groups || [];
