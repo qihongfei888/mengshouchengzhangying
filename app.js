@@ -52,6 +52,7 @@
   // Supabase 客户端（唯一云同步后端）
   let supabaseClient = null;
   function ensureSupabaseClient() {
+    if (window.RUN_MODE === 'offline') return null;
     if (!navigator.onLine) return null;
     if (supabaseClient) return supabaseClient;
     if (typeof window === 'undefined' ||
@@ -701,7 +702,7 @@
         version: '1.0.0',
         classes: [],
         currentClassId: null,
-        systemName: '童心宠伴',
+        systemName: '萌兽成长营',
         theme: 'coral',
         lastModified: new Date().toISOString()
       };
@@ -760,7 +761,7 @@
       version: '1.0.0',
       classes: [],
       currentClassId: null,
-      systemName: '童心宠伴',
+      systemName: '萌兽成长营',
       theme: 'coral',
       lastModified: new Date().toISOString()
     };
@@ -1297,7 +1298,7 @@
           version: '1.0.0', // 数据版本号
           classes: [],
           currentClassId: null,
-          systemName: '童心宠伴',
+          systemName: '萌兽成长营',
           theme: 'coral'
         };
         setUserData(defaultData);
@@ -1347,7 +1348,7 @@
           
           if (stagePointsEl) stagePointsEl.value = currentClass.stagePoints || 20;
           if (stagesEl) stagesEl.value = currentClass.totalStages || 10;
-          if (broadcastEl) broadcastEl.value = (currentClass.broadcastMessages || ['欢迎来到童心宠伴！🎉']).join('\n');
+          if (broadcastEl) broadcastEl.value = (currentClass.broadcastMessages || ['欢迎来到萌兽成长营！🎉']).join('\n');
         } else {
           // 没有选择班级时的默认值
           this.students = [];
@@ -1361,7 +1362,7 @@
           
           if (stagePointsEl) stagePointsEl.value = 20;
           if (stagesEl) stagesEl.value = 10;
-          if (broadcastEl) broadcastEl.value = '欢迎来到童心宠伴！🎉';
+          if (broadcastEl) broadcastEl.value = '欢迎来到萌兽成长营！🎉';
         }
         
         console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
@@ -1373,9 +1374,9 @@
         const settingClassNameEl = document.getElementById('settingClassName');
         const settingThemeEl = document.getElementById('settingTheme');
         
-        if (systemTitleEl) systemTitleEl.textContent = data.systemName || '童心宠伴';
+        if (systemTitleEl) systemTitleEl.textContent = data.systemName || '萌兽成长营';
         if (classNameEl) classNameEl.textContent = this.currentClassName ? `| ${this.currentClassName}` : '';
-        if (settingSystemNameEl) settingSystemNameEl.value = data.systemName || '童心宠伴';
+        if (settingSystemNameEl) settingSystemNameEl.value = data.systemName || '萌兽成长营';
         if (settingClassNameEl) settingClassNameEl.value = this.currentClassName || '';
         if (settingThemeEl) settingThemeEl.value = data.theme || 'coral';
         
@@ -1520,7 +1521,7 @@
           version: '1.0.0',
           classes: [],
           currentClassId: null,
-          systemName: '童心宠伴',
+          systemName: '萌兽成长营',
           theme: 'coral'
         };
       }
@@ -1529,7 +1530,7 @@
       if (!data.version) {
         data.version = '1.0.0';
         // 为旧数据添加必要的字段
-        if (!data.systemName) data.systemName = '童心宠伴';
+        if (!data.systemName) data.systemName = '萌兽成长营';
         if (!data.theme) data.theme = 'coral';
         if (!data.classes) data.classes = [];
         if (!data.currentClassId) data.currentClassId = null;
@@ -1717,7 +1718,7 @@
         }
         
         if (!cls.broadcastMessages) {
-          cls.broadcastMessages = ['欢迎来到童心宠伴！🎉'];
+          cls.broadcastMessages = ['欢迎来到萌兽成长营！🎉'];
         }
         
         if (!cls.petCategoryPhotos) {
@@ -1870,7 +1871,7 @@
             version: '1.0.0',
             classes: [],
             currentClassId: null,
-            systemName: oldData.class_pet_system_name || '童心宠伴',
+            systemName: oldData.class_pet_system_name || '萌兽成长营',
             theme: oldData.class_pet_theme || 'coral'
           };
           
@@ -1887,7 +1888,7 @@
             minusItems: oldData.class_pet_minus_items || [],
             prizes: oldData.class_pet_prizes || [],
             lotteryPrizes: oldData.class_pet_lottery_prizes || [],
-            broadcastMessages: oldData.class_pet_broadcast_messages || ['欢迎来到童心宠伴！🎉'],
+            broadcastMessages: oldData.class_pet_broadcast_messages || ['欢迎来到萌兽成长营！🎉'],
             petCategoryPhotos: oldData.class_pet_pet_category_photos || {}
           };
           
@@ -2458,7 +2459,7 @@
         const systemNameEl = document.getElementById('settingSystemName');
         const themeEl = document.getElementById('settingTheme');
         
-        data.systemName = systemNameEl ? systemNameEl.value || '童心宠伴' : '童心宠伴';
+        data.systemName = systemNameEl ? systemNameEl.value || '萌兽成长营' : '萌兽成长营';
         data.theme = themeEl ? themeEl.value || 'coral' : 'coral';
         
         // 获取班级名称
@@ -2495,7 +2496,7 @@
             ],
             prizes: [],
             lotteryPrizes: [],
-            broadcastMessages: ['欢迎来到童心宠伴！🎉'],
+            broadcastMessages: ['欢迎来到萌兽成长营！🎉'],
             petCategoryPhotos: {}
           };
           data.classes.push(newClass);
@@ -2524,7 +2525,7 @@
           currentClass.minusItems = this.getMinusItems();
           currentClass.prizes = this.getPrizes();
           currentClass.lotteryPrizes = this.getLotteryPrizes();
-          currentClass.broadcastMessages = broadcastEl ? broadcastEl.value.split('\n') : ['欢迎来到童心宠伴！🎉'];
+          currentClass.broadcastMessages = broadcastEl ? broadcastEl.value.split('\n') : ['欢迎来到萌兽成长营！🎉'];
           currentClass.petCategoryPhotos = this.getPetCategoryPhotos();
           this.currentClassName = currentClass.name;
         }
@@ -3609,7 +3610,7 @@
         ],
         prizes: [],
         lotteryPrizes: [],
-        broadcastMessages: ['欢迎来到童心宠伴！🎉'],
+        broadcastMessages: ['欢迎来到萌兽成长营！🎉'],
         petCategoryPhotos: {}
       };
       
@@ -4264,7 +4265,7 @@
         // 默认欢迎语
         const welcome = document.createElement('span');
         welcome.className = 'broadcast-item';
-        welcome.textContent = '欢迎来到童心宠伴！🎉';
+        welcome.textContent = '欢迎来到萌兽成长营！🎉';
         scroll.appendChild(welcome);
       }
       
@@ -8156,8 +8157,8 @@
       
       // 更新UI显示
       var t = document.getElementById('systemTitleText');
-      if (t) t.textContent = name || '童心宠伴';
-      else if (document.getElementById('systemTitle')) document.getElementById('systemTitle').textContent = name || '童心宠伴';
+      if (t) t.textContent = name || '萌兽成长营';
+      else if (document.getElementById('systemTitle')) document.getElementById('systemTitle').textContent = name || '萌兽成长营';
       document.getElementById('currentClassName').textContent = className ? `| ${className}` : '';
       this.currentClassName = className;
       document.body.setAttribute('data-theme', theme);
@@ -8211,7 +8212,7 @@
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = '童心宠伴_全部备份_' + new Date().toISOString().slice(0, 10) + '.json';
+      a.download = '萌兽成长营_全部备份_' + new Date().toISOString().slice(0, 10) + '.json';
       a.click();
       URL.revokeObjectURL(a.href);
       
@@ -8248,7 +8249,7 @@
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `童心宠伴_${currentClass.name}_班级数据_${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `萌兽成长营_${currentClass.name}_班级数据_${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(a.href);
       
@@ -9759,8 +9760,8 @@
             try {
               // 有数据端自动登录：传 true 表示“登录场景”，本地已有班级数据则不拿云端覆盖，避免数据消失
               console.log('自动登录时从云端同步数据（登录场景保护：本地有数据则不覆盖）...');
-              await app.syncFromCloud(true);
-              // 若 syncFromCloud 内触发“其他设备已登录”并 forceLogout，则不再进入应用
+              await Promise.race([app.syncFromCloud(true), new Promise(function(r){setTimeout(r,4000);})]);
+ // 若 syncFromCloud 内触发“其他设备已登录”并 forceLogout，则不再进入应用
               if (!app.currentUserId) return;
             } catch (e) {
               console.error('云端同步失败，使用本地数据:', e);
@@ -9825,7 +9826,7 @@
 
   document.addEventListener('DOMContentLoaded', async function () {
     // 离线桌面版：优先从磁盘恢复 localStorage 快照
-    await restoreLocalStorageFromDisk();
+    try{ await Promise.race([restoreLocalStorageFromDisk(), new Promise(function(r){setTimeout(r,3000);})]); }catch(e){}
     var importBackupEl = document.getElementById('importBackupFile');
     if (importBackupEl) {
       importBackupEl.addEventListener('change', function (e) {
@@ -9905,13 +9906,13 @@
             createdAt: new Date().toISOString(),
             stagePoints: 20,
             totalStages: 10,
-            broadcastMessages: ['欢迎来到童心宠伴！🎉'],
+            broadcastMessages: ['欢迎来到萌兽成长营！🎉'],
             accessories: [...DEFAULT_ACCESSORIES],
             prizes: [...DEFAULT_PRIZES]
           };
           userData.classes = [defaultClass];
           userData.currentClassId = defaultClass.id;
-          userData.systemName = '童心宠伴';
+          userData.systemName = '萌兽成长营';
           userData.theme = 'coral';
           setUserData(userData);
           console.log('创建默认班级数据');
@@ -9967,7 +9968,7 @@
       if (!userExistsLocally) {
         console.log('本地用户不存在，尝试从云端同步用户列表');
         try {
-          const syncSuccess = await app.syncUserListFromCloud();
+          const syncSuccess = await Promise.race([app.syncUserListFromCloud(), new Promise(function(r){setTimeout(r,4000);})]);
           console.log('用户列表同步结果:', syncSuccess);
           // 再次检查本地用户列表
           localUsers = getUserList();
@@ -10025,6 +10026,8 @@
     });
     
     // 最后调用bootstrap()
-    await bootstrap();
+    // 5秒超时保护：如果bootstrap卡住，强制显示登录页
+var bootstrapTimeout=setTimeout(function(){try{app.showLoginPage();}catch(e){}},5000);
+try{await bootstrap();}catch(e){console.error("bootstrap error:",e);}finally{clearTimeout(bootstrapTimeout);}
   });
 })();

@@ -2,9 +2,19 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <script>
+  // 最早执行：确保登录页可见，不被任何脚本阻塞
+  document.addEventListener('DOMContentLoaded', function(){
+    var lp = document.getElementById('login-page');
+    var ap = document.getElementById('app');
+    if(lp) { lp.style.display='flex'; lp.style.zIndex='1000'; }
+    if(ap) ap.style.display='none';
+  });
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>童心宠伴</title>
+  <title>萌兽成长营</title>
   <link rel="stylesheet" href="./styles.css?v=6">
+  <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
       font-family: 'ZCOOL KuaiLe';
@@ -37,8 +47,8 @@
   <!-- 登录页：用户登录，数据按用户隔离 -->
   <div id="login-page" class="login-page">
     <div class="login-box">
-      <h1 class="login-title"><svg class="title-icon" aria-hidden="true"><use href="#icon-paw"/></svg> 童心宠伴</h1>
-      <p class="login-subtitle">请登录或注册账号</p>
+      <h1 class="login-title"><svg class="title-icon" aria-hidden="true"><use href="#icon-paw"/></svg> 萌兽成长营</h1>
+      <p class="login-subtitle"><span style="font-size:1.1rem">🐉 召唤你的专属神兽，开启成长之旅！</span></p>
       <div class="login-tabs">
         <button type="button" class="login-tab active" data-tab="login">登录</button>
         <button type="button" class="login-tab" data-tab="register">注册</button>
@@ -52,7 +62,7 @@
           <label>密码</label>
           <input type="password" id="loginPassword" class="login-input" placeholder="请输入密码" autocomplete="off">
         </div>
-        <button type="submit" class="btn btn-primary btn-block">登录</button>
+        <button type="button" class="btn btn-primary btn-block" onclick="window._doLogin()">登录</button>
       </form>
       <form id="register-form" class="login-form" style="display:none">
         <div class="form-group">
@@ -72,7 +82,7 @@
           <input type="text" id="registerLicenseKey" class="login-input" placeholder="请输入授权码（格式：XXXX-XXXX-XXXX-XXXX）" autocomplete="off">
           <p class="form-hint">授权码请联系管理员获取</p>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">注册并登录</button>
+        <button type="button" class="btn btn-primary btn-block" onclick="window._doRegister()">注册</button>
       </form>
 
       <div class="login-backup-area">
@@ -112,14 +122,14 @@
       <div class="broadcast-icon">📢</div>
       <div class="broadcast-content">
         <div class="broadcast-scroll" id="broadcastScroll">
-          <span class="broadcast-item">欢迎来到童心宠伴！🎉</span>
+          <span class="broadcast-item">欢迎来到萌兽成长营！🎉</span>
         </div>
       </div>
     </div>
     
     <!-- 顶部导航 -->
     <header class="main-header">
-      <h1 class="system-title" id="systemTitle"><svg class="title-icon" aria-hidden="true"><use href="#icon-paw"/></svg> <span id="systemTitleText">童心宠伴</span></h1>
+      <h1 class="system-title" id="systemTitle"><svg class="title-icon" aria-hidden="true"><use href="#icon-paw"/></svg> <span id="systemTitleText">萌兽成长营</span></h1>
       <span class="current-class-name" id="currentClassName"></span>
       <nav class="main-nav">
         <button class="nav-btn active" data-page="dashboard"><svg class="nav-icon" aria-hidden="true"><use href="#icon-home"/></svg> 首页</button>
@@ -128,6 +138,7 @@
         <button class="nav-btn" data-page="pets"><svg class="nav-icon" aria-hidden="true"><use href="#icon-pet"/></svg> 领养宠物</button>
         <button class="nav-btn" data-page="honor"><svg class="nav-icon" aria-hidden="true"><use href="#icon-trophy"/></svg> 光荣榜</button>
         <button class="nav-btn" data-page="store"><svg class="nav-icon" aria-hidden="true"><use href="#icon-cart"/></svg> 勋章商店</button>
+        <button class="nav-btn nav-btn-pk" data-page="monopoly">🎯 大PK</button>
         <button class="nav-btn" data-page="settings"><svg class="nav-icon" aria-hidden="true"><use href="#icon-settings"/></svg> 系统设置</button>
         <button type="button" id="adminButton" class="nav-btn" style="display:none" onclick="app.openAdminPanel()"><svg class="nav-icon" aria-hidden="true"><use href="#icon-lock"/></svg> 管理后台</button>
         <button type="button" class="nav-btn nav-btn-logout" onclick="app.logout()"><svg class="nav-icon" aria-hidden="true"><use href="#icon-logout"/></svg> 退出 / 切换班级</button>
@@ -138,7 +149,7 @@
       <!-- 首页 -->
       <section id="page-dashboard" class="page active">
         <div class="dashboard-welcome">
-          <h2>🐾 欢迎使用童心宠伴</h2>
+          <h2>🐾 欢迎使用萌兽成长营</h2>
           <p>✨ 学生可通过打卡获得积分，喂养宠物成长，收集徽章兑换奖品！</p>
         </div>
         <div class="quick-stats">
@@ -201,6 +212,15 @@
               <div class="tool-card-icon">🥚</div>
               <div class="tool-card-main">班级扭蛋机</div>
               <div class="tool-card-sub">积分 / 勋章扭蛋抽奖</div>
+            <button class="tool-card tool-card-pk" onclick="app.showPage('monopoly')">
+              <div class="tool-card-icon">🎯</div>
+              <div class="tool-card-main">大 PK</div>
+              <div class="tool-card-sub">小组神兽大富翁</div>
+            </button>
+            <button class="tool-card" onclick="window.LuckyDraw&&LuckyDraw.open()">
+              <div class="tool-card-icon">🎰</div>
+              <div class="tool-card-main">幸运大抽奖</div>
+              <div class="tool-card-sub">单次/3次/5次 奖品卡弹出</div>
             </button>
           </div>
         </div>
@@ -297,9 +317,14 @@
           <h2>🏆 光荣榜</h2>
           <div class="honor-period-tabs">
             <button class="honor-period-tab active" data-period="all">总排名</button>
+            <button class="honor-period-tab" data-period="day">🌟 每日之星</button>
             <button class="honor-period-tab" data-period="week">本周</button>
             <button class="honor-period-tab" data-period="month">本月</button>
             <button class="honor-period-tab" data-period="semester">本学期</button>
+          </div>
+          <div id="dailyStarActions" class="daily-star-actions" style="display:none">
+            <button class="btn btn-primary btn-small" onclick="window.openDailyStarAward()">🌟 颁发每日之星</button>
+            <span class="daily-star-hint">老师手动指定今日之星并加分</span>
           </div>
         </div>
         <div class="honor-layout">
@@ -340,7 +365,42 @@
         <div id="storeAccessories" class="store-goods-grid" style="display:none"></div>
       </section>
 
-      <!-- 系统设置 -->
+            <!-- 大PK 神兽大富翁 -->
+      <section id="page-monopoly" class="page">
+        <div class="page-header">
+          <h2>🎯 神兽大PK · 大富翁</h2>
+          <p class="page-header-hint">各小组选神兽出战，掷骰前进，遇奖励得分，踩地雷扣分！</p>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="Monopoly.startGame()">🎮 开始游戏</button>
+            <button class="btn btn-secondary" onclick="Monopoly.resetGame()">🔄 重置</button>
+          </div>
+        </div>
+        <div class="monopoly-layout">
+          <div class="monopoly-sidebar">
+            <div class="monopoly-groups-panel">
+              <h3>🐉 参战小组</h3>
+              <div id="monopolyGroupsList" class="monopoly-groups-list"></div>
+            </div>
+            <div class="monopoly-turn-panel" id="monopolyTurnPanel">
+              <h3>⚔️ 当前回合</h3>
+              <div id="monopolyTurnInfo" class="monopoly-turn-info"><p style="color:#888">点击「开始游戏」</p></div>
+              <div class="monopoly-dice-area">
+                <div id="monopolyDice" class="monopoly-dice">🎲</div>
+                <button class="btn btn-primary monopoly-roll-btn" id="monopolyRollBtn" onclick="Monopoly.rollDice()" disabled>掷骰子</button>
+              </div>
+            </div>
+            <div class="monopoly-log-panel">
+              <h3>📜 事件日志</h3>
+              <div id="monopolyLog" class="monopoly-log"></div>
+            </div>
+          </div>
+          <div class="monopoly-board-wrap">
+            <div id="monopolyBoard" class="monopoly-board"></div>
+          </div>
+        </div>
+      </section>
+
+<!-- 系统设置 -->
       <section id="page-settings" class="page page-settings-cute">
         <div class="page-header">
           <h2>✨ 系统设置</h2>
@@ -351,7 +411,7 @@
             <h3>📋 基本设置</h3>
             <div class="setting-item">
               <label>系统名称</label>
-              <input type="text" id="settingSystemName" placeholder="童心宠伴">
+              <input type="text" id="settingSystemName" placeholder="萌兽成长营">
             </div>
             <div class="setting-item">
               <label>选择班级</label>
@@ -535,7 +595,7 @@
             <div class="broadcast-settings">
               <div class="setting-item">
                 <label>广播内容（每行一条）</label>
-                <textarea id="broadcastContent" rows="4" placeholder="欢迎来到童心宠伴！学生加分减分会自动显示在这里~"></textarea>
+                <textarea id="broadcastContent" rows="4" placeholder="欢迎来到萌兽成长营！学生加分减分会自动显示在这里~"></textarea>
               </div>
               <div class="setting-item checkbox-item">
                 <label class="checkbox-label">
@@ -1210,148 +1270,64 @@
   <!-- 特效容器 -->
   <div id="effectContainer" class="effect-container"></div>
 
-  <script src="./xlsx.full.min.js?v=3"></script>
-  <script src="./supabase.min.js"></script>
-  <script src="./config.js"></script>
-  <script src="./db.js?v=3"></script>
-  <script src="./data.js?v=3"></script>
-  <script src="./app.js?v=14"></script>
   <script>
-    // 登录处理
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOMContentLoaded事件触发');
-      
-      // 绑定登录表单提交事件
-      const loginForm = document.getElementById('login-form');
-      if (loginForm) {
-        console.log('找到登录表单');
-        loginForm.addEventListener('submit', function(e) {
-          e.preventDefault();
-          console.log('登录表单提交');
-          
-          const username = document.getElementById('loginUsername').value.trim();
-          const password = document.getElementById('loginPassword').value.trim();
-          
-          if (!username) { alert('请输入用户名'); return; }
-          if (!password) { alert('请输入密码'); return; }
-          
-          console.log('登录尝试:', username);
-          
-          // 调用app的登录方法
-          if (window.app && window.app.login) {
-            console.log('调用app.login方法');
-            window.app.login(username, password).then(success => {
-              if (success) {
-                console.log('登录成功');
-              } else {
-                console.log('登录失败');
-                alert('登录失败，请检查用户名和密码');
-              }
-            }).catch(error => {
-              console.error('登录错误:', error);
-              alert('登录失败: ' + error.message);
-            });
-          } else {
-            console.log('app对象或login方法未加载');
-            // 模拟登录成功
-            alert('登录成功！用户名: ' + username);
-            console.log('登录成功');
-          }
-        });
-      } else {
-        console.log('未找到登录表单');
-      }
-      
-      // 绑定注册表单提交事件
-      const registerForm = document.getElementById('register-form');
-      if (registerForm) {
-        console.log('找到注册表单');
-        registerForm.addEventListener('submit', function(e) {
-          e.preventDefault();
-          console.log('注册表单提交');
-          
-          const username = document.getElementById('registerUsername').value.trim();
-          const password = document.getElementById('registerPassword').value.trim();
-          const passwordConfirm = document.getElementById('registerPasswordConfirm').value.trim();
-          const licenseKey = document.getElementById('registerLicenseKey').value.trim();
-          
-          if (!username) { alert('请输入用户名'); return; }
-          if (!password) { alert('请设置密码'); return; }
-          if (password !== passwordConfirm) { alert('两次输入的密码不一致'); return; }
-          if (!licenseKey) { alert('请输入授权码'); return; }
-          
-          console.log('注册尝试:', username);
-          
-          // 调用app的注册方法
-          if (window.app && window.app.register) {
-            console.log('调用app.register方法');
-            window.app.register(username, password, licenseKey).then(success => {
-              if (success) {
-                console.log('注册成功');
-              } else {
-                console.log('注册失败');
-                alert('注册失败，请检查信息是否正确');
-              }
-            }).catch(error => {
-              console.error('注册错误:', error);
-              alert('注册失败: ' + error.message);
-            });
-          } else {
-            console.log('app对象或register方法未加载');
-            // 模拟注册成功
-            alert('注册成功！用户名: ' + username);
-            console.log('注册成功');
-          }
-        });
-      } else {
-        console.log('未找到注册表单');
-      }
-      
-      // 绑定登录标签切换事件
-      const loginTabs = document.querySelectorAll('.login-tab');
-      if (loginTabs.length > 0) {
-        console.log('找到登录标签');
-        loginTabs.forEach(tab => {
-          tab.addEventListener('click', function() {
-            const tabType = this.dataset.tab;
-            console.log('切换到标签:', tabType);
-            
-            // 切换标签样式
-            loginTabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            
-            // 切换表单显示
-            if (tabType === 'login') {
-              document.getElementById('login-form').style.display = 'block';
-              document.getElementById('register-form').style.display = 'none';
-            } else if (tabType === 'register') {
-              document.getElementById('login-form').style.display = 'none';
-              document.getElementById('register-form').style.display = 'block';
-            }
-          });
-        });
-      } else {
-        console.log('未找到登录标签');
-      }
-      
-      // 图片懒加载
-      const lazyImages = document.querySelectorAll('img[data-src]');
-      
-      const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            img.src = img.dataset.src;
-            img.classList.remove('lazy');
-            imageObserver.unobserve(img);
-          }
-        });
-      });
-      
-      lazyImages.forEach(img => {
-        imageObserver.observe(img);
-      });
-    });
-  </script>
-</body>
-</html>
+// 紧急保护：3秒后强制显示登录页
+window._loginForced=false;
+setTimeout(function(){
+  if(window._loginForced)return;
+  var lp=document.getElementById("login-page");
+  var ap=document.getElementById("app");
+  if(lp){lp.style.display="flex";lp.style.zIndex="9999";}
+  if(ap)ap.style.display="none";
+  document.querySelectorAll(".loading,.spinner,.loader").forEach(function(el){el.style.display="none";});
+  console.log("强制显示登录页");
+},3000);
+</script>
+<script src="./login_handler.js?v=4"></script>
+<script src="./debug_login.js?v=1" defer></script>
+  <script src="./xlsx.full.min.js?v=3" defer></script>
+  <script src="./supabase.min.js" defer></script>
+  <script src="./config.js" defer></script>
+  <script src="./db.js?v=3" defer></script>
+  <script src="./data.js?v=3" defer></script>
+  <script src="./app.js?v=14" defer></script>
+
+  <script src="./features.js?v=1" defer></script>
+  <script src="./features_monopoly.js?v=1" defer></script>
+  <script src="./features_monopoly2.js?v=1" defer></script>
+  <script src="./features_stage.js?v=2" defer></script>
+  <script src="./features_init.js?v=2" defer></script>
+
+  <!-- 每日之星颁奖弹窗 -->
+  <div id="dailyStarModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="document.getElementById('dailyStarModal').classList.remove('show')">&times;</button>
+      <h3>🌟 颁发每日之星</h3>
+      <div class="form-group">
+        <label>选择学生</label>
+        <select id="dailyStarStudent" class="login-input"></select>
+      </div>
+      <div class="form-group">
+        <label>颁奖原因</label>
+        <input type="text" id="dailyStarReason" class="login-input" placeholder="如：积极发言，表现优秀">
+      </div>
+      <div class="form-group">
+        <label>奖励积分</label>
+        <input type="number" id="dailyStarPoints" class="login-input" value="5" min="1" max="50">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="window.awardDailyStar()">🌟 颁发！</button>
+    </div>
+  </div>
+<script>
+window.addEventListener("load",function(){
+  var d=document.createElement("div");d.style.cssText="position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.88);color:#0f0;font-size:11px;padding:6px 10px;z-index:99999;max-height:100px;overflow-y:auto;font-family:monospace";
+  document.body.appendChild(d);
+  function L(m,c){var s=document.createElement("div");s.style.color=c||"#0f0";s.textContent=m;d.insertBefore(s,d.firstChild);}
+  window.onerror=function(m,f,l){L("ERR:"+m+" L"+l,"#f66");return false;};
+  L("app="+(!!window.app)+" lf="+(!!document.getElementById("login-form")));
+  var lf=document.getElementById("login-form");
+  if(lf){lf.addEventListener("submit",function(){L("SUBMIT OK","#ff0");},true);L("listener OK","#0ff");}
+  else L("login-form MISSING","#f66");
+});
+</script>
+</body></html>
