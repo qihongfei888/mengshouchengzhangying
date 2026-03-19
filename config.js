@@ -8,9 +8,9 @@ window.RUN_MODE = (location.protocol === 'https:' || location.hostname === 'loca
 window.APP_ID = 'mengshow';
 window.APP_STORAGE_PREFIX = 'mengshow_';
 
-// Supabase 配置（与你 Supabase 项目一致）
-window.SUPABASE_URL = 'https://cuipqszkjsxixmbrvwdg.supabase.co';
-window.SUPABASE_KEY = 'sb_publishable_kV8fI-YCfPQy2m2akpOdXg_JXrRurE9';
+// Supabase 配置（萌兽成长营专属项目，与童心宠伴完全隔离）
+window.SUPABASE_URL = 'https://cfhouotmbcapvvhxrnvt.supabase.co';
+window.SUPABASE_KEY = 'sb_publishable_mx6cyPE5H4HA90BXYQVyqg_A_uq2qcq';
 
 // R2 宠物照片根地址（暂时不用可以留空字符串）
 // 留空时，宠物照片将直接使用 GitHub Pages 上的 photos 目录：
