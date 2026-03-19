@@ -2,15 +2,6 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <script>
-  // 最早执行：确保登录页可见，不被任何脚本阻塞
-  document.addEventListener('DOMContentLoaded', function(){
-    var lp = document.getElementById('login-page');
-    var ap = document.getElementById('app');
-    if(lp) { lp.style.display='flex'; lp.style.zIndex='1000'; }
-    if(ap) ap.style.display='none';
-  });
-  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="stylesheet" href="./styles.css?v=6">
@@ -1270,21 +1261,7 @@
   <!-- 特效容器 -->
   <div id="effectContainer" class="effect-container"></div>
 
-  <script>
-// 紧急保护：3秒后强制显示登录页
-window._loginForced=false;
-setTimeout(function(){
-  if(window._loginForced)return;
-  var lp=document.getElementById("login-page");
-  var ap=document.getElementById("app");
-  if(lp){lp.style.display="flex";lp.style.zIndex="9999";}
-  if(ap)ap.style.display="none";
-  document.querySelectorAll(".loading,.spinner,.loader").forEach(function(el){el.style.display="none";});
-  console.log("强制显示登录页");
-},3000);
-</script>
 <script src="./login_handler.js?v=4"></script>
-<script src="./debug_login.js?v=1" defer></script>
   <script src="./xlsx.full.min.js?v=3" defer></script>
   <script src="./supabase.min.js" defer></script>
   <script src="./config.js" defer></script>
