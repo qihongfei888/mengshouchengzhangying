@@ -1262,18 +1262,36 @@
   <div id="effectContainer" class="effect-container"></div>
 
 <script src="./login_handler.js?v=4"></script>
-  <!-- xlsx.full.min.js 按需加载 -->
-  <script src="./supabase.min.js" defer></script>
-  <script src="./config.js" defer></script>
-  <script src="./db.js?v=3" defer></script>
-  <script src="./data.js?v=3" defer></script>
-  <script src="./app.js?v=14" defer></script>
-
-  <script src="./features.js?v=1" defer></script>
-  <script src="./features_monopoly.js?v=1" defer></script>
-  <script src="./features_monopoly2.js?v=1" defer></script>
-  <script src="./features_stage.js?v=2" defer></script>
-  <script src="./features_init.js?v=2" defer></script>
+<script>
+// 页面交互就绪后才加载大脚本
+function _loadScripts(){
+  var scripts=[
+    './supabase.min.js',
+    './config.js',
+    './db.js?v=3',
+    './data.js?v=3',
+    './app.js?v=14',
+    './features.js?v=1',
+    './features_monopoly.js?v=1',
+    './features_monopoly2.js?v=1',
+    './features_stage.js?v=2',
+    './features_init.js?v=2'
+  ];
+  var i=0;
+  function loadNext(){
+    if(i>scripts.length-1)return;
+    var s=document.createElement('script');
+    s.src=scripts[i++];
+    s.onload=loadNext;
+    document.body.appendChild(s);
+  }
+  loadNext();
+}
+// 等待页面完全渲染后加载
+if(document.readyState==='complete'){_loadScripts();}
+else{window.addEventListener('load',_loadScripts);}
+</script>
+  <!-- 脚本由_loadScripts()动态按序加载 -->
 
   <!-- 每日之星颁奖弹窗 -->
   <div id="dailyStarModal" class="modal">
