@@ -1,4 +1,4 @@
-﻿/* features.js - 萌兽成长营扩展功能 */
+/* features.js - 萌兽成长营扩展功能 */
 'use strict';
 
 window.BEAST_DESC = {
