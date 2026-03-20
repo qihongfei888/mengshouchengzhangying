@@ -3826,7 +3826,7 @@
         } else {
           // 中间阶段：成长期 - 调用本地照片
           if (s.pet.typeId && s.pet.breedId) {
-            const photoPath = `photos/${s.pet.typeId}/growing/${s.pet.breedId}_stage2.jpg`;
+            const photoPath = `photos/${s.pet.typeId}/growing/${s.pet.breedId}_stage3.jpg`;
             petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class="pet-img">🐾</span>';"></div>`;
           } else {
             petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
@@ -4905,7 +4905,7 @@
         if (window.PET_TYPES && window.PET_TYPES.length > 0) {
           window.PET_TYPES.forEach(type => {
             type.breeds.forEach(breed => {
-              // 从照片包读取成长期照片，格式：photos/类别ID/growing/品种ID_stage2.jpg
+              // 从照片包读取成长期照片，格式：photos/类别ID/growing/品种ID_stage3.jpg
               const photoPath = `photos/${type.id}/growing/${breed.id}_stage2.jpg`;
               optionsHtml += `
                 <div class="pet-breed-option" data-type="${type.id}" data-breed="${breed.id}" data-food="${this.escape(type.food)}">
