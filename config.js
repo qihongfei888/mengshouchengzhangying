@@ -3,11 +3,6 @@
 // 自动检测运行环境：GitHub Pages用online，本地file://用offline
 window.RUN_MODE = (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'online' : 'offline';
 
-// 应用标识 - 用于区分萌兽成长营和童心宠伴，避免数据冲突
-// 童心宠伴用 'class_pet_'，萌兽成长营用 'mengshow_'
-window.APP_ID = 'mengshow';
-window.APP_STORAGE_PREFIX = 'mengshow_';
-
 // Supabase 配置（萌兽成长营专属项目，与童心宠伴完全隔离）
 window.SUPABASE_URL = 'https://cfhouotmbcapvvhxrnvt.supabase.co';
 window.SUPABASE_KEY = 'sb_publishable_mx6cyPE5H4HA90BXYQVyqg_A_uq2qcq';
