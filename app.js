@@ -4877,7 +4877,7 @@
             
             document.getElementById('currentStudentPetInfo').innerHTML = `
               <div class="pet-growth-area">
-                <p><strong>${this.escape(s.name)}</strong> 的宠物（已领养，不可更换）</p>
+                <p><strong>${this.escape(s.name)}</strong> 的神兽（已领养，不可更换）</p>
                 <div class="pet-display-box" style="border: ${borderStyle}">
                   ${petDisplayContent || petDisplay}
                   <span>${petName}</span>
