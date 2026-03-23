@@ -1,6 +1,5 @@
-// 运行模式：强制offline，使用本地存储，避免云同步冲突
-// GitHub Pages 用户登录后数据保存在浏览器本地
-window.RUN_MODE = 'offline';
+// 运行模式：'online' 用 Supabase 云同步；'offline' 只用本地存储
+window.RUN_MODE = (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'online' : 'offline';
 
 // Supabase 配置（萌兽成长营专属项目，与童心宠伴完全隔离）
 window.SUPABASE_URL = 'https://cfhouotmbcapvvhxrnvt.supabase.co';

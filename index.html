@@ -1288,18 +1288,6 @@
       <button class="btn btn-primary btn-block" onclick="window.awardDailyStar()">🌟 颁发！</button>
     </div>
   </div>
-<script>
-window.addEventListener("load",function(){
-  var d=document.createElement("div");d.style.cssText="position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.88);color:#0f0;font-size:11px;padding:6px 10px;z-index:99999;max-height:100px;overflow-y:auto;font-family:monospace";
-  document.body.appendChild(d);
-  function L(m,c){var s=document.createElement("div");s.style.color=c||"#0f0";s.textContent=m;d.insertBefore(s,d.firstChild);}
-  window.onerror=function(m,f,l){L("ERR:"+m+" L"+l,"#f66");return false;};
-  L("app="+(!!window.app)+" lf="+(!!document.getElementById("login-form")));
-  var lf=document.getElementById("login-form");
-  if(lf){lf.addEventListener("submit",function(){L("SUBMIT OK","#ff0");},true);L("listener OK","#0ff");}
-  else L("login-form MISSING","#f66");
-});
-</script>
 <script src="./config.js"></script>
 <script src="./supabase.min.js"></script>
 <script src="./db.js?v=3"></script>
