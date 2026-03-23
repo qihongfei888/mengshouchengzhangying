@@ -1,4 +1,4 @@
-// login_handler.js - 完全独立的登录处理
+// login_handler.js - 完全独立的登录处理，不依赖app.js
 (function(){
 
 var ADMIN_LIST = [
@@ -22,13 +22,18 @@ window._doLogin = function(){
     var uid = 'admin_' + u;
     try{ localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({id:uid, username:u, isAdmin:true})); }catch(e){}
     try{ localStorage.setItem(SESSION_ID_KEY, 'sess_'+Date.now()); }catch(e){}
-    if(window.app && typeof window.app.showApp==='function'){
+    
+    // 直接显示主页，不调用app.js的showApp()
+    var loginPage = document.getElementById('login-page');
+    var appContainer = document.getElementById('app');
+    if(loginPage) loginPage.style.display = 'none';
+    if(appContainer) appContainer.style.display = 'block';
+    
+    // 初始化app对象（如果还没初始化）
+    if(window.app){
       window.app.currentUserId = uid;
       window.app.currentUsername = u;
       try{ if(typeof window.app.loadUserData==='function') window.app.loadUserData(); }catch(e){}
-      try{ window.app.showApp(); }catch(e){ location.reload(); }
-    } else {
-      location.reload();
     }
     return;
   }
@@ -43,13 +48,17 @@ window._doLogin = function(){
     if(user.password !== p){ alert('密码错误，请重新输入'); return; }
     try{ localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({id:user.id, username:user.username})); }catch(e){}
     try{ localStorage.setItem(SESSION_ID_KEY, 'sess_'+Date.now()); }catch(e){}
-    if(window.app && typeof window.app.showApp==='function'){
+    
+    // 直接显示主页
+    var loginPage = document.getElementById('login-page');
+    var appContainer = document.getElementById('app');
+    if(loginPage) loginPage.style.display = 'none';
+    if(appContainer) appContainer.style.display = 'block';
+    
+    if(window.app){
       window.app.currentUserId = user.id;
       window.app.currentUsername = user.username;
       try{ if(typeof window.app.loadUserData==='function') window.app.loadUserData(); }catch(e){}
-      try{ window.app.showApp(); }catch(e){ location.reload(); }
-    } else {
-      location.reload();
     }
   }catch(e){ alert('登录出错: '+e.message); }
 };
