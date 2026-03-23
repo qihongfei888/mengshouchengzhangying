@@ -69,7 +69,7 @@ window._doRegister = function(){
   }
 };
 
-// Tab切换
+// Tab切换 + 表单事件绑定
 function bindTabs(){
   document.querySelectorAll('.login-tab').forEach(function(tab){
     tab.addEventListener('click', function(){
@@ -82,6 +82,22 @@ function bindTabs(){
       if(rf)rf.style.display=type==='register'?'block':'none';
     });
   });
+  // 绑定登录表单submit事件
+  var loginForm = document.getElementById('login-form');
+  if(loginForm){
+    loginForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      window._doLogin();
+    });
+  }
+  // 绑定注册表单submit事件
+  var registerForm = document.getElementById('register-form');
+  if(registerForm){
+    registerForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      window._doRegister();
+    });
+  }
 }
 
 if(document.readyState==='loading'){
