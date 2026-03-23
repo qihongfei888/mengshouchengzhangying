@@ -1,4 +1,4 @@
-// 异步加载app.js，避免主线程阻塞
+// 异步加载app.js和login_handler.js，避免主线程阻塞
 (function() {
   // 显示加载提示
   const loadingDiv = document.createElement('div');
@@ -36,22 +36,28 @@
   // 延迟加载app.js（给浏览器时间处理其他任务）
   setTimeout(function() {
     // 动态加载app.js
-    const script = document.createElement('script');
-    script.src = './app.js?v=14';
-    script.onload = function() {
-      // app.js加载完成后，隐藏加载提示
-      setTimeout(function() {
-        if (loadingDiv.parentNode) {
-          loadingDiv.style.opacity = '0';
-          loadingDiv.style.transition = 'opacity 0.3s';
-          setTimeout(function() {
-            if (loadingDiv.parentNode) {
-              loadingDiv.parentNode.removeChild(loadingDiv);
-            }
-          }, 300);
-        }
-      }, 500);
+    const appScript = document.createElement('script');
+    appScript.src = './app.js?v=14';
+    appScript.onload = function() {
+      // app.js加载完成后，再加载login_handler.js
+      const loginScript = document.createElement('script');
+      loginScript.src = './login_handler.js?v=4';
+      loginScript.onload = function() {
+        // 隐藏加载提示
+        setTimeout(function() {
+          if (loadingDiv.parentNode) {
+            loadingDiv.style.opacity = '0';
+            loadingDiv.style.transition = 'opacity 0.3s';
+            setTimeout(function() {
+              if (loadingDiv.parentNode) {
+                loadingDiv.parentNode.removeChild(loadingDiv);
+              }
+            }, 300);
+          }
+        }, 200);
+      };
+      document.body.appendChild(loginScript);
     };
-    document.body.appendChild(script);
+    document.body.appendChild(appScript);
   }, 100);
 })();
