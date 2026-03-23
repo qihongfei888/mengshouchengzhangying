@@ -22,14 +22,26 @@
 
   function loadNext() {
     if (i >= scripts.length) {
-      // 全部加载完成，隐藏加载提示
+      // 全部加载完成
       if (bar) bar.style.width = '100%';
+      // 确保登录表单事件已绑定
       setTimeout(function() {
-        loadingDiv.style.opacity = '0';
-        loadingDiv.style.transition = 'opacity 0.4s';
-        setTimeout(function() {
-          if (loadingDiv.parentNode) loadingDiv.parentNode.removeChild(loadingDiv);
-        }, 400);
+        var loginForm = document.getElementById('login-form');
+        if (loginForm && !loginForm._bound) {
+          loginForm._bound = true;
+          loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (typeof window._doLogin === 'function') window._doLogin();
+          });
+        }
+        // 隐藏加载提示
+        if (loadingDiv.parentNode) {
+          loadingDiv.style.opacity = '0';
+          loadingDiv.style.transition = 'opacity 0.4s';
+          setTimeout(function() {
+            if (loadingDiv.parentNode) loadingDiv.parentNode.removeChild(loadingDiv);
+          }, 400);
+        }
       }, 300);
       return;
     }
