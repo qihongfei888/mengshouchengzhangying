@@ -124,15 +124,15 @@
       <h1 class="system-title" id="systemTitle"><svg class="title-icon" aria-hidden="true"><use href="#icon-paw"/></svg> <span id="systemTitleText">萌兽成长营</span></h1>
       <span class="current-class-name" id="currentClassName"></span>
       <nav class="main-nav">
-        <button class="nav-btn active" data-page="dashboard"><svg class="nav-icon" aria-hidden="true"><use href="#icon-home"/></svg> 首页</button>
-        <button class="nav-btn" data-page="students"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 学生管理</button>
-        <button class="nav-btn" data-page="groups"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 小组管理</button>
-        <button class="nav-btn" data-page="pets"><svg class="nav-icon" aria-hidden="true"><use href="#icon-pet"/></svg> 领养宠物</button>
-        <button class="nav-btn" data-page="petgallery"><svg class="nav-icon" aria-hidden="true"><use href="#icon-pet"/></svg> 🐉 神兽图鉴</button>
-        <button class="nav-btn" data-page="honor"><svg class="nav-icon" aria-hidden="true"><use href="#icon-trophy"/></svg> 光荣榜</button>
-        <button class="nav-btn" data-page="store"><svg class="nav-icon" aria-hidden="true"><use href="#icon-cart"/></svg> 勋章商店</button>
-        <button class="nav-btn nav-btn-pk" data-page="monopoly">🎯 大PK</button>
-        <button class="nav-btn" data-page="settings"><svg class="nav-icon" aria-hidden="true"><use href="#icon-settings"/></svg> 系统设置</button>
+        <button class="nav-btn active" data-page="dashboard" onclick="app.showPage('dashboard')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-home"/></svg> 首页</button>
+        <button class="nav-btn" data-page="students" onclick="app.showPage('students')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 学生管理</button>
+        <button class="nav-btn" data-page="groups" onclick="app.showPage('groups')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 小组管理</button>
+        <button class="nav-btn" data-page="pets" onclick="app.showPage('pets')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-pet"/></svg> 领养宠物</button>
+        <button class="nav-btn" data-page="petgallery" onclick="app.showPage('petgallery')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-pet"/></svg> 🐉 神兽图鉴</button>
+        <button class="nav-btn" data-page="honor" onclick="app.showPage('honor')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-trophy"/></svg> 光荣榜</button>
+        <button class="nav-btn" data-page="store" onclick="app.showPage('store')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-cart"/></svg> 勋章商店</button>
+        <button class="nav-btn nav-btn-pk" data-page="monopoly" onclick="app.showPage('monopoly')">🎯 大PK</button>
+        <button class="nav-btn" data-page="settings" onclick="app.showPage('settings')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-settings"/></svg> 系统设置</button>
         <button type="button" id="adminButton" class="nav-btn" style="display:none" onclick="app.openAdminPanel()"><svg class="nav-icon" aria-hidden="true"><use href="#icon-lock"/></svg> 管理后台</button>
         <button type="button" class="nav-btn nav-btn-logout" onclick="app.logout()"><svg class="nav-icon" aria-hidden="true"><use href="#icon-logout"/></svg> 退出 / 切换班级</button>
       </nav>
@@ -1322,5 +1322,5 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 1000);
 });
 </script>
-<script src="./app-loader.js?v=10"></script>
+<script src="./app-loader.js?v=11"></script>
 </body></html>
