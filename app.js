@@ -9730,7 +9730,14 @@
         app.renderStudents();
         app.renderDashboard();
         app.renderPetStudentList();
-        alert('成功导入 ' + added.length + ' 名学生');
+        app.renderStudentManage();
+        app.loadBadgeAwardStudents();
+        app.renderStore();
+        if (added.length === 0) {
+          alert('没有导入到新学生：请检查学号是否重复，或表头是否包含“学号/姓名”');
+        } else {
+          alert('成功导入 ' + added.length + ' 名学生');
+        }
       } catch (err) {
         alert('导入失败：' + (err.message || err));
       }
