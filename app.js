@@ -3835,16 +3835,16 @@
           petHtml = `<div class="student-pet-preview"><div class="pet-egg" style="width: 100%; height: 100%; background: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #facc15 100%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3), inset 0 -10px 15px rgba(255, 255, 255, 0.3);"><span style="font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🥚</span></div></div>`;
         } else if (currentStage >= totalStages) {
           // 已完成：成熟期 - 调用本地照片
-          if (s.pet.typeId && s.pet.breedId) {
-            const photoPath = `photos/${s.pet.typeId}/mature/${s.pet.breedId}_stage3.jpg`;
+          if (s.pet.typeId) {
+            const photoPath = `photos/${s.pet.typeId}/stage3.jpg`;
             petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class="pet-img">🐾</span>';"></div>`;
           } else {
             petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
           }
         } else {
           // 中间阶段：成长期 - 调用本地照片
-          if (s.pet.typeId && s.pet.breedId) {
-            const photoPath = `photos/${s.pet.typeId}/growing/${s.pet.breedId}_stage3.jpg`;
+          if (s.pet.typeId) {
+            const photoPath = `photos/${s.pet.typeId}/stage3.jpg`;
             petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class="pet-img">🐾</span>';"></div>`;
           } else {
             petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
@@ -3946,6 +3946,8 @@
         const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
         const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
         const icon = (breed && breed.icon) || (type && type.icon) || '🐾';
+        const intro = (type && type.desc) || (window.BEAST_DESC && window.BEAST_DESC[s.pet.typeId]) || '';
+        const photo = s.pet.typeId ? `photos/${s.pet.typeId}/stage3.jpg` : '';
         const progress = s.pet.stageProgress || 0;
         const need = stagePoints;
         const stage = s.pet.stage || 0;
@@ -3953,7 +3955,13 @@
         const foodLabel = this.getPetFood(s);
         petSection = `
           <div class="modal-feed-section">
-            <p><strong>宠物进度</strong>：第 ${stage}/${totalStages} 阶段，本阶段 ${progress}/${need} 分</p>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              ${photo ? `<img src="${photo}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;border:2px solid #f59e0b;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none;font-size:2rem;">${icon}</span>` : `<span style="font-size:2rem;">${icon}</span>`}
+              <div>
+                <p><strong>宠物进度</strong>：第 ${stage}/${totalStages} 阶段，本阶段 ${progress}/${need} 分</p>
+                ${intro ? `<p class="text-muted" style="margin-top:4px;">📜 ${this.escape(intro)}</p>` : ''}
+              </div>
+            </div>
             ${canFeed ? `<button class="btn feed-btn" onclick="app.feedStudentInModal('${s.id}')">${foodLabel} 喂食（消耗1积分）</button>` : '<p class="text-muted">积分不足或已满级</p>'}
           </div>`;
       } else {
@@ -4393,7 +4401,7 @@
                   <div class="current-pet">
                     ${s.pet.stage === 1 ? 
                       `<div class="pet-egg" style="width: 100px; height: 100px; background: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #facc15 100%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3), inset 0 -10px 15px rgba(255, 255, 255, 0.3);"><span style="font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🥚</span></div>` : 
-                      `<img src="photos/${s.pet.typeId}/mature/${s.pet.breedId}_stage3.jpg" class="pet-img-stage" style="width: 100px; height: 100px; object-fit: cover;" onerror="this.src=''; this.onerror=null;">`
+                      `<img src="photos/${s.pet.typeId}/stage3.jpg" class="pet-img-stage" style="width: 100px; height: 100px; object-fit: cover;" onerror="this.src=''; this.onerror=null;">`
                     }
                     <div class="pet-name">${s.pet.name}</div>
                   </div>
@@ -4829,7 +4837,7 @@
             } else {
               const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
               const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
-              const photoPath = `photos/${type.id}/mature/${breed.id}_stage3.jpg`;
+              const photoPath = `photos/${type.id}/stage3.jpg`;
               petDisplay = `
                 <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                 <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
@@ -4864,7 +4872,7 @@
                 `;
               } else if (isComplete) {
                 // 已完成：成熟期 - 调用本地照片
-                const photoPath = `photos/${type.id}/mature/${breed.id}_stage3.jpg`;
+                const photoPath = `photos/${type.id}/stage3.jpg`;
                 petDisplayContent = `
                   <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
@@ -4872,7 +4880,7 @@
               } else {
                 // 中间阶段：成长期 - 调用本地照片（安全判空，避免 type 或 breed 未定义时报错）
                 if (type && breed && type.id && breed.id) {
-                const photoPath = `photos/${type.id}/growing/${breed.id}_stage2.jpg`;
+                const photoPath = `photos/${type.id}/stage3.jpg`;
                 petDisplayContent = `
                   <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
@@ -4922,16 +4930,17 @@
         let optionsHtml = '<div class="pet-adopt-options">';
         if (window.PET_TYPES && window.PET_TYPES.length > 0) {
           window.PET_TYPES.forEach(type => {
-            type.breeds.forEach(breed => {
-              // 从照片包读取成长期照片，格式：photos/类别ID/growing/品种ID_stage3.jpg
-              const photoPath = `photos/${type.id}/growing/${breed.id}_stage2.jpg`;
-              optionsHtml += `
-                <div class="pet-breed-option" data-type="${type.id}" data-breed="${breed.id}" data-food="${this.escape(type.food)}">
-                  <img src="${photoPath}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                  <span class="breed-icon" style="display:none">${breed.icon}</span>
-                  <span class="breed-name">${this.escape(breed.name)}</span>
-                </div>`;
-            });
+            const defaultBreed = type.breeds && type.breeds.length ? type.breeds[0] : null;
+            const breedId = defaultBreed ? defaultBreed.id : '';
+            const breedIcon = defaultBreed ? defaultBreed.icon : (type.icon || '🐾');
+            const breedName = defaultBreed ? defaultBreed.name : type.name;
+            const photoPath = `photos/${type.id}/stage3.jpg`;
+            optionsHtml += `
+              <div class="pet-breed-option" data-type="${type.id}" data-breed="${breedId}" data-food="${this.escape(type.food)}">
+                <img src="${photoPath}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                <span class="breed-icon" style="display:none">${breedIcon}</span>
+                <span class="breed-name">${this.escape(breedName || type.name)}</span>
+              </div>`;
           });
         } else {
           optionsHtml += '<p class="placeholder-text">宠物类型数据未加载</p>';

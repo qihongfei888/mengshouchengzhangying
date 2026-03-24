@@ -128,7 +128,6 @@
         <button class="nav-btn" data-page="students" onclick="app.showPage('students')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 学生管理</button>
         <button class="nav-btn" data-page="groups" onclick="app.showPage('groups')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-users"/></svg> 小组管理</button>
         <button class="nav-btn" data-page="pets" onclick="app.showPage('pets')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-pet"/></svg> 领养宠物</button>
-        <button class="nav-btn" data-page="petgallery" onclick="app.showPage('petgallery')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-pet"/></svg> 🐉 神兽图鉴</button>
         <button class="nav-btn" data-page="honor" onclick="app.showPage('honor')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-trophy"/></svg> 光荣榜</button>
         <button class="nav-btn" data-page="store" onclick="app.showPage('store')"><svg class="nav-icon" aria-hidden="true"><use href="#icon-cart"/></svg> 勋章商店</button>
         <button class="nav-btn nav-btn-pk" data-page="monopoly" onclick="app.showPage('monopoly')">🎯 大PK</button>
@@ -279,12 +278,6 @@
             </div>
           </div>
         </div>
-      </section>
-
-      <!-- 神兽图鉴 -->
-      <section id="page-petgallery" class="page">
-        <h2 style="text-align:center;color:#8b4513;margin:20px 0">🐉 山海经神兽图鉴</h2>
-        <div id="petGalleryList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;padding:20px"></div>
       </section>
 
       <!-- 领养宠物 -->
@@ -1294,33 +1287,5 @@
 <script src="./db.js?v=3"></script>
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
-<script>
-// 神兽图鉴渲染
-window.renderPetGallery = function() {
-  const list = document.getElementById('petGalleryList');
-  if (!list || !window.PET_TYPES) return;
-  list.innerHTML = window.PET_TYPES.map(type => `
-    <div style="background:#fff;border-radius:12px;padding:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1);text-align:center">
-      <div style="font-size:3rem;margin:10px 0">${type.icon}</div>
-      <h3 style="color:#8b4513;margin:10px 0;font-size:1.2rem">${type.name}</h3>
-      <p style="color:#666;font-size:0.9rem;margin:10px 0;line-height:1.5">${type.desc}</p>
-      <p style="color:#d9534f;font-size:0.85rem;margin:10px 0">🍖 ${type.food}</p>
-    </div>
-  `).join('');
-};
-// 页面切换时渲染神兽图鉴
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function() {
-    const observer = new MutationObserver(function() {
-      const gallery = document.getElementById('page-petgallery');
-      if (gallery && gallery.classList.contains('active')) {
-        window.renderPetGallery();
-      }
-    });
-    const pages = document.querySelectorAll('.page');
-    pages.forEach(p => observer.observe(p, {attributes: true}));
-  }, 1000);
-});
-</script>
-<script src="./app-loader.js?v=12"></script>
+<script src="./app-loader.js?v=13"></script>
 </body></html>

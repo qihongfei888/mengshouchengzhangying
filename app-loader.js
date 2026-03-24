@@ -8,12 +8,12 @@
   document.body.appendChild(loadingDiv);
 
   var scripts = [
-    './app.js?v=21',
+    './app.js?v=22',
     './features.js?v=1',
     './features_monopoly.js?v=1',
     './features_monopoly2.js?v=1',
     './features_stage.js?v=2',
-    './features_init.js?v=3',
+    './features_init.js?v=4',
     './login_handler.js?v=9'
   ];
 
