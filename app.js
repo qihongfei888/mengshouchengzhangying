@@ -3483,20 +3483,21 @@
     },
 
     getStagePointsByStage(stage) {
-      const data = getUserData();
-      const currentClass = data.classes && this.currentClassId
-        ? data.classes.find(c => c.id === this.currentClassId)
-        : null;
-      const list = currentClass && Array.isArray(currentClass.stagePointsByStage)
-        ? currentClass.stagePointsByStage
-        : [];
+      // 缓存班级数据，避免每张卡片都读一次localStorage
+      if (!this._stageCache || this._stageCacheClassId !== this.currentClassId) {
+        const data = getUserData();
+        const currentClass = data.classes && this.currentClassId
+          ? data.classes.find(c => c.id === this.currentClassId)
+          : null;
+        this._stageCache = {
+          list: (currentClass && Array.isArray(currentClass.stagePointsByStage)) ? currentClass.stagePointsByStage : [],
+          defaultPoints: (currentClass && parseInt(currentClass.stagePoints, 10) > 0) ? parseInt(currentClass.stagePoints, 10) : 20
+        };
+        this._stageCacheClassId = this.currentClassId;
+      }
       const idx = Math.max(1, parseInt(stage, 10) || 1) - 1;
-      const v = parseInt(list[idx], 10);
-      if (Number.isFinite(v) && v > 0) return v;
-      // 兜底：返回班级默认积分或全局默认值20
-      return (currentClass && parseInt(currentClass.stagePoints, 10) > 0)
-        ? parseInt(currentClass.stagePoints, 10)
-        : 20;
+      const v = parseInt(this._stageCache.list[idx], 10);
+      return (Number.isFinite(v) && v > 0) ? v : this._stageCache.defaultPoints;
     },
     getStagePhotoPath(typeId, stage) {
       if (!typeId) return '';
@@ -8096,8 +8097,6 @@
       }
     },
     applyTheme(theme) {
-      setStorage(STORAGE_KEYS.theme, theme);
-      this.saveData();
       document.body.setAttribute('data-theme', theme);
     },
     importStudents() { document.getElementById('importFile').click(); },
@@ -8487,8 +8486,11 @@
           }
         }
 
-        // 兼容 students 可能被写成对象的历史数据
-        if (!Array.isArray(this.students)) {
+        // 兼容 students 可能被写成对象的历史数据，并确保只加载当前班级的学生
+        const u0cls = this.currentClassId ? (u0.classes || []).find(c => c.id === this.currentClassId) : null;
+        if (u0cls) {
+          this.students = Array.isArray(u0cls.students) ? u0cls.students : [];
+        } else if (!Array.isArray(this.students)) {
           this.students = this.students && typeof this.students === 'object' ? Object.values(this.students) : [];
         }
 

@@ -94,15 +94,35 @@ body {
   border-radius: 50% !important;
   border: 3px solid rgba(212,160,23,0.5) !important;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2),0 0 20px rgba(212,160,23,0.35) !important;
+  display: block !important;
+  margin: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: 110px !important;
+  height: 110px !important;
+  object-fit: cover !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: rotateY(0deg) translate(-50%, -50%) !important;
+}
+@keyframes beastSlowSpin {
+  from{transform:rotateY(0deg) translate(-50%, -50%)}
+  to{transform:rotateY(360deg) translate(-50%, -50%)}
+}
+.student-card-v2-pet .student-pet-preview {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 130px !important;
+  height: 130px !important;
+  overflow: hidden !important;
 }
 .student-card-v2:hover .student-card-v2-pet img,
 .student-card-v2:hover .pet-img-stage {
   animation-duration: 5s !important;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3),0 0 36px rgba(212,160,23,0.7) !important;
-}
-@keyframes beastSlowSpin {
-  from{transform:rotateY(0deg)}
-  to{transform:rotateY(360deg)}
 }
 
 /* 豆包水印遮盖 */
