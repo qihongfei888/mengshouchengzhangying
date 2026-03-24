@@ -3966,7 +3966,7 @@
           <div class="student-card-v2-info">
             <div class="student-name-row">
               <span class="student-name-v2" style="color: ${theme.primary};">${this.escape(s.name)}</span>
-              ${s.pet ? `<span class="student-pet-type">${this.escape(s.pet.isCustom ? s.pet.customName : ((window.PET_TYPES.find(t => t.id === s.pet.typeId)?.name) || PHOTO_TYPE_NAME_MAP[s.pet.typeId] || '神兽'))}</span>` : '<span class="student-pet-type">未领养</span>'}
+              ${s.pet ? `<span class="student-pet-type">${this.escape(s.pet.isCustom ? (s.pet.customName || '自定义') : ((window.PET_TYPES && window.PET_TYPES.find(t => t.id === s.pet.typeId) && window.PET_TYPES.find(t => t.id === s.pet.typeId).name) || (window.PHOTO_TYPE_NAME_MAP && window.PHOTO_TYPE_NAME_MAP[s.pet.typeId]) || s.pet.typeId || '神兽'))}</span>` : '<span class="student-pet-type">未领养</span>'}
             </div>
             ${extraInfoHtml}
             <div class="student-progress-row">
