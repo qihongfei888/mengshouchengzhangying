@@ -355,6 +355,15 @@
     'luanniao','lushu','mingshe','pixiu','qinglong','qingniao','qinlin','qiongqi','shanxiao','shuiyuan',
     'taotie','taowu','tiangou','xiezhi','xuanwu','xuangui','yinglong','yutu','zheng','zhulong','zhuque'
   ];
+  const PHOTO_TYPE_NAME_MAP = {
+    baihu:'白虎', baize:'白泽', bifang:'毕方', chiru:'赤鱬', dianmu:'电母', dijiang:'帝江', fenghuang:'凤凰',
+    fuzhu:'夫诸', gudiao:'蛊雕', heluoyu:'河罗鱼', huashe:'化蛇', huoshu:'火鼠', hundun:'混沌',
+    jiuweihu:'九尾狐', jiuying:'九婴', jingwei:'精卫', jinshen:'金神', jinwu:'金乌', jufu:'举父',
+    leishen:'雷神', luanniao:'鸾鸟', lushu:'鹿蜀', mingshe:'鸣蛇', pixiu:'貔貅', qinglong:'青龙',
+    qingniao:'青鸟', qinlin:'麒麟', qiongqi:'穷奇', shanxiao:'山魈', shuiyuan:'水猿', taotie:'饕餮',
+    taowu:'梼杌', tiangou:'天狗', xiezhi:'獬豸', xuanwu:'玄武', xuangui:'玄龟', yinglong:'应龙',
+    yutu:'玉兔', zheng:'狰', zhulong:'烛龙', zhuque:'朱雀'
+  };
 
   function generateSessionId() {
     return 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 12);
@@ -1353,10 +1362,12 @@
           // 加载班级设置
           const stagePointsEl = document.getElementById('settingStagePoints');
           const stagesEl = document.getElementById('settingStages');
+          const stagePointsByStageEl = document.getElementById('settingStagePointsByStage');
           const broadcastEl = document.getElementById('broadcastContent');
           
           if (stagePointsEl) stagePointsEl.value = currentClass.stagePoints || 20;
           if (stagesEl) stagesEl.value = currentClass.totalStages || 10;
+          if (stagePointsByStageEl) stagePointsByStageEl.value = (currentClass.stagePointsByStage || []).join(',');
           if (broadcastEl) broadcastEl.value = (currentClass.broadcastMessages || ['欢迎来到萌兽成长营！🎉']).join('\n');
         } else {
           // 没有选择班级时的默认值
@@ -1367,10 +1378,12 @@
           
           const stagePointsEl = document.getElementById('settingStagePoints');
           const stagesEl = document.getElementById('settingStages');
+          const stagePointsByStageEl = document.getElementById('settingStagePointsByStage');
           const broadcastEl = document.getElementById('broadcastContent');
           
           if (stagePointsEl) stagePointsEl.value = 20;
           if (stagesEl) stagesEl.value = 10;
+          if (stagePointsByStageEl) stagePointsByStageEl.value = '';
           if (broadcastEl) broadcastEl.value = '欢迎来到萌兽成长营！🎉';
         }
         
@@ -1721,6 +1734,10 @@
         if (!cls.totalStages) {
           cls.totalStages = 10;
         }
+
+        if (!Array.isArray(cls.stagePointsByStage)) {
+          cls.stagePointsByStage = [];
+        }
         
         if (!cls.plusItems) {
           cls.plusItems = [];
@@ -1768,6 +1785,7 @@
             id: cls.id,
             name: cls.name,
             stagePoints: cls.stagePoints,
+            stagePointsByStage: cls.stagePointsByStage,
             totalStages: cls.totalStages,
             // 与教学配置强相关的几块保留：自定义加/扣分项、奖品、抽奖奖品、广播配置、宠物照片配置
             plusItems: cls.plusItems,
@@ -1887,6 +1905,7 @@
             groups: oldData.class_pet_groups || [],
             groupPointHistory: oldData.class_pet_group_point_history || [],
             stagePoints: oldData.class_pet_stage_points || 20,
+            stagePointsByStage: [],
             totalStages: oldData.class_pet_total_stages || 10,
             plusItems: oldData.class_pet_plus_items || [],
             minusItems: oldData.class_pet_minus_items || [],
@@ -2484,6 +2503,7 @@
             groups: [],
             groupPointHistory: [],
             stagePoints: 20,
+            stagePointsByStage: [],
             totalStages: 10,
             plusItems: [
               { name: '早读打卡', points: 1 },
@@ -2521,10 +2541,14 @@
           
           const stagePointsEl = document.getElementById('settingStagePoints');
           const stagesEl = document.getElementById('settingStages');
+          const stagePointsByStageEl = document.getElementById('settingStagePointsByStage');
           const broadcastEl = document.getElementById('broadcastContent');
           
           currentClass.stagePoints = stagePointsEl ? parseInt(stagePointsEl.value) || 20 : 20;
           currentClass.totalStages = stagesEl ? parseInt(stagesEl.value) || 10 : 10;
+          currentClass.stagePointsByStage = stagePointsByStageEl
+            ? stagePointsByStageEl.value.split(',').map(x => parseInt(String(x).trim(), 10)).filter(x => Number.isFinite(x) && x > 0)
+            : [];
           currentClass.plusItems = this.getPlusItems();
           currentClass.minusItems = this.getMinusItems();
           currentClass.prizes = this.getPrizes();
@@ -3458,10 +3482,23 @@
       console.log('应用初始化完成');
     },
 
-    getStagePoints() {
+    getStagePointsByStage(stage) {
       const data = getUserData();
-      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
-      return currentClass ? (parseInt(currentClass.stagePoints, 10) || 20) : 20;
+      const currentClass = data.classes && this.currentClassId
+        ? data.classes.find(c => c.id === this.currentClassId)
+        : null;
+      const list = currentClass && Array.isArray(currentClass.stagePointsByStage)
+        ? currentClass.stagePointsByStage
+        : [];
+      const idx = Math.max(1, parseInt(stage, 10) || 1) - 1;
+      const v = parseInt(list[idx], 10);
+      if (Number.isFinite(v) && v > 0) return v;
+      return this.getStagePoints();
+    },
+    getStagePhotoPath(typeId, stage) {
+      if (!typeId) return '';
+      const s = Math.max(1, Math.min(5, parseInt(stage, 10) || 1));
+      return `photos/${typeId}/stage${s}.jpg`;
     },
     getTotalStages() {
       const data = getUserData();
@@ -3592,6 +3629,8 @@
         groups: [],
         groupPointHistory: [],
         stagePoints: parseInt(document.getElementById('settingStagePoints').value) || 20,
+        stagePointsByStage: (document.getElementById('settingStagePointsByStage')?.value || '')
+          .split(',').map(x => parseInt(x.trim(), 10)).filter(x => Number.isFinite(x) && x > 0),
         totalStages: parseInt(document.getElementById('settingStages').value) || 10,
         plusItems: [
           { name: '早读打卡', points: 1 },
@@ -3812,35 +3851,21 @@
     },
 
     studentCardHtml(s) {
-      const stagePoints = this.getStagePoints();
       const totalStages = this.getTotalStages();
       let petHtml = '';
       let badgeCount = this.getTotalBadgesEarned(s);
       
       // 获取当前阶段（确保为数字，避免出现 undefined/10 这种显示）
       const currentStage = s.pet ? (s.pet.stage || 0) : 0;
+      const stageNeed = this.getStagePointsByStage(currentStage || 1);
       const theme = this.getCardThemeByLevel(currentStage);
       
       if (s.pet) {
         if (!s.pet.typeId) {
-          // 第1阶段：宠物蛋 - 使用固定样式
-          petHtml = `<div class="student-pet-preview"><div class="pet-egg" style="width: 100%; height: 100%; background: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #facc15 100%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3), inset 0 -10px 15px rgba(255, 255, 255, 0.3);"><span style="font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🥚</span></div></div>`;
-        } else if (currentStage >= totalStages) {
-          // 已完成：成熟期 - 调用本地照片
-          if (s.pet.typeId) {
-            const photoPath = `photos/${s.pet.typeId}/stage3.jpg`;
-            petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class="pet-img">🐾</span>';"></div>`;
-          } else {
-            petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
-          }
+          petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
         } else {
-          // 中间阶段：成长期 - 调用本地照片
-          if (s.pet.typeId) {
-            const photoPath = `photos/${s.pet.typeId}/stage3.jpg`;
-            petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class="pet-img">🐾</span>';"></div>`;
-          } else {
-            petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
-          }
+          const photoPath = this.getStagePhotoPath(s.pet.typeId, s.pet.stage || 1);
+          petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\"pet-img\">🐾</span>';"></div>`;
         }
       } else {
         petHtml = '<div class="student-pet-preview pet-empty"><span class="pet-img">🐣</span><small>未领养</small></div>';
@@ -3852,18 +3877,18 @@
       let needPointsText = '';
       if (s.pet) {
         if (currentStage === 1) {
-          progressPercent = Math.min(100, ((s.pet.stageProgress || 0) / stagePoints) * 100);
+          progressPercent = Math.min(100, ((s.pet.stageProgress || 0) / stageNeed) * 100);
           progressText = '🥚 宠物蛋';
-          const need = Math.max(0, stagePoints - (s.pet.stageProgress || 0));
+          const need = Math.max(0, stageNeed - (s.pet.stageProgress || 0));
           needPointsText = `还需 ${need} 积分孵化`;
         } else if (currentStage >= totalStages) {
           progressPercent = 100;
           progressText = '已满级';
           needPointsText = '已完成全部升级！';
         } else {
-          progressPercent = Math.min(100, ((s.pet.stageProgress || 0) / stagePoints) * 100);
+          progressPercent = Math.min(100, ((s.pet.stageProgress || 0) / stageNeed) * 100);
           progressText = `第${currentStage}/${totalStages}阶段`;
-          const need = Math.max(0, stagePoints - (s.pet.stageProgress || 0));
+          const need = Math.max(0, stageNeed - (s.pet.stageProgress || 0));
           needPointsText = `还需 ${need} 积分升级`;
         }
       } else {
@@ -3905,7 +3930,7 @@
           <div class="student-card-v2-info">
             <div class="student-name-row">
               <span class="student-name-v2" style="color: ${theme.primary};">${this.escape(s.name)}</span>
-              ${s.pet ? `<span class="student-pet-type">${s.pet.isCustom ? s.pet.customName : (s.pet.typeId ? '宠物' : '未领养')}</span>` : '<span class="student-pet-type">未领养</span>'}
+              ${s.pet ? `<span class="student-pet-type">${this.escape(s.pet.isCustom ? s.pet.customName : ((window.PET_TYPES.find(t => t.id === s.pet.typeId)?.name) || PHOTO_TYPE_NAME_MAP[s.pet.typeId] || '神兽'))}</span>` : '<span class="student-pet-type">未领养</span>'}
             </div>
             ${extraInfoHtml}
             <div class="student-progress-row">
@@ -3939,9 +3964,9 @@
         const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
         const icon = (breed && breed.icon) || (type && type.icon) || '🐾';
         const intro = (type && type.desc) || (window.BEAST_DESC && window.BEAST_DESC[s.pet.typeId]) || '';
-        const photo = s.pet.typeId ? `photos/${s.pet.typeId}/stage3.jpg` : '';
+        const photo = s.pet.typeId ? this.getStagePhotoPath(s.pet.typeId, s.pet.stage || 1) : '';
         const progress = s.pet.stageProgress || 0;
-        const need = stagePoints;
+        const need = this.getStagePointsByStage(stage || 1);
         const stage = s.pet.stage || 0;
         const canFeed = !s.pet.hatching && stage < totalStages && (s.points || 0) >= 1;
         const foodLabel = this.getPetFood(s);
@@ -3995,7 +4020,7 @@
       
       const history = (s.scoreHistory || []).slice(0, 10);
       const withdrawBtn = history.length ? `<button class="btn btn-outline btn-small" onclick="app.openWithdrawModal('${s.id}')">撤回记录</button>` : '';
-      const toNext = s.pet && (s.pet.hatching || (s.pet.stage || 0) < totalStages) ? Math.max(0, stagePoints - (s.pet.stageProgress || 0)) : null;
+      const toNext = s.pet && (s.pet.hatching || (s.pet.stage || 0) < totalStages) ? Math.max(0, this.getStagePointsByStage((s.pet.stage || 1)) - (s.pet.stageProgress || 0)) : null;
       const toNextTip = toNext !== null ? `<p class="modal-to-next">距下一级还需 <strong>${toNext}</strong> 积分</p>` : '';
       document.getElementById('studentModalBody').innerHTML = `
         <div class="student-card-header">
@@ -4115,8 +4140,9 @@
 
         let downgraded = false;
         while (progress < 0 && stage > 1) {
+          const prevNeed = this.getStagePointsByStage(stage - 1);
           stage -= 1;
-          progress += stagePoints;
+          progress += prevNeed;
           downgraded = true;
           // 每退化一级提醒一次
           this.speak('我好饿，好久没有喂我了');
@@ -4134,8 +4160,9 @@
         pet.stage = stage;
         pet.stageProgress = Math.max(0, progress);
 
+        const baseNeed = this.getStagePointsByStage(stage || 1);
         if (downgraded && !pet.isDead) {
-          console.log(`学生 ${s.name} 的宠物退化到阶段 ${stage}，当前进度 ${pet.stageProgress}/${stagePoints}`);
+          console.log(`学生 ${s.name} 的宠物退化到阶段 ${stage}，当前进度 ${pet.stageProgress}/${baseNeed}`);
         }
       } catch (e) {
         console.warn('宠物退化逻辑出错:', e);
@@ -4569,24 +4596,16 @@
       const pts = Math.min(amount, s.points || 0);
       if (pts <= 0) return;
       s.points = (s.points || 0) - pts;
-      const stagePoints = this.getStagePoints();
       const totalStages = this.getTotalStages();
       
       let stage = s.pet.stage || 1;
       let progress = (s.pet.stageProgress || 0) + pts;
       
-      // 第1阶段：宠物蛋，需要孵化
-      if (stage === 1) {
-        if (progress >= stagePoints) {
-          stage = 2;
-          progress = progress - stagePoints;
-          this.showUpgradeEffect();
-        }
-      }
-      
-      // 第2阶段及以上：正常升级
-      while (stage < totalStages && progress >= stagePoints) {
-        progress -= stagePoints;
+      // 按阶段积分逐级升级
+      while (stage < totalStages) {
+        const need = this.getStagePointsByStage(stage);
+        if (progress < need) break;
+        progress -= need;
         stage++;
         this.showUpgradeEffect();
       }
@@ -4787,7 +4806,6 @@
       document.getElementById('petPlaceholder').style.display = 'none';
       document.getElementById('petAdoptContent').style.display = 'block';
       const totalStages = this.getTotalStages();
-      const stagePoints = this.getStagePoints();
 
       // 只有当宠物信息是“完整”的时候才视为已领养：
       // 1) 自定义宠物：isCustom = true
@@ -4796,6 +4814,7 @@
 
       if (hasStructuredPet) {
         if (s.pet.hatching) {
+          const hatchNeed = this.getStagePointsByStage(1);
           const canFeed = (s.points || 0) >= 1;
           let petDisplay, foodStr;
           if (s.pet.isCustom && s.pet.customImage) {
@@ -4803,18 +4822,18 @@
             foodStr = '🍖';
           } else {
             const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
-            const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
-            // 使用固定的宠物蛋样式
+            const eggPath = this.getStagePhotoPath(s.pet.typeId, 1);
             petDisplay = `
-              <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #facc15 100%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3), inset 0 -10px 15px rgba(255, 255, 255, 0.3); margin: 0 auto 16px;"><span style="font-size: 3.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🥚</span></div>
+              <img src="${eggPath}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; margin-bottom: 16px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+              <span style="display:none;font-size:3.2rem;">🥚</span>
             `;
             foodStr = type && type.food ? type.food : '🍖';
           }
           document.getElementById('currentStudentPetInfo').innerHTML = `
             <div class="egg-stage">
               ${petDisplay}
-              <p>等待孵化中… 请用 <span class="feed-food-icon">${foodStr}</span> 喂养宠物完成孵化（本阶段需 ${stagePoints} 积分）</p>
-              <p>当前进度：${s.pet.stageProgress || 0}/${stagePoints}</p>
+              <p>等待孵化中… 请用 <span class="feed-food-icon">${foodStr}</span> 喂养宠物完成孵化（本阶段需 ${hatchNeed} 积分）</p>
+              <p>当前进度：${s.pet.stageProgress || 0}/${hatchNeed}</p>
               ${canFeed ? `<button class="btn feed-pet-btn btn-primary" onclick="app.feedPet('${s.id}',1); app.showEatEffect(); app.renderPetAdopt();">${foodStr} 喂食（消耗1积分）</button>` : '<p class="text-muted">积分不足无法喂食</p>'}
             </div>`;
           document.getElementById('petChooseSection').innerHTML = '';
@@ -4829,12 +4848,12 @@
             } else {
               const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
               const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
-              const photoPath = `photos/${type.id}/stage3.jpg`;
+              const photoPath = this.getStagePhotoPath(type.id, stage);
               petDisplay = `
                 <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                 <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
               `;
-              petName = (breed && breed.name) || (type && type.name);
+              petName = PHOTO_TYPE_NAME_MAP[type.id] || (breed && breed.name) || (type && type.name);
             }
             document.getElementById('currentStudentPetInfo').innerHTML = `
               <div class="pet-growth-area">
@@ -4858,13 +4877,14 @@
               const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
               let petDisplayContent;
               if (stage === 1) {
-                // 第一阶段：宠物蛋 - 使用固定样式
+                const eggPath = this.getStagePhotoPath(type.id, 1);
                 petDisplayContent = `
-                  <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #facc15 100%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3), inset 0 -10px 15px rgba(255, 255, 255, 0.3); margin: 0 auto 8px;"><span style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🥚</span></div>
+                  <img src="${eggPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                  <span class="breed-icon" style="display:none">🥚</span>
                 `;
               } else if (isComplete) {
                 // 已完成：成熟期 - 调用本地照片
-                const photoPath = `photos/${type.id}/stage3.jpg`;
+                const photoPath = this.getStagePhotoPath(type.id, stage);
                 petDisplayContent = `
                   <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
@@ -4872,7 +4892,7 @@
               } else {
                 // 中间阶段：成长期 - 调用本地照片（安全判空，避免 type 或 breed 未定义时报错）
                 if (type && breed && type.id && breed.id) {
-                const photoPath = `photos/${type.id}/stage3.jpg`;
+                const photoPath = this.getStagePhotoPath(type.id, stage);
                 petDisplayContent = `
                   <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
@@ -4881,11 +4901,11 @@
                   petDisplayContent = `<span class="pet-img">🐾</span>`;
               }
               }
-              petName = (breed && breed.name) || (type && type.name) || '宠物';
+              petName = PHOTO_TYPE_NAME_MAP[type.id] || (breed && breed.name) || (type && type.name) || '宠物';
               foodStr = type && type.food ? type.food : '🍖';
             }
             const progress = s.pet.stageProgress || 0;
-            const need = stagePoints;
+            const need = this.getStagePointsByStage(stage || 1);
             const pct = need ? Math.min(100, (progress / need) * 100) : 0;
             const borderStyle = STAGE_BORDERS[Math.min(stage, STAGE_BORDERS.length - 1)];
             
@@ -4923,11 +4943,11 @@
         if (window.PET_TYPES && window.PET_TYPES.length > 0) {
           const petTypeMap = new Map(window.PET_TYPES.map(t => [t.id, t]));
           PHOTO_TYPE_IDS.forEach(typeId => {
-            const type = petTypeMap.get(typeId) || { id: typeId, name: typeId, icon: '🐾', food: '🍖', breeds: [{ id: typeId, name: typeId, icon: '🐾' }] };
+            const type = petTypeMap.get(typeId) || { id: typeId, name: (PHOTO_TYPE_NAME_MAP[typeId] || typeId), icon: '🐾', food: '🍖', breeds: [{ id: typeId, name: (PHOTO_TYPE_NAME_MAP[typeId] || typeId), icon: '🐾' }] };
             const defaultBreed = type.breeds && type.breeds.length ? type.breeds[0] : null;
             const breedId = defaultBreed ? defaultBreed.id : type.id;
             const breedIcon = defaultBreed ? defaultBreed.icon : (type.icon || '🐾');
-            const breedName = defaultBreed ? defaultBreed.name : type.name;
+            const breedName = PHOTO_TYPE_NAME_MAP[type.id] || (defaultBreed ? defaultBreed.name : type.name);
             const photoPath = `photos/${type.id}/stage3.jpg`;
             optionsHtml += `
               <div class="pet-breed-option" data-type="${type.id}" data-breed="${breedId}" data-food="${this.escape(type.food)}">
@@ -5636,7 +5656,7 @@
           <input type="number" value="${item.points}" data-index="${i}" data-type="plus" data-field="points" style="width:70px" placeholder="分">
           <button class="btn-remove" onclick="app.removeScoreItem('plus',${i})">删除</button>
         </div>
-      `).join('') || '<p class="placeholder-text">未添加加分项（最多 8 个）</p>';
+      `).join('') || '<p class="placeholder-text">未添加加分项（最多 30 个）</p>';
       document.getElementById('plusItemsList').innerHTML = html;
       document.querySelectorAll('#plusItemsList input').forEach(inp => {
         inp.addEventListener('change', () => {
@@ -5661,7 +5681,7 @@
           <input type="number" value="${item.points}" data-index="${i}" data-type="minus" data-field="points" style="width:70px" placeholder="分">
           <button class="btn-remove" onclick="app.removeScoreItem('minus',${i})">删除</button>
         </div>
-      `).join('') || '<p class="placeholder-text">未添加扣分项（最多 6 个）</p>';
+      `).join('') || '<p class="placeholder-text">未添加扣分项（最多 30 个）</p>';
       document.getElementById('minusItemsList').innerHTML = html;
       document.querySelectorAll('#minusItemsList input').forEach(inp => {
         inp.addEventListener('change', () => {

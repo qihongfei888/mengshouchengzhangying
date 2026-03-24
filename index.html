@@ -439,8 +439,13 @@
           <div class="settings-card settings-card-cute">
             <h3>🐾 宠物成长</h3>
             <div class="setting-item">
-              <label>每阶段所需积分</label>
+              <label>默认每阶段所需积分</label>
               <input type="number" id="settingStagePoints" min="1" value="20">
+            </div>
+            <div class="setting-item">
+              <label>按阶段积分（逗号分隔）</label>
+              <input type="text" id="settingStagePointsByStage" placeholder="例如：20,25,30,35,40">
+              <p class="form-hint">按“第1阶段,第2阶段...”填写；留空则使用默认每阶段积分。</p>
             </div>
             <div class="setting-item">
               <label>成长阶段数</label>
@@ -1286,5 +1291,5 @@
 <script src="./db.js?v=3"></script>
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
-<script src="./app-loader.js?v=14"></script>
+<script src="./app-loader.js?v=15"></script>
 </body></html>

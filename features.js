@@ -67,9 +67,11 @@ window.LuckyDraw = {
   ],
   drawCount: 1,
   spinning: false,
+  selectedStudentId: '',
   open: function() {
     if(!document.getElementById('luckyDrawModal')) this._buildModal();
     this._refreshPrizes();
+    this._refreshStudents();
     document.getElementById('luckyDrawModal').classList.add('show');
   },
   close: function() { var m=document.getElementById('luckyDrawModal'); if(m)m.classList.remove('show'); },
@@ -79,6 +81,8 @@ window.LuckyDraw = {
       '<h3>🎰 幸运大抽奖</h3>'+
       '<div style="display:flex;gap:16px;flex-wrap:wrap">'+
       '<div style="flex:1;min-width:220px">'+
+      '<div style="margin-bottom:12px"><label>抽奖学生：</label><select id="luckyStudentSelect" class="login-input" onchange="LuckyDraw.onStudentChange(this.value)"></select></div>'+
+      '<div id="luckyStudentInfo" style="margin-bottom:12px;padding:8px 10px;border-radius:8px;background:#fff7d1;border:1px solid #f6d776;color:#7a5300">请先选择学生</div>'+
       '<div style="margin-bottom:12px"><label>抽奖次数：</label>'+
       '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(1)">单次</button> '+
       '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(3)">3次</button> '+
@@ -93,6 +97,21 @@ window.LuckyDraw = {
     document.body.appendChild(m);
     this._refreshPrizes();
     this._drawWheel();
+  },
+  _refreshStudents: function() {
+    var sel=document.getElementById('luckyStudentSelect');
+    if(!sel)return;
+    var list=(window.app&&window.app.students)||[];
+    sel.innerHTML='<option value="">请选择学生</option>'+list.map(function(s){return '<option value="'+s.id+'">'+_esc(s.name)+'</option>';}).join('');
+    if(this.selectedStudentId) sel.value=this.selectedStudentId;
+    this.onStudentChange(sel.value || '');
+  },
+  onStudentChange: function(studentId) {
+    this.selectedStudentId = studentId || '';
+    var info=document.getElementById('luckyStudentInfo');
+    if(!info)return;
+    var s=((window.app&&window.app.students)||[]).find(function(x){return x.id===studentId;});
+    info.textContent = s ? ('当前学生：'+s.name+' ｜ 积分：'+(s.points||0)) : '请先选择学生';
   },
   setCount: function(n) { this.drawCount=n; },
   _refreshPrizes: function() {
@@ -132,6 +151,7 @@ window.LuckyDraw = {
   },
   spin: function() {
     if(this.spinning)return;
+    if(!this.selectedStudentId){ alert('请先选择学生再抽奖'); return; }
     var self=this,results=[];
     var doSpin=function(remaining,cb){
       if(remaining<=0){cb(results);return;}
@@ -162,6 +182,7 @@ window.LuckyDraw = {
   },
   _showResults: function(results) {
     var el=document.getElementById('luckyResult');if(!el)return;
+    var student=((window.app&&window.app.students)||[]).find(function(x){return x.id===window.LuckyDraw.selectedStudentId;});
     el.innerHTML=results.map(function(p){
       return '<div style="display:inline-flex;flex-direction:column;align-items:center;margin:6px;padding:10px 14px;border-radius:12px;background:'+p.color+'22;border:2px solid '+p.color+'">'+
         '<span style="font-size:2rem">'+p.emoji+'</span><span style="font-weight:bold">'+_esc(p.name)+'</span></div>';
@@ -170,7 +191,16 @@ window.LuckyDraw = {
     results.forEach(function(p,i){
       setTimeout(function(){ window.LuckyDraw._prizeCard(p); },i*600);
     });
-    _speak('恭喜获得' + results.map(function(p){return p.name;}).join('，') + '！');
+    if(student){
+      var gain=results.reduce(function(sum,p){ return sum + (parseInt(p.pts,10)||0); },0);
+      if(gain>0 && window.app){
+        student.points=(student.points||0)+gain;
+        if(!student.scoreHistory) student.scoreHistory=[];
+        student.scoreHistory.unshift({time:Date.now(),delta:gain,reason:'幸运大抽奖奖励'});
+        if(typeof window.app.saveStudents==='function') window.app.saveStudents();
+      }
+    }
+    _speak('恭喜' + (student?student.name:'同学') + '获得' + results.map(function(p){return p.name;}).join('，') + '！');
   },
   _prizeCard: function(p) {
     _addKF('prizeIn','0%{opacity:0;transform:translate(-50%,-50%) scale(0.2) rotate(-15deg)}40%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(3deg)}60%{transform:translate(-50%,-50%) scale(0.95)}80%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}100%{opacity:0;transform:translate(-50%,-80%) scale(0.8)}');
@@ -178,10 +208,10 @@ window.LuckyDraw = {
     var wrap=document.createElement('div');
     wrap.style.cssText='position:fixed;top:50%;left:50%;z-index:10003;pointer-events:none;';
     var halo=document.createElement('div');
-    halo.style.cssText='position:absolute;top:50%;left:50%;width:220px;height:220px;border-radius:50%;background:conic-gradient('+p.color+',#FFD23F,'+p.color+');animation:haloSpin 1.5s linear 3;opacity:0.35;transform:translate(-50%,-50%);';
+    halo.style.cssText='position:absolute;top:50%;left:50%;width:420px;height:420px;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,215,64,.45) 0 12deg,rgba(255,166,0,.08) 12deg 24deg);filter:blur(1px);animation:haloSpin 2.2s linear infinite;opacity:0.8;transform:translate(-50%,-50%);';
     var card=document.createElement('div');
-    card.style.cssText='position:absolute;top:50%;left:50%;width:180px;background:#fff;border:3px solid '+p.color+';border-radius:20px;padding:24px 16px;text-align:center;animation:prizeIn 2.5s ease-out forwards;box-shadow:0 0 40px '+p.color+'88;';
-    card.innerHTML='<div style="font-size:3.5rem">'+p.emoji+'</div><div style="font-size:1.3rem;font-weight:bold;margin-top:8px;color:'+p.color+'">'+_esc(p.name)+'</div><div style="font-size:0.85rem;color:#888;margin-top:4px">恭喜获奖！</div>';
+    card.style.cssText='position:absolute;top:50%;left:50%;width:220px;background:linear-gradient(180deg,#fff 0%,#fff9e8 100%);border:4px solid #ffe08a;border-radius:24px;padding:18px 16px;text-align:center;animation:prizeIn 2.5s ease-out forwards;box-shadow:0 0 60px rgba(255,211,79,.85),0 12px 24px rgba(0,0,0,.25);';
+    card.innerHTML='<div style="position:absolute;left:10px;top:10px;background:#6fa8ff;color:#fff;border-radius:12px;padding:2px 8px;font-weight:700;font-size:.95rem">'+(parseInt(p.pts,10)||0)+'</div><div style="font-size:3.7rem;margin-top:6px">'+p.emoji+'</div><div style="font-size:1.25rem;font-weight:800;margin-top:8px;color:#8a5a00">'+_esc(p.name)+'</div><div style="font-size:1rem;color:#5a4500;margin-top:6px">获得奖励卡！</div>';
     wrap.appendChild(halo);wrap.appendChild(card);document.body.appendChild(wrap);
     setTimeout(function(){wrap.remove();},2600);
   }
