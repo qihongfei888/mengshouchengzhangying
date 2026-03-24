@@ -1402,8 +1402,20 @@
           this.loadUserData();
           this.dataLoaded = true;
         }
-        // 渲染完整界面（首页、学生、小组、光荣榜等），多端打开或刷新时才能看到最新数据
-        this.init();
+        // 分帧初始化，避免主线程长时间阻塞导致“页面无响应”
+        if (!this._initScheduled) {
+          this._initScheduled = true;
+          const self = this;
+          setTimeout(function () {
+            try {
+              self.init();
+            } catch (e) {
+              console.error('初始化应用失败:', e);
+            } finally {
+              self._initScheduled = false;
+            }
+          }, 0);
+        }
       } catch (e) {
         console.error('显示应用失败:', e);
         alert('应用加载失败，请刷新页面重试');
