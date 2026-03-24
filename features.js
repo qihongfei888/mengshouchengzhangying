@@ -77,21 +77,23 @@ window.LuckyDraw = {
   close: function() { var m=document.getElementById('luckyDrawModal'); if(m)m.classList.remove('show'); },
   _buildModal: function() {
     var m=document.createElement('div'); m.id='luckyDrawModal'; m.className='modal';
-    m.innerHTML='<div class="modal-content lucky-modal"><button class="modal-close" onclick="LuckyDraw.close()">✕</button>'+
-      '<h3>🎰 幸运大抽奖</h3>'+
-      '<div style="display:flex;gap:16px;flex-wrap:wrap">'+
-      '<div style="flex:1;min-width:220px">'+
-      '<div style="margin-bottom:12px"><label>抽奖学生：</label><select id="luckyStudentSelect" class="login-input" onchange="LuckyDraw.onStudentChange(this.value)"></select></div>'+
-      '<div id="luckyStudentInfo" style="margin-bottom:12px;padding:8px 10px;border-radius:8px;background:#fff7d1;border:1px solid #f6d776;color:#7a5300">请先选择学生</div>'+
-      '<div style="margin-bottom:12px"><label>抽奖次数：</label>'+
-      '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(1)">单次</button> '+
-      '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(3)">3次</button> '+
-      '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(5)">5次</button></div>'+
+    m.innerHTML='<div class="modal-content lucky-modal lucky-blackgold"><button class="modal-close" onclick="LuckyDraw.close()">✕</button>'+
+      '<h3 class="lucky-title">🎰 幸运大抽奖</h3>'+
+      '<div class="lucky-rays" aria-hidden="true"></div>'+
+      '<div class="lucky-layout">'+
+      '<div class="lucky-left">'+
+      '<div class="lucky-row"><label>抽奖学生：</label><select id="luckyStudentSelect" class="login-input" onchange="LuckyDraw.onStudentChange(this.value)"></select></div>'+
+      '<div id="luckyStudentInfo" class="lucky-student-info">请先选择学生</div>'+
+      '<div class="lucky-row"><label>抽奖次数：</label>'+
+      '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(1)">单抽</button> '+
+      '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(3)">三连</button> '+
+      '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(5)">五连</button> '+
+      '<button class="btn btn-small btn-primary" onclick="LuckyDraw.setCount(10)">十连抽</button></div>'+
       '<canvas id="luckyWheel" width="260" height="260"></canvas>'+
-      '<div style="text-align:center;margin-top:12px"><button class="btn btn-primary" onclick="LuckyDraw.spin()">🎰 开始抽奖</button></div>'+
-      '<div id="luckyResult" style="margin-top:12px"></div>'+
+      '<div class="lucky-action"><button class="btn btn-primary" onclick="LuckyDraw.spin()">🎰 开始抽奖</button></div>'+
+      '<div id="luckyResult" class="lucky-result-grid"></div>'+
       '</div>'+
-      '<div style="flex:1;min-width:200px"><h4>奖品设置（老师可编辑）</h4><div id="luckyPrizeEdit"></div>'+
+      '<div class="lucky-right"><h4>奖品设置（老师可编辑）</h4><div id="luckyPrizeEdit"></div>'+
       '<button class="btn btn-small btn-primary" onclick="LuckyDraw.addPrize()" style="margin-top:8px">➕ 添加奖品</button></div>'+
       '</div></div>';
     document.body.appendChild(m);
@@ -183,9 +185,9 @@ window.LuckyDraw = {
   _showResults: function(results) {
     var el=document.getElementById('luckyResult');if(!el)return;
     var student=((window.app&&window.app.students)||[]).find(function(x){return x.id===window.LuckyDraw.selectedStudentId;});
-    el.innerHTML=results.map(function(p){
-      return '<div style="display:inline-flex;flex-direction:column;align-items:center;margin:6px;padding:10px 14px;border-radius:12px;background:'+p.color+'22;border:2px solid '+p.color+'">'+
-        '<span style="font-size:2rem">'+p.emoji+'</span><span style="font-weight:bold">'+_esc(p.name)+'</span></div>';
+    el.innerHTML=results.map(function(p,i){
+      return '<div class="lucky-result-card" style="--d:'+(i*120)+'ms;border-color:'+p.color+'">'+
+        '<span class="lucky-result-emoji">'+p.emoji+'</span><span class="lucky-result-name">'+_esc(p.name)+'</span></div>';
     }).join('');
     // 卡片弹出光环特效
     results.forEach(function(p,i){

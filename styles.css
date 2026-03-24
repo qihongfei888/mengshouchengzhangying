@@ -1331,6 +1331,49 @@ body::before {
 .lottery-spin-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .lottery-hint { color: var(--text-muted); font-size: 0.9rem; margin-top: 12px; }
 
+/* LuckyDraw 黑金风 */
+.lucky-blackgold {
+  background: radial-gradient(circle at 50% 20%, #3b2b12 0%, #17120a 45%, #0a0907 100%);
+  color: #f8df9c;
+  border: 1px solid rgba(255, 217, 112, 0.25);
+  max-width: 980px;
+  overflow: hidden;
+  position: relative;
+}
+.lucky-title { color: #ffd56a; text-shadow: 0 0 12px rgba(255, 214, 113, .55); margin-bottom: 10px; }
+.lucky-rays {
+  position: absolute; inset: -120px -80px auto -80px; height: 520px;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 205, 80, .16) 0 10deg, rgba(255, 170, 40, .03) 10deg 20deg);
+  animation: luckyRaysSpin 20s linear infinite;
+  pointer-events: none;
+}
+@keyframes luckyRaysSpin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+.lucky-layout { display:flex; gap:18px; flex-wrap:wrap; position:relative; z-index:1; }
+.lucky-left { flex:1; min-width:290px; }
+.lucky-right { flex:1; min-width:230px; background: rgba(22,17,10,.72); border:1px solid rgba(255,218,126,.22); border-radius:14px; padding:10px; }
+.lucky-row { margin-bottom: 12px; }
+.lucky-row label { color:#ffe6ad; margin-right:8px; }
+.lucky-student-info { margin-bottom:12px; padding:8px 10px; border-radius:8px; background:rgba(255,216,128,.12); border:1px solid rgba(255,216,128,.4); color:#ffe8b3; }
+.lucky-action { text-align:center; margin-top:12px; }
+.lucky-result-grid { margin-top:12px; display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; }
+.lucky-result-card {
+  background: linear-gradient(180deg, rgba(255,247,210,.95) 0%, rgba(255,236,170,.95) 100%);
+  border: 2px solid #ffd46c;
+  border-radius: 14px;
+  padding: 10px 8px;
+  text-align: center;
+  box-shadow: 0 6px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.55);
+  animation: luckyCardFlip .55s ease both;
+  animation-delay: var(--d, 0ms);
+  transform-origin: center;
+}
+.lucky-result-emoji { display:block; font-size:1.9rem; margin-bottom:4px; }
+.lucky-result-name { display:block; font-weight:700; color:#6c4600; }
+@keyframes luckyCardFlip {
+  0% { opacity:0; transform: rotateY(90deg) translateY(12px) scale(.92); }
+  100% { opacity:1; transform: rotateY(0deg) translateY(0) scale(1); }
+}
+
 /* 班级扭蛋机 */
 .gacha-modal h3 {
   display: flex;
