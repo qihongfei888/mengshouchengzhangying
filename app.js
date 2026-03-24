@@ -3826,9 +3826,19 @@
 
     renderStudents() {
       const keyword = (document.getElementById('studentSearch') && document.getElementById('studentSearch').value || '').trim().toLowerCase();
-      let list = this.students;
-      if (keyword) list = list.filter(s => (s.name || '').toLowerCase().includes(keyword) || (s.id || '').toLowerCase().includes(keyword));
-      const html = list.map(s => this.studentCardHtml(s)).join('');
+      const source = Array.isArray(this.students) ? this.students.filter(s => s && typeof s === 'object') : [];
+      let list = source;
+      if (keyword) {
+        list = list.filter(s => (String(s.name || '')).toLowerCase().includes(keyword) || (String(s.id || '')).toLowerCase().includes(keyword));
+      }
+      const html = list.map(s => {
+        try {
+          return this.studentCardHtml(s);
+        } catch (e) {
+          console.error('渲染学生卡片失败:', s, e);
+          return '';
+        }
+      }).join('');
       const el = document.getElementById('studentList');
       if (el) el.innerHTML = html || '<p class="placeholder-text">暂无学生，请导入学生名单</p>';
     },
