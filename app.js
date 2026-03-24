@@ -3493,7 +3493,10 @@
       const idx = Math.max(1, parseInt(stage, 10) || 1) - 1;
       const v = parseInt(list[idx], 10);
       if (Number.isFinite(v) && v > 0) return v;
-      return this.getStagePointsByStage(1);
+      // 兜底：返回班级默认积分或全局默认值20
+      return (currentClass && parseInt(currentClass.stagePoints, 10) > 0)
+        ? parseInt(currentClass.stagePoints, 10)
+        : 20;
     },
     getStagePhotoPath(typeId, stage) {
       if (!typeId) return '';
