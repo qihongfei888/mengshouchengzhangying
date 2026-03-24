@@ -3861,12 +3861,16 @@
         try {
           return this.studentCardHtml(s);
         } catch (e) {
-          console.error('渲染学生卡片失败:', s, e);
+          console.error('渲染学生卡片失败 id=' + (s && s.id) + ' name=' + (s && s.name) + ':', e.message);
           return '';
         }
       }).join('');
       const el = document.getElementById('studentList');
-      if (el) el.innerHTML = html || '<p class="placeholder-text">暂无学生，请导入学生名单</p>';
+      console.log('[renderStudents] source=' + source.length + ' list=' + list.length + ' html_len=' + html.length);
+      if (el) {
+        const nonEmpty = html.replace(/\s/g, '');
+        el.innerHTML = nonEmpty ? html : '<p class="placeholder-text">暂无学生，请导入学生名单</p>';
+      }
     },
 
     // 根据等级获取卡片颜色主题
