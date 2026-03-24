@@ -73,7 +73,6 @@ function injectIntros(){
     window.fixPetPhotos();window.applyStageStyles&&window.applyStageStyles();
   }
   run();
-  new MutationObserver(run).observe(grid,{childList:true,subtree:true});
 }
 
 function patchRender(){
@@ -83,7 +82,7 @@ function patchRender(){
   window.app.renderStudents._p=true;
 }
 
-function init(){patchApp();patchHonorTab();injectIntros();patchRender();window.fixPetPhotos();window.applyStageStyles&&window.applyStageStyles();new MutationObserver(function(){window.fixPetPhotos();window.applyStageStyles&&window.applyStageStyles();}).observe(document.body,{childList:true,subtree:true});}
+function init(){patchApp();patchHonorTab();injectIntros();patchRender();window.fixPetPhotos();window.applyStageStyles&&window.applyStageStyles();}
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 setTimeout(function(){patchApp();patchRender();window.fixPetPhotos();window.applyStageStyles&&window.applyStageStyles();},1500);
