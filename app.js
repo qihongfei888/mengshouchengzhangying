@@ -9868,6 +9868,11 @@
     
     document.getElementById('login-form').addEventListener('submit', async function (e) {
       e.preventDefault();
+      // 优先使用独立登录处理，避免双重登录逻辑冲突
+      if (typeof window._doLogin === 'function') {
+        window._doLogin();
+        return;
+      }
       var username = (document.getElementById('loginUsername').value || '').trim();
       var password = (document.getElementById('loginPassword').value || '').trim();
       if (!username) { alert('请输入用户名（手机号或邮箱）'); return; }
