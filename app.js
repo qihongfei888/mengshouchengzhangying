@@ -3735,7 +3735,27 @@
         btn.dataset.boundNav = '1';
         btn.addEventListener('click', () => this.showPage(btn.dataset.page));
       });
-      
+
+      // 学生卡片点击事件委托（只绑定一次，避免inline onclick失效）
+      const studentList = document.getElementById('studentList');
+      if (studentList && !studentList.dataset.boundCard) {
+        studentList.dataset.boundCard = '1';
+        studentList.addEventListener('click', (e) => {
+          const card = e.target.closest('.student-card-v2');
+          if (!card) return;
+          // 如果点击的是喂食区域，不打开弹窗
+          if (e.target.closest('.student-points-row.can-feed')) {
+            const sid = card.dataset.studentId;
+            if (sid) this.quickFeed(sid);
+            return;
+          }
+          // 如果点击的是装扮按钮，不打开弹窗
+          if (e.target.closest('.student-card-v2-actions')) return;
+          const sid = card.dataset.studentId;
+          if (sid) this.openStudentModal(sid);
+        });
+      }
+
       // 光荣榜时间周期标签（只绑定一次）
       document.querySelectorAll('.honor-period-tab').forEach(tab => {
         if (tab.dataset.boundHonor === '1') return;
@@ -3960,7 +3980,7 @@
           <div class="student-card-v2-info">
             <div class="student-name-row">
               <span class="student-name-v2" style="color: ${theme.primary};">${this.escape(s.name)}</span>
-              ${s.pet ? `<span class="student-pet-type">${this.escape(s.pet.isCustom ? (s.pet.customName || '自定义') : ((window.PET_TYPES && window.PET_TYPES.find(t => t.id === s.pet.typeId) && window.PET_TYPES.find(t => t.id === s.pet.typeId).name) || (window.PHOTO_TYPE_NAME_MAP && window.PHOTO_TYPE_NAME_MAP[s.pet.typeId]) || s.pet.typeId || '神兽'))}</span>` : '<span class="student-pet-type">未领养</span>'}
+              ${s.pet ? `<span class="student-pet-type">${this.escape(s.pet.isCustom ? (s.pet.customName || '自定义') : (((window.PET_TYPES || []).find(t => t.id === s.pet.typeId) || {}).name || s.pet.typeId || '神兽'))}</span>` : '<span class="student-pet-type">未领养</span>'}
             </div>
             ${extraInfoHtml}
             <div class="student-progress-row">
