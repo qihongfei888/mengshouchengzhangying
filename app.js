@@ -3834,21 +3834,6 @@
         : (v && typeof v === 'object' ? Object.values(v).filter(s => s && typeof s === 'object') : []);
 
       let source = normalizeList(rawStudents);
-      if (source.length === 0) {
-        const u = getUserData();
-        const classes = (u && Array.isArray(u.classes)) ? u.classes : [];
-        let cls = classes.find(c => c.id === this.currentClassId && normalizeList(c.students).length > 0);
-        if (!cls) cls = classes.find(c => normalizeList(c.students).length > 0);
-        if (cls) {
-          this.currentClassId = cls.id;
-          this.currentClassName = cls.name || '';
-          this.students = normalizeList(cls.students);
-          source = this.students;
-          u.currentClassId = cls.id;
-          setUserData(u);
-          this.updateClassSelect();
-        }
-      }
 
       // 兼容历史数据把 students 存成对象的情况
       if (!Array.isArray(this.students) && source.length) this.students = source;
