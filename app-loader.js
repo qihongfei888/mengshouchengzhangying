@@ -8,13 +8,13 @@
   document.body.appendChild(loadingDiv);
 
   var scripts = [
-    './app.js?v=17',
+    './app.js?v=18',
     './features.js?v=1',
     './features_monopoly.js?v=1',
     './features_monopoly2.js?v=1',
     './features_stage.js?v=2',
     './features_init.js?v=2',
-    './login_handler.js?v=6'
+    './login_handler.js?v=7'
   ];
 
   var i = 0;
