@@ -3706,12 +3706,16 @@
     },
 
     bindNav() {
-      document.querySelectorAll('.nav-btn').forEach(btn => {
+      document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
+        if (btn.dataset.boundNav === '1') return;
+        btn.dataset.boundNav = '1';
         btn.addEventListener('click', () => this.showPage(btn.dataset.page));
       });
       
-      // 光荣榜时间周期标签
+      // 光荣榜时间周期标签（只绑定一次）
       document.querySelectorAll('.honor-period-tab').forEach(tab => {
+        if (tab.dataset.boundHonor === '1') return;
+        tab.dataset.boundHonor = '1';
         tab.addEventListener('click', () => {
           document.querySelectorAll('.honor-period-tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
@@ -3748,13 +3752,21 @@
 
     bindSearch() {
       const search = document.getElementById('studentSearch');
-      if (search) search.addEventListener('input', () => this.renderStudents());
+      if (search && !search.dataset.boundSearch) {
+        search.dataset.boundSearch = '1';
+        search.addEventListener('input', () => this.renderStudents());
+      }
       const petSearch = document.getElementById('petStudentSearch');
-      if (petSearch) petSearch.addEventListener('input', () => this.renderPetStudentList());
+      if (petSearch && !petSearch.dataset.boundPetSearch) {
+        petSearch.dataset.boundPetSearch = '1';
+        petSearch.addEventListener('input', () => this.renderPetStudentList());
+      }
     },
 
     bindStoreTabs() {
       document.querySelectorAll('.store-tab').forEach(tab => {
+        if (tab.dataset.boundStoreTab === '1') return;
+        tab.dataset.boundStoreTab = '1';
         tab.addEventListener('click', () => {
           document.querySelectorAll('.store-tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
