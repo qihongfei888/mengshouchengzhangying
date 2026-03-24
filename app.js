@@ -231,7 +231,7 @@
         }
         
         // 使用与app对象一致的键名
-        const key = this.userId ? `class_pet_user_data_${this.userId}` : 'class_pet_default_user';
+        const key = this.userId ? `${USER_DATA_PREFIX}${this.userId}` : `${APP_NAMESPACE}_default_user`;
         console.log('更新本地数据，键名:', key);
         console.log('更新数据:', data);
         
@@ -301,7 +301,7 @@
     getLocalData() {
       try {
         // 使用与app对象一致的键名
-        const key = this.userId ? `class_pet_user_data_${this.userId}` : 'class_pet_default_user';
+        const key = this.userId ? `${USER_DATA_PREFIX}${this.userId}` : `${APP_NAMESPACE}_default_user`;
         const data = localStorage.getItem(key);
         return data ? JSON.parse(data) : null;
       } catch (e) {
@@ -325,27 +325,36 @@
   // 实例化实时同步
   window.realtimeSync = new RealtimeSync();
   
+  const APP_NAMESPACE = 'mengshou';
+  const nsKey = (suffix) => `${APP_NAMESPACE}_${suffix}`;
+
   const STORAGE_KEYS = {
-    students: 'class_pet_students',
-    systemName: 'class_pet_system_name',
-    theme: 'class_pet_theme',
-    stagePoints: 'class_pet_stage_points',
-    totalStages: 'class_pet_total_stages',
-    plusItems: 'class_pet_plus_items',
-    minusItems: 'class_pet_minus_items',
-    prizes: 'class_pet_prizes',
-    lotteryPrizes: 'class_pet_lottery_prizes',
-    broadcastMessages: 'class_pet_broadcast_messages',
-    groups: 'class_pet_groups',
-    groupPointHistory: 'class_pet_group_point_history',
-    petCategoryPhotos: 'class_pet_pet_category_photos',
-    className: 'class_pet_class_name',
-    cardPrizes: 'class_pet_card_prizes'
+    students: nsKey('students'),
+    systemName: nsKey('system_name'),
+    theme: nsKey('theme'),
+    stagePoints: nsKey('stage_points'),
+    totalStages: nsKey('total_stages'),
+    plusItems: nsKey('plus_items'),
+    minusItems: nsKey('minus_items'),
+    prizes: nsKey('prizes'),
+    lotteryPrizes: nsKey('lottery_prizes'),
+    broadcastMessages: nsKey('broadcast_messages'),
+    groups: nsKey('groups'),
+    groupPointHistory: nsKey('group_point_history'),
+    petCategoryPhotos: nsKey('pet_category_photos'),
+    className: nsKey('class_name'),
+    cardPrizes: nsKey('card_prizes')
   };
-  const USER_LIST_KEY = 'class_pet_user_list';
-  const USER_DATA_PREFIX = 'class_pet_user_data_';
-  const CURRENT_USER_KEY = 'class_pet_current_user';
-  const SESSION_ID_KEY = 'class_pet_session_id';
+  const USER_LIST_KEY = nsKey('user_list');
+  const USER_DATA_PREFIX = nsKey('user_data_');
+  const CURRENT_USER_KEY = nsKey('current_user');
+  const SESSION_ID_KEY = nsKey('session_id');
+  const PHOTO_TYPE_IDS = [
+    'baihu','baize','bifang','chiru','dianmu','dijiang','fenghuang','fuzhu','gudiao','heluoyu',
+    'huashe','huoshu','hundun','jiuweihu','jiuying','jingwei','jinshen','jinwu','jufu','leishen',
+    'luanniao','lushu','mingshe','pixiu','qinglong','qingniao','qinlin','qiongqi','shanxiao','shuiyuan',
+    'taotie','taowu','tiangou','xiezhi','xuanwu','xuangui','yinglong','yutu','zheng','zhulong','zhuque'
+  ];
 
   function generateSessionId() {
     return 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 12);
@@ -386,8 +395,8 @@
   }
 
   // 授权码管理
-  const LICENSE_KEY = 'class_pet_licenses';
-  const ACTIVATED_DEVICES_KEY = 'class_pet_activated_devices';
+  const LICENSE_KEY = nsKey('licenses');
+  const ACTIVATED_DEVICES_KEY = nsKey('activated_devices');
   
   // 管理员账号和密码
   const ADMIN_ACCOUNTS = [
@@ -608,7 +617,7 @@
           // 清理旧的备份数据
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('class_pet_backup_')) {
+            if (key && key.startsWith(`${APP_NAMESPACE}_backup_`)) {
               localStorage.removeItem(key);
               console.log('已清理备份:', key);
             }
@@ -736,7 +745,7 @@
     
     // 3. 尝试从本地备份键恢复数据（仅限本账号）
     try {
-      const backupKey = 'class_pet_local_' + userId;
+      const backupKey = `${APP_NAMESPACE}_local_` + userId;
       const backupStr = localStorage.getItem(backupKey);
       if (backupStr) {
         const backupObj = JSON.parse(backupStr);
@@ -854,13 +863,13 @@
       }
     }
     
-    var key = userId ? USER_DATA_PREFIX + userId : 'class_pet_default_user';
+    var key = userId ? USER_DATA_PREFIX + userId : `${APP_NAMESPACE}_default_user`;
     memoryStorage[key] = data;
     try {
       localStorage.setItem(key, JSON.stringify(data));
       // 同步写入本地备份键（仅该账号），刷新后若云端同步失败可从备份键加载
       if (userId) {
-        const backupKey = 'class_pet_local_' + userId;
+        const backupKey = `${APP_NAMESPACE}_local_` + userId;
         const timestamp = (data && data.lastModified) || new Date().toISOString();
         localStorage.setItem(backupKey, JSON.stringify({ data: data, timestamp: timestamp }));
       }
@@ -891,7 +900,7 @@
           // 清理旧的备份数据
           for (let i = localStorage.length - 1; i >= 0; i--) {
             const storageKey = localStorage.key(i);
-            if (storageKey && storageKey.startsWith('class_pet_backup_')) {
+            if (storageKey && storageKey.startsWith(`${APP_NAMESPACE}_backup_`)) {
               localStorage.removeItem(storageKey);
               console.log('已清理备份:', storageKey);
             }
@@ -1839,24 +1848,7 @@
         console.log('检查本地存储中的旧数据...');
         
         // 检查所有可能的旧存储键
-        const oldStorageKeys = [
-          'class_pet_students',
-          'class_pet_system_name',
-          'class_pet_theme',
-          'class_pet_stage_points',
-          'class_pet_total_stages',
-          'class_pet_plus_items',
-          'class_pet_minus_items',
-          'class_pet_prizes',
-          'class_pet_lottery_prizes',
-          'class_pet_broadcast_messages',
-          'class_pet_groups',
-          'class_pet_group_point_history',
-          'class_pet_pet_category_photos',
-          'class_pet_class_name',
-          'class_pet_user_list',
-          'class_pet_licenses'
-        ];
+        const oldStorageKeys = [];
         
         let hasOldData = false;
         const oldData = {};
@@ -2616,7 +2608,7 @@
         
         // 5. 本地备份（仅本账号）：保存完整数据，避免精简版导致本地“看起来丢数据”
         try {
-          const backupKey = this.currentUserId ? `class_pet_local_${this.currentUserId}` : 'class_pet_local_default';
+          const backupKey = this.currentUserId ? `${APP_NAMESPACE}_local_${this.currentUserId}` : `${APP_NAMESPACE}_local_default`;
           localStorage.setItem(backupKey, JSON.stringify({
             data: userData,
             timestamp: now
@@ -3052,7 +3044,7 @@
                 if (this.shouldOverwriteLocalWithCloud(localData, updatedData)) {
                   setUserData(updatedData);
                   try {
-                    const backupKey = this.currentUserId ? `class_pet_local_${this.currentUserId}` : 'class_pet_local_default';
+                    const backupKey = this.currentUserId ? `${APP_NAMESPACE}_local_${this.currentUserId}` : `${APP_NAMESPACE}_local_default`;
                     localStorage.setItem(backupKey, JSON.stringify({
                       data: updatedData,
                       timestamp: cloudTimestamp
@@ -3136,7 +3128,7 @@
           console.log('云端未配置或拉取失败，使用本地数据');
           // 尝试从本地存储读取数据
           try {
-            const backupKey = this.currentUserId ? `class_pet_local_${this.currentUserId}` : 'class_pet_local_default';
+            const backupKey = this.currentUserId ? `${APP_NAMESPACE}_local_${this.currentUserId}` : `${APP_NAMESPACE}_local_default`;
             const backupData = localStorage.getItem(backupKey);
             if (backupData) {
               try {
@@ -3193,7 +3185,7 @@
       // 2. 云存储没有数据或同步失败，尝试从本地备份加载（不允许多端空备份覆盖本地有效数据）
       if (!syncSuccess) {
         try {
-          const backupKey = this.currentUserId ? `class_pet_local_${this.currentUserId}` : 'class_pet_local_default';
+          const backupKey = this.currentUserId ? `${APP_NAMESPACE}_local_${this.currentUserId}` : `${APP_NAMESPACE}_local_default`;
           const localDataStr = localStorage.getItem(backupKey);
           
           if (localDataStr) {
@@ -3502,7 +3494,7 @@
       // 新规则：
       // - 不再自动显示默认加分项；只有老师手动添加的才显示
       // - 上限 8 个
-      const MAX_PLUS_ITEMS = 8;
+      const MAX_PLUS_ITEMS = 30;
       const list = (plusItems && plusItems.length > 0) ? plusItems : [];
       return list.slice(0, MAX_PLUS_ITEMS);
     },
@@ -3532,7 +3524,7 @@
       // 新规则：
       // - 不再自动显示默认扣分项；只有老师手动添加的才显示
       // - 上限 6 个
-      const MAX_MINUS_ITEMS = 6;
+      const MAX_MINUS_ITEMS = 30;
       const list = (minusItems && minusItems.length > 0) ? minusItems : [];
       return list.slice(0, MAX_MINUS_ITEMS);
     },
@@ -3830,7 +3822,7 @@
       const theme = this.getCardThemeByLevel(currentStage);
       
       if (s.pet) {
-        if (s.pet.stage === 1) {
+        if (!s.pet.typeId) {
           // 第1阶段：宠物蛋 - 使用固定样式
           petHtml = `<div class="student-pet-preview"><div class="pet-egg" style="width: 100%; height: 100%; background: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #facc15 100%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3), inset 0 -10px 15px rgba(255, 255, 255, 0.3);"><span style="font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🥚</span></div></div>`;
         } else if (currentStage >= totalStages) {
@@ -4929,9 +4921,11 @@
         document.getElementById('currentStudentPetInfo').innerHTML = `<p><strong>${this.escape(s.name)}</strong> 选择要领养的新宠物</p>${completedTip}`;
         let optionsHtml = '<div class="pet-adopt-options">';
         if (window.PET_TYPES && window.PET_TYPES.length > 0) {
-          window.PET_TYPES.forEach(type => {
+          const petTypeMap = new Map(window.PET_TYPES.map(t => [t.id, t]));
+          PHOTO_TYPE_IDS.forEach(typeId => {
+            const type = petTypeMap.get(typeId) || { id: typeId, name: typeId, icon: '🐾', food: '🍖', breeds: [{ id: typeId, name: typeId, icon: '🐾' }] };
             const defaultBreed = type.breeds && type.breeds.length ? type.breeds[0] : null;
-            const breedId = defaultBreed ? defaultBreed.id : '';
+            const breedId = defaultBreed ? defaultBreed.id : type.id;
             const breedIcon = defaultBreed ? defaultBreed.icon : (type.icon || '🐾');
             const breedName = defaultBreed ? defaultBreed.name : type.name;
             const photoPath = `photos/${type.id}/stage3.jpg`;
@@ -4951,8 +4945,7 @@
           node.addEventListener('click', () => {
             const typeId = node.dataset.type;
             const breedId = node.dataset.breed;
-            const type = window.PET_TYPES.find(t => t.id === typeId);
-            if (!type || !s) return;
+            if (!s) return;
             s.pet = { typeId, breedId, stage: 1, stageProgress: 0, hatching: false, isCustom: false };
             this.saveStudents();
             this.renderPetAdopt();
@@ -5690,7 +5683,7 @@
       const data = getUserData();
       const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
       if (currentClass) {
-        const max = type === 'plus' ? 8 : 6;
+        const max = type === 'plus' ? 30 : 30;
         const arr = type === 'plus' ? (currentClass.plusItems || []) : (currentClass.minusItems || []);
         if (arr.length >= max) {
           alert(`最多只能添加 ${max} 个${type === 'plus' ? '加分' : '扣分'}项`);
@@ -5730,7 +5723,7 @@
       const points = parseInt(document.getElementById('scoreItemPoints').value, 10) || 1;
       const editIndex = document.getElementById('scoreItemEditIndex').value;
       const normalizedPoints = type === 'minus' ? Math.abs(points) : points;
-      const max = type === 'plus' ? 8 : 6;
+      const max = type === 'plus' ? 30 : 30;
 
       const data = getUserData();
       if (!data || !Array.isArray(data.classes)) {
@@ -5896,7 +5889,7 @@
     },
 
     addScoreItemModal(type) {
-      const max = type === 'plus' ? 8 : 6;
+      const max = type === 'plus' ? 30 : 30;
       const curLen = (type === 'plus' ? this.getPlusItems() : this.getMinusItems()).length;
       if (curLen >= max) {
         alert(`最多只能添加 ${max} 个${type === 'plus' ? '加分' : '扣分'}项`);
@@ -7876,7 +7869,7 @@
             // 清理localStorage中的备份数据
             for (let i = localStorage.length - 1; i >= 0; i--) {
               const key = localStorage.key(i);
-              if (key && key.startsWith('class_pet_backup_')) {
+              if (key && key.startsWith(`${APP_NAMESPACE}_backup_`)) {
                 const value = localStorage.getItem(key);
                 cleanedSize += (key.length + value.length) * 2;
                 localStorage.removeItem(key);
@@ -7886,7 +7879,7 @@
             
             // 清理内存存储中的备份数据
             for (const key in memoryStorage) {
-              if (key.startsWith('class_pet_backup_')) {
+              if (key.startsWith(`${APP_NAMESPACE}_backup_`)) {
                 delete memoryStorage[key];
                 cleanedCount++;
               }
@@ -7897,7 +7890,7 @@
               try {
                 const allKeys = await IndexedDBManager.getAllKeys();
                 for (const key of allKeys) {
-                  if (key.startsWith('class_pet_backup_')) {
+                  if (key.startsWith(`${APP_NAMESPACE}_backup_`)) {
                     await IndexedDBManager.removeItem(key);
                     cleanedCount++;
                   }
@@ -7965,7 +7958,7 @@
     saveToLocalBackup() {
       try {
         const classData = getClassData();
-        const backupKey = `class_pet_backup_${this.currentClassId}`;
+        const backupKey = `${APP_NAMESPACE}_backup_${this.currentClassId}`;
         const backupData = JSON.stringify({
           data: classData,
           timestamp: Date.now(),
@@ -7989,7 +7982,7 @@
     // 从本地备份恢复
     loadFromLocalBackup() {
       try {
-        const backupKey = `class_pet_backup_${this.currentClassId}`;
+        const backupKey = `${APP_NAMESPACE}_backup_${this.currentClassId}`;
         let backupData = null;
         
         // 尝试从localStorage读取
@@ -9802,7 +9795,7 @@
           // 若主键无数据（云端失败且主键未写入），尝试从本地备份键恢复
           if (app.currentUserId && (!app.students || app.students.length === 0)) {
             try {
-              const backupKey = 'class_pet_local_' + app.currentUserId;
+              const backupKey = `${APP_NAMESPACE}_local_` + app.currentUserId;
               const raw = localStorage.getItem(backupKey);
               if (raw) {
                 const parsed = JSON.parse(raw);

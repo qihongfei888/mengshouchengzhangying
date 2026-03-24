@@ -6,9 +6,10 @@ var ADMIN_LIST = [
   { username: '18645803876', password: 'QW0124.' }
 ];
 
-var USER_LIST_KEY = 'class_pet_user_list';
-var CURRENT_USER_KEY = 'class_pet_current_user';
-var SESSION_ID_KEY = 'class_pet_session_id';
+var APP_NAMESPACE = 'mengshou';
+var USER_LIST_KEY = APP_NAMESPACE + '_user_list';
+var CURRENT_USER_KEY = APP_NAMESPACE + '_current_user';
+var SESSION_ID_KEY = APP_NAMESPACE + '_session_id';
 
 function setLoginBtnLoading(loading) {
   var btn = document.querySelector('#login-form button[type="submit"]');
