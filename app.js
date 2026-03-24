@@ -3842,7 +3842,7 @@
           return this.studentCardHtml(s);
         } catch (e) {
           console.error('渲染学生卡片失败:', s, e);
-          return `<div class="student-card-v2" style="padding:12px"><div><strong>${this.escape(String(s.name || '未命名学生'))}</strong></div><div class="text-muted">学号：${this.escape(String(s.id || '未设置'))}</div><div class="text-muted">积分：${parseInt(s.points, 10) || 0}</div></div>`;
+          return '';
         }
       }).join('');
       const el = document.getElementById('studentList');
@@ -3912,7 +3912,7 @@
       }
       
       // 宠物装扮
-      const petAccessories = s.pet && s.pet.accessories ? s.pet.accessories : [];
+      const petAccessories = (s.pet && Array.isArray(s.pet.accessories)) ? s.pet.accessories : [];
       const accessoriesHtml = petAccessories.length > 0 ? 
         `<div class="pet-accessories">${petAccessories.map(acc => `<span class="accessory" title="${acc.name}">${acc.icon}</span>`).join('')}</div>` : 
         '';
@@ -5403,7 +5403,8 @@
     },
     getTotalBadgesEarned(s) {
       if (!s) return 0;
-      let earned = (s.completedPets || []).reduce((sum, p) => sum + (p.badgesEarned || 0), 0);
+      const completed = Array.isArray(s.completedPets) ? s.completedPets : [];
+      let earned = completed.reduce((sum, p) => sum + (p.badgesEarned || 0), 0);
       if (s.pet) earned += (s.pet.badgesEarned || 0);
       return earned;
     },
