@@ -8457,90 +8457,88 @@
       try {
         const workbook = XLSX.read(data, { type: 'binary' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-        
-        if (!jsonData || jsonData.length === 0) {
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+
+        if (!rows || rows.length === 0) {
           alert('Excel文件中没有数据');
           return;
         }
-        
-        // 映射Excel列到学生数据
+
+        // 兼容 students 可能被写成对象的历史数据
+        if (!Array.isArray(this.students)) {
+          this.students = this.students && typeof this.students === 'object' ? Object.values(this.students) : [];
+        }
+
+        const normalize = v => String(v == null ? '' : v).trim();
+        const header = (rows[0] || []).map(v => normalize(v).toLowerCase());
+        const idCol = header.findIndex(h => h.includes('学号') || h === 'id' || h === '编号' || h === 'studentid');
+        const nameCol = header.findIndex(h => h.includes('姓名') || h === 'name' || h === '学生姓名' || h === 'studentname');
+        const hasHeader = idCol >= 0 || nameCol >= 0;
+        const idIdx = idCol >= 0 ? idCol : 0;
+        const nameIdx = nameCol >= 0 ? nameCol : 1;
+
         const students = [];
         let successCount = 0;
         let skipCount = 0;
+        const startRow = hasHeader ? 1 : 0;
 
-        const pushStudent = (rawId, rawName, row) => {
-          const name = String(rawName || '').trim();
-          if (!name && !rawId) return false;
+        for (let i = startRow; i < rows.length; i++) {
+          const row = Array.isArray(rows[i]) ? rows[i] : [];
+          const rawId = normalize(row[idIdx]);
+          const rawName = normalize(row[nameIdx]);
+          if (!rawId && !rawName) continue;
 
-          const sidBase = String(rawId || '').trim() || ('S' + String(Date.now()).slice(-6) + String(successCount + skipCount + 1).padStart(3, '0'));
-          let sid = sidBase;
+          const baseId = rawId || ('S' + String(Date.now()).slice(-6) + String(i + 1).padStart(3, '0'));
+          let sid = baseId;
           let bump = 1;
           while (this.students.some(s => s.id === sid) || students.some(s => s.id === sid)) {
             if (rawId) {
-              sid = sidBase + '_' + bump;
+              sid = baseId + '_' + bump;
               bump++;
             } else {
               sid = '';
               break;
             }
           }
-          if (!sid) { skipCount++; return false; }
+          if (!sid) { skipCount++; continue; }
 
           students.push({
             id: sid,
-            name: name || sid,
-            avatar: (row && row['头像']) || '👦',
-            points: parseInt((row && row['积分']) || 0) || 0,
-            badges: parseInt((row && row['徽章']) || 0) || 0,
-            groupName: (row && row['所在小组']) || ''
+            name: rawName || sid,
+            avatar: '👦',
+            points: 0,
+            badges: 0,
+            groupName: ''
           });
           successCount++;
-          return true;
-        };
-        
-        jsonData.forEach((row, index) => {
-          // 支持多种列名格式；学号可选（缺失时自动生成）
-          const rawId = row['学号'] || row['ID'] || row['id'] || row['编号'] || row['studentId'] || '';
-          const rawName = row['姓名'] || row['名字'] || row['name'] || row['学生姓名'] || row['studentName'] || '';
-          pushStudent(rawId, rawName, row);
-        });
-
-        // 兜底：如果对象模式未识别到姓名/学号，按前两列读取
-        if (students.length === 0) {
-          const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-          for (let i = 1; i < rows.length; i++) {
-            const r = rows[i] || [];
-            pushStudent(r[0], r[1], null);
-          }
         }
-        
+
         if (students.length > 0) {
-          // 添加到当前班级
           this.students.push(...students);
-          // 强制确保当前班级 students 为数组并持久化
+
+          // 强制写回当前班级并持久化
           const u = getUserData();
           const classId = this.currentClassId || u.currentClassId;
           const cls = classId ? (u.classes || []).find(c => c.id === classId) : null;
           if (cls) {
-            cls.students = Array.isArray(this.students) ? this.students : Object.values(this.students || {});
+            cls.students = this.students;
             u.currentClassId = classId;
             setUserData(u);
           }
+
           this.saveStudents();
+          this.showPage('students');
           this.renderStudents();
           this.renderDashboard();
           this.renderHonor();
           this.renderStudentManage();
           this.loadBadgeAwardStudents();
-          
+
           let msg = `成功导入 ${successCount} 名学生`;
-          if (skipCount > 0) {
-            msg += `，跳过 ${skipCount} 名已存在学生`;
-          }
+          if (skipCount > 0) msg += `，跳过 ${skipCount} 条重复记录`;
           alert(msg);
         } else {
-          alert('没有可导入的学生数据（可能所有学生都已存在）');
+          alert('没有可导入的学生数据：请确保表格前两列为“学号、姓名”（或包含对应表头）');
         }
       } catch (err) {
         alert('Excel导入失败：' + (err.message || '文件格式错误'));
