@@ -9890,7 +9890,11 @@
       if (!username) { alert('请输入用户名（手机号或邮箱）'); return; }
       if (!password) { alert('请输入密码'); return; }
       
-      alert('登录事件触发，用户名: ' + username);
+      // 统一走独立登录处理，避免与 app.js 内置登录流程冲突
+      if (typeof window._doLogin === 'function') {
+        window._doLogin();
+        return;
+      }
       console.log('登录尝试:', username);
       
       // 检查是否为管理员账号
