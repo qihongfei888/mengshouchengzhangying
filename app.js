@@ -3945,8 +3945,9 @@
       const isMaxLevel = s.pet && (s.pet.stage || 0) >= totalStages && s.pet.completed;
       
       // 按照设计图重新设计学生卡片
+      const safeId = String(s.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
       return `
-        <div class="student-card-v2" data-id="${s.id}" data-student-id="${s.id}" style="background: ${theme.bg}; border-color: ${theme.border};" onclick="app.openStudentModal('${s.id}')">
+        <div class="student-card-v2" data-id="${s.id}" data-student-id="${s.id}" style="background: ${theme.bg}; border-color: ${theme.border};" onclick="app.openStudentModal('${safeId}')">
           <div class="student-card-v2-header">
             <span class="student-level" style="color: ${theme.primary}; background: ${theme.bg};">Lv.${s.pet ? (s.pet.stage || 0) : 0}</span>
             ${badgeCount > 0 ? `<span class="student-badge-count">🏆${badgeCount}</span>` : ''}
@@ -3975,7 +3976,7 @@
             </div>
           </div>
           <div class="student-card-v2-actions">
-            ${s.pet ? `<button class="btn btn-small" onclick="event.stopPropagation(); app.dressUpPet('${s.id}')">🎀 装扮</button>` : ''}
+            ${s.pet ? `<button class="btn btn-small" onclick="event.stopPropagation(); app.dressUpPet('${safeId}')">🎀 装扮</button>` : ''}
           </div>
         </div>`;
     },
