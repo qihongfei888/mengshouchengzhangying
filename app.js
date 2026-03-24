@@ -3826,7 +3826,13 @@
 
     renderStudents() {
       const keyword = (document.getElementById('studentSearch') && document.getElementById('studentSearch').value || '').trim().toLowerCase();
-      const source = Array.isArray(this.students) ? this.students.filter(s => s && typeof s === 'object') : [];
+      const rawStudents = this.students;
+      const source = Array.isArray(rawStudents)
+        ? rawStudents.filter(s => s && typeof s === 'object')
+        : (rawStudents && typeof rawStudents === 'object' ? Object.values(rawStudents).filter(s => s && typeof s === 'object') : []);
+      // 兼容历史数据把 students 存成对象的情况
+      if (!Array.isArray(this.students) && source.length) this.students = source;
+
       let list = source;
       if (keyword) {
         list = list.filter(s => (String(s.name || '')).toLowerCase().includes(keyword) || (String(s.id || '')).toLowerCase().includes(keyword));
@@ -3836,7 +3842,7 @@
           return this.studentCardHtml(s);
         } catch (e) {
           console.error('渲染学生卡片失败:', s, e);
-          return '';
+          return `<div class="student-card-v2" style="padding:12px"><div><strong>${this.escape(String(s.name || '未命名学生'))}</strong></div><div class="text-muted">学号：${this.escape(String(s.id || '未设置'))}</div><div class="text-muted">积分：${parseInt(s.points, 10) || 0}</div></div>`;
         }
       }).join('');
       const el = document.getElementById('studentList');
@@ -8498,6 +8504,15 @@
         if (students.length > 0) {
           // 添加到当前班级
           this.students.push(...students);
+          // 强制确保当前班级 students 为数组并持久化
+          const u = getUserData();
+          const classId = this.currentClassId || u.currentClassId;
+          const cls = classId ? (u.classes || []).find(c => c.id === classId) : null;
+          if (cls) {
+            cls.students = Array.isArray(this.students) ? this.students : Object.values(this.students || {});
+            u.currentClassId = classId;
+            setUserData(u);
+          }
           this.saveStudents();
           this.renderStudents();
           this.renderDashboard();
