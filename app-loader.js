@@ -14,7 +14,7 @@
     './features_monopoly2.js?v=1',
     './features_stage.js?v=2',
     './features_init.js?v=2',
-    './login_handler.js?v=8'
+    './login_handler.js?v=9'
   ];
 
   var i = 0;

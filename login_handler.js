@@ -29,18 +29,8 @@ function doLoginSuccess(uid, username, isAdmin) {
   try { localStorage.setItem(SESSION_ID_KEY, 'sess_' + Date.now()); } catch (e) {}
 
   if (!window.app) {
-    // app 可能仍在异步加载，稍后再尝试初始化一次
+    // app 仍在异步加载时先展示界面，避免卡住
     showAppFallback();
-    setTimeout(function(){
-      try {
-        if (window.app) {
-          window.app.currentUserId = uid;
-          window.app.currentUsername = username;
-          if (typeof window.app.showApp === 'function') window.app.showApp();
-          if (typeof window.app.init === 'function') window.app.init();
-        }
-      } catch (e) { console.error('delayed init err:', e); }
-    }, 300);
     return;
   }
 
@@ -55,6 +45,7 @@ function doLoginSuccess(uid, username, isAdmin) {
 
   try {
     if (typeof window.app.showApp === 'function') {
+      // showApp 内部会负责初始化；这里不要再额外调用 init，避免重复绑定和卡死
       window.app.showApp();
     } else {
       showAppFallback();
@@ -63,17 +54,6 @@ function doLoginSuccess(uid, username, isAdmin) {
     console.error('showApp err:', e);
     showAppFallback();
   }
-
-  // 强制补一次初始化，确保系统内按键监听器已绑定
-  setTimeout(function(){
-    try {
-      if (window.app && typeof window.app.init === 'function') {
-        window.app.init();
-      }
-    } catch (e) {
-      console.error('post-login init err:', e);
-    }
-  }, 50);
 }
 
 window._doLogin = function(){
