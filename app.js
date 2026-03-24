@@ -8557,7 +8557,7 @@
         }
 
         if (students.length > 0) {
-          this.students.push(...students);
+          this.students = (Array.isArray(this.students) ? this.students : []).concat(students);
 
           // 强制写回当前班级并持久化
           const u = getUserData();
@@ -8570,6 +8570,9 @@
           }
 
           this.saveStudents();
+          this.loadUserData();
+          const searchEl = document.getElementById('studentSearch');
+          if (searchEl) searchEl.value = '';
           this.showPage('students');
           this.renderStudents();
           this.renderDashboard();
