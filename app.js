@@ -8365,11 +8365,11 @@
             // 导入JSON备份文件
             const data = JSON.parse(e.target.result);
             this.importJsonData(data, fileName);
-          } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.csv')) {
+          } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv')) {
             // 导入Excel/CSV学生名单
             this.importExcelData(e.target.result, fileName);
           } else {
-            alert('不支持的文件格式，请上传 .json, .xlsx 或 .csv 文件');
+            alert('不支持的文件格式，请上传 .json, .xlsx, .xls 或 .csv 文件');
           }
         } catch (err) {
           alert('导入失败：' + (err.message || '文件格式错误'));
@@ -8468,15 +8468,12 @@
         const students = [];
         let successCount = 0;
         let skipCount = 0;
-        
-        jsonData.forEach((row, index) => {
-          // 支持多种列名格式；学号可选（缺失时自动生成）
-          const rawId = row['学号'] || row['ID'] || row['id'] || row['编号'] || row['studentId'] || '';
-          const rawName = row['姓名'] || row['名字'] || row['name'] || row['学生姓名'] || row['studentName'] || '';
-          const name = String(rawName || '').trim();
-          if (!name && !rawId) return;
 
-          const sidBase = String(rawId || '').trim() || ('S' + String(Date.now()).slice(-6) + String(index + 1).padStart(3, '0'));
+        const pushStudent = (rawId, rawName, row) => {
+          const name = String(rawName || '').trim();
+          if (!name && !rawId) return false;
+
+          const sidBase = String(rawId || '').trim() || ('S' + String(Date.now()).slice(-6) + String(successCount + skipCount + 1).padStart(3, '0'));
           let sid = sidBase;
           let bump = 1;
           while (this.students.some(s => s.id === sid) || students.some(s => s.id === sid)) {
@@ -8484,23 +8481,39 @@
               sid = sidBase + '_' + bump;
               bump++;
             } else {
-              // 纯自动生成ID时，重复则直接跳过
               sid = '';
               break;
             }
           }
-          if (!sid) { skipCount++; return; }
+          if (!sid) { skipCount++; return false; }
 
           students.push({
             id: sid,
             name: name || sid,
-            avatar: row['头像'] || '👦',
-            points: parseInt(row['积分']) || 0,
-            badges: parseInt(row['徽章']) || 0,
-            groupName: row['所在小组'] || ''
+            avatar: (row && row['头像']) || '👦',
+            points: parseInt((row && row['积分']) || 0) || 0,
+            badges: parseInt((row && row['徽章']) || 0) || 0,
+            groupName: (row && row['所在小组']) || ''
           });
           successCount++;
+          return true;
+        };
+        
+        jsonData.forEach((row, index) => {
+          // 支持多种列名格式；学号可选（缺失时自动生成）
+          const rawId = row['学号'] || row['ID'] || row['id'] || row['编号'] || row['studentId'] || '';
+          const rawName = row['姓名'] || row['名字'] || row['name'] || row['学生姓名'] || row['studentName'] || '';
+          pushStudent(rawId, rawName, row);
         });
+
+        // 兜底：如果对象模式未识别到姓名/学号，按前两列读取
+        if (students.length === 0) {
+          const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          for (let i = 1; i < rows.length; i++) {
+            const r = rows[i] || [];
+            pushStudent(r[0], r[1], null);
+          }
+        }
         
         if (students.length > 0) {
           // 添加到当前班级
