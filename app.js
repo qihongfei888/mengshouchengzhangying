@@ -3826,10 +3826,30 @@
 
     renderStudents() {
       const keyword = (document.getElementById('studentSearch') && document.getElementById('studentSearch').value || '').trim().toLowerCase();
-      const rawStudents = this.students;
-      const source = Array.isArray(rawStudents)
-        ? rawStudents.filter(s => s && typeof s === 'object')
-        : (rawStudents && typeof rawStudents === 'object' ? Object.values(rawStudents).filter(s => s && typeof s === 'object') : []);
+      let rawStudents = this.students;
+
+      // 自愈：当前班级为空时，自动切换到有学生数据的班级
+      const normalizeList = (v) => Array.isArray(v)
+        ? v.filter(s => s && typeof s === 'object')
+        : (v && typeof v === 'object' ? Object.values(v).filter(s => s && typeof s === 'object') : []);
+
+      let source = normalizeList(rawStudents);
+      if (source.length === 0) {
+        const u = getUserData();
+        const classes = (u && Array.isArray(u.classes)) ? u.classes : [];
+        let cls = classes.find(c => c.id === this.currentClassId && normalizeList(c.students).length > 0);
+        if (!cls) cls = classes.find(c => normalizeList(c.students).length > 0);
+        if (cls) {
+          this.currentClassId = cls.id;
+          this.currentClassName = cls.name || '';
+          this.students = normalizeList(cls.students);
+          source = this.students;
+          u.currentClassId = cls.id;
+          setUserData(u);
+          this.updateClassSelect();
+        }
+      }
+
       // 兼容历史数据把 students 存成对象的情况
       if (!Array.isArray(this.students) && source.length) this.students = source;
 
@@ -8380,7 +8400,7 @@
       if (fileName.endsWith('.json')) {
         reader.readAsText(file, 'UTF-8');
       } else {
-        reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
       }
     },
 
@@ -8455,13 +8475,25 @@
     // 导入Excel数据
     importExcelData(data, fileName) {
       try {
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
 
         if (!rows || rows.length === 0) {
           alert('Excel文件中没有数据');
           return;
+        }
+
+        // 确保当前班级已定位（避免导入写入到“无班级上下文”导致列表不显示）
+        const u0 = getUserData();
+        if (!this.currentClassId) {
+          if (u0.currentClassId) {
+            this.currentClassId = u0.currentClassId;
+          } else if (Array.isArray(u0.classes) && u0.classes.length > 0) {
+            this.currentClassId = u0.classes[0].id;
+            u0.currentClassId = this.currentClassId;
+            setUserData(u0);
+          }
         }
 
         // 兼容 students 可能被写成对象的历史数据
@@ -8484,8 +8516,19 @@
 
         for (let i = startRow; i < rows.length; i++) {
           const row = Array.isArray(rows[i]) ? rows[i] : [];
-          const rawId = normalize(row[idIdx]);
-          const rawName = normalize(row[nameIdx]);
+          let rawId = normalize(row[idIdx]);
+          let rawName = normalize(row[nameIdx]);
+
+          // 兜底：若定位列为空，则取本行前两个非空单元格
+          if (!rawId && !rawName) {
+            const filled = row.map(normalize).filter(Boolean);
+            rawId = filled[0] || '';
+            rawName = filled[1] || '';
+          } else if (!rawName) {
+            const filled = row.map(normalize).filter(Boolean);
+            rawName = filled.find(v => v !== rawId) || '';
+          }
+
           if (!rawId && !rawName) continue;
 
           const baseId = rawId || ('S' + String(Date.now()).slice(-6) + String(i + 1).padStart(3, '0'));
