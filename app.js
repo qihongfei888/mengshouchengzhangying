@@ -3493,7 +3493,7 @@
       const idx = Math.max(1, parseInt(stage, 10) || 1) - 1;
       const v = parseInt(list[idx], 10);
       if (Number.isFinite(v) && v > 0) return v;
-      return this.getStagePoints();
+      return this.getStagePointsByStage(1);
     },
     getStagePhotoPath(typeId, stage) {
       if (!typeId) return '';
@@ -4156,7 +4156,7 @@
         const s = student;
         const pet = s.pet;
         if (pet.completed) return; // 已养成的宠物不再退化
-        const stagePoints = this.getStagePoints();
+        const stagePoints = this.getStagePointsByStage(pet.stage || 1);
         let stage = pet.stage || 1;
         let progress = pet.stageProgress || 0;
         // 只处理负向变更
@@ -8187,9 +8187,8 @@
     },
     exportToExcel() {
       if (!this.students.length) { alert('暂无数据'); return; }
-      const stagePoints = this.getStagePoints();
+      const stagePoints = this.getStagePointsByStage(1);
       const totalStages = this.getTotalStages();
-      const headers = ['学号', '姓名', '积分', '宠物类型', '宠物品种', '阶段', '本阶段进度', '徽章数'];
       const rows = this.students.map(s => {
         const type = s.pet ? window.PET_TYPES.find(t => t.id === s.pet.typeId) : null;
         const breed = type && s.pet ? type.breeds.find(b => b.id === s.pet.breedId) : null;
