@@ -3418,63 +3418,52 @@
     },
 
     init() {
+      // 先绑定交互，避免渲染中途报错导致“按键无反应”
+      try { this.bindNav(); } catch (e) { console.error('bindNav失败:', e); }
+      try { this.bindSearch(); } catch (e) { console.error('bindSearch失败:', e); }
+      try { this.bindStoreTabs(); } catch (e) { console.error('bindStoreTabs失败:', e); }
+
+      // 数据加载
       try {
-        // 检查是否已经加载过数据（避免重复加载覆盖同步的数据）
         if (!this.dataLoaded) {
-          // 加载用户数据和当前班级数据
           this.loadUserData();
           this.dataLoaded = true;
           console.log('首次加载用户数据');
         } else {
           console.log('数据已加载，跳过重复加载');
         }
-        
-        // 渲染各项设置
-        this.renderPlusItems();
-        this.renderMinusItems();
-        this.renderPrizes();
-        this.renderLotteryPrizes();
-        
-        // 绑定事件和显示页面
-        this.bindNav();
-        this.bindSearch();
-        this.bindStoreTabs();
-        this.loadBroadcastSettings();
-        this.loadBroadcastMessages();
-
-        // 首屏只渲染首页，其他重渲染延后，避免主线程卡死
-        this.showPage('dashboard');
-        this.renderDashboard();
-        setTimeout(() => { try { this.renderStudents(); } catch (e) { console.error('延后渲染学生失败:', e); } }, 0);
-        setTimeout(() => { try { this.renderHonor(); } catch (e) { console.error('延后渲染光荣榜失败:', e); } }, 30);
-        setTimeout(() => { try { this.renderStore(); } catch (e) { console.error('延后渲染商店失败:', e); } }, 60);
-        
-        // 初始化照片存储（添加错误处理）
-        try {
-          this.initPhotoStorage();
-        } catch (e) {
-          console.error('照片存储初始化失败:', e);
-        }
-        
-        // 后台定时任务只启动一次，避免重复init导致性能雪崩
-        if (!this._backgroundJobsStarted) {
-          this._backgroundJobsStarted = true;
-          // 每小时重置GitHub API计数
-          setInterval(() => {
-            try {
-              this.resetGithubApiCounter();
-            } catch (e) {
-              console.error('重置API计数器失败:', e);
-            }
-          }, 60 * 60 * 1000);
-          // 启动照片队列处理器
-          this.startPhotoQueueProcessor();
-        }
-        
-        console.log('应用初始化完成');
       } catch (e) {
-        console.error('应用初始化失败:', e);
+        console.error('加载用户数据失败:', e);
       }
+
+      // 渲染设置项
+      try { this.renderPlusItems(); } catch (e) { console.error('renderPlusItems失败:', e); }
+      try { this.renderMinusItems(); } catch (e) { console.error('renderMinusItems失败:', e); }
+      try { this.renderPrizes(); } catch (e) { console.error('renderPrizes失败:', e); }
+      try { this.renderLotteryPrizes(); } catch (e) { console.error('renderLotteryPrizes失败:', e); }
+      try { this.loadBroadcastSettings(); } catch (e) { console.error('loadBroadcastSettings失败:', e); }
+      try { this.loadBroadcastMessages(); } catch (e) { console.error('loadBroadcastMessages失败:', e); }
+
+      // 首屏渲染
+      try { this.showPage('dashboard'); } catch (e) { console.error('showPage失败:', e); }
+      try { this.renderDashboard(); } catch (e) { console.error('renderDashboard失败:', e); }
+      setTimeout(() => { try { this.renderStudents(); } catch (e) { console.error('延后渲染学生失败:', e); } }, 0);
+      setTimeout(() => { try { this.renderHonor(); } catch (e) { console.error('延后渲染光荣榜失败:', e); } }, 30);
+      setTimeout(() => { try { this.renderStore(); } catch (e) { console.error('延后渲染商店失败:', e); } }, 60);
+
+      // 初始化照片存储
+      try { this.initPhotoStorage(); } catch (e) { console.error('照片存储初始化失败:', e); }
+
+      // 后台任务仅启动一次
+      if (!this._backgroundJobsStarted) {
+        this._backgroundJobsStarted = true;
+        setInterval(() => {
+          try { this.resetGithubApiCounter(); } catch (e) { console.error('重置API计数器失败:', e); }
+        }, 60 * 60 * 1000);
+        this.startPhotoQueueProcessor();
+      }
+
+      console.log('应用初始化完成');
     },
 
     getStagePoints() {
