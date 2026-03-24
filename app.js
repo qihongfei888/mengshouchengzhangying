@@ -3981,11 +3981,11 @@
       if (!s) return;
       const plusItems = this.getPlusItems();
       const minusItems = this.getMinusItems();
-      const stagePoints = this.getStagePoints();
+      const stagePoints = this.getStagePointsByStage(s.pet ? (s.pet.stage || 1) : 1);
       const totalStages = this.getTotalStages();
       let petSection = '';
       if (s.pet) {
-        const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
+        const type = window.PET_TYPES && window.PET_TYPES.find(t => t.id === s.pet.typeId);
         const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
         const icon = (breed && breed.icon) || (type && type.icon) || '🐾';
         const intro = (type && type.desc) || (window.BEAST_DESC && window.BEAST_DESC[s.pet.typeId]) || '';
