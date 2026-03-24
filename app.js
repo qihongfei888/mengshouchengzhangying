@@ -3441,11 +3441,13 @@
         this.bindStoreTabs();
         this.loadBroadcastSettings();
         this.loadBroadcastMessages();
+
+        // 首屏只渲染首页，其他重渲染延后，避免主线程卡死
         this.showPage('dashboard');
         this.renderDashboard();
-        this.renderStudents();
-        this.renderHonor();
-        this.renderStore();
+        setTimeout(() => { try { this.renderStudents(); } catch (e) { console.error('延后渲染学生失败:', e); } }, 0);
+        setTimeout(() => { try { this.renderHonor(); } catch (e) { console.error('延后渲染光荣榜失败:', e); } }, 30);
+        setTimeout(() => { try { this.renderStore(); } catch (e) { console.error('延后渲染商店失败:', e); } }, 60);
         
         // 初始化照片存储（添加错误处理）
         try {
@@ -3454,17 +3456,20 @@
           console.error('照片存储初始化失败:', e);
         }
         
-        // 每小时重置GitHub API计数
-        setInterval(() => {
-          try {
-            this.resetGithubApiCounter();
-          } catch (e) {
-            console.error('重置API计数器失败:', e);
-          }
-        }, 60 * 60 * 1000);
-        
-        // 启动照片队列处理器
-        this.startPhotoQueueProcessor();
+        // 后台定时任务只启动一次，避免重复init导致性能雪崩
+        if (!this._backgroundJobsStarted) {
+          this._backgroundJobsStarted = true;
+          // 每小时重置GitHub API计数
+          setInterval(() => {
+            try {
+              this.resetGithubApiCounter();
+            } catch (e) {
+              console.error('重置API计数器失败:', e);
+            }
+          }, 60 * 60 * 1000);
+          // 启动照片队列处理器
+          this.startPhotoQueueProcessor();
+        }
         
         console.log('应用初始化完成');
       } catch (e) {
