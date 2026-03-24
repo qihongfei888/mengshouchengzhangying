@@ -9760,7 +9760,8 @@
             try {
               // 有数据端自动登录：传 true 表示“登录场景”，本地已有班级数据则不拿云端覆盖，避免数据消失
               console.log('自动登录时从云端同步数据（登录场景保护：本地有数据则不覆盖）...');
-              await Promise.race([app.syncFromCloud(true), new Promise(function(r){setTimeout(r,1500)})]);
+              // 登录阶段不做阻塞式云拉取，避免卡在转圈
+              await Promise.resolve(false);
  // 若 syncFromCloud 内触发“其他设备已登录”并 forceLogout，则不再进入应用
               if (!app.currentUserId) return;
             } catch (e) {
