@@ -8,7 +8,7 @@
   document.body.appendChild(loadingDiv);
 
   var scripts = [
-    './app.js?v=33',
+    './app.js?v=34',
     './features.js?v=3',
     './features_monopoly.js?v=1',
     './features_monopoly2.js?v=1',

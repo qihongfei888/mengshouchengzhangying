@@ -8582,7 +8582,24 @@
 
           let msg = `成功导入 ${successCount} 名学生`;
           if (skipCount > 0) msg += `，跳过 ${skipCount} 条重复记录`;
-          alert(msg);
+          
+          // 诊断弹窗：显示实际写入的数据
+          const userData = getUserData();
+          const currentCls = userData.classes && userData.classes.find(c => c.id === this.currentClassId);
+          const actualCount = currentCls && Array.isArray(currentCls.students) ? currentCls.students.length : 0;
+          const debugMsg = `
+【导入诊断】
+✓ 导入提示: ${msg}
+✓ 当前班级ID: ${this.currentClassId}
+✓ 班级名称: ${this.currentClassName}
+✓ 内存中学生数: ${this.students.length}
+✓ 存储中班级学生数: ${actualCount}
+✓ 前3个学生: ${this.students.slice(0, 3).map(s => s.name + '(' + s.id + ')').join(', ')}
+
+如果"存储中班级学生数"为0，说明数据没写进班级。
+如果"内存中学生数"不为0但页面空白，说明是渲染问题。
+          `;
+          alert(debugMsg);
         } else {
           alert('没有可导入的学生数据：请确保表格前两列为“学号、姓名”（或包含对应表头）');
         }
