@@ -8558,7 +8558,6 @@
           }
 
           this.saveStudents();
-          this.loadUserData();
           const searchEl = document.getElementById('studentSearch');
           if (searchEl) searchEl.value = '';
           this.showPage('students');
