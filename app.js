@@ -8463,27 +8463,36 @@
         let skipCount = 0;
         
         jsonData.forEach((row, index) => {
-          // 支持多种列名格式
-          const id = row['学号'] || row['ID'] || row['id'] || row['编号'] || '';
-          const name = row['姓名'] || row['名字'] || row['name'] || row['学生姓名'] || '';
-          
-          if (id && name) {
-            // 检查是否已存在
-            const existing = this.students.find(s => s.id === String(id));
-            if (!existing) {
-              students.push({
-                id: String(id),
-                name: String(name),
-                avatar: row['头像'] || '👦',
-                points: parseInt(row['积分']) || 0,
-                badges: parseInt(row['徽章']) || 0,
-                groupName: row['所在小组'] || ''
-              });
-              successCount++;
+          // 支持多种列名格式；学号可选（缺失时自动生成）
+          const rawId = row['学号'] || row['ID'] || row['id'] || row['编号'] || row['studentId'] || '';
+          const rawName = row['姓名'] || row['名字'] || row['name'] || row['学生姓名'] || row['studentName'] || '';
+          const name = String(rawName || '').trim();
+          if (!name && !rawId) return;
+
+          const sidBase = String(rawId || '').trim() || ('S' + String(Date.now()).slice(-6) + String(index + 1).padStart(3, '0'));
+          let sid = sidBase;
+          let bump = 1;
+          while (this.students.some(s => s.id === sid) || students.some(s => s.id === sid)) {
+            if (rawId) {
+              sid = sidBase + '_' + bump;
+              bump++;
             } else {
-              skipCount++;
+              // 纯自动生成ID时，重复则直接跳过
+              sid = '';
+              break;
             }
           }
+          if (!sid) { skipCount++; return; }
+
+          students.push({
+            id: sid,
+            name: name || sid,
+            avatar: row['头像'] || '👦',
+            points: parseInt(row['积分']) || 0,
+            badges: parseInt(row['徽章']) || 0,
+            groupName: row['所在小组'] || ''
+          });
+          successCount++;
         });
         
         if (students.length > 0) {
@@ -9696,65 +9705,7 @@
   };
 
   document.getElementById('importFile').addEventListener('change', function (e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (ev) {
-      try {
-        const data = ev.target.result;
-        let rows = [];
-        if (file.name.endsWith('.csv')) {
-          const text = new TextDecoder().decode(data);
-          rows = text.split(/\r?\n/).map(line => line.split(',').map(c => c.trim()));
-        } else {
-          const wb = XLSX.read(data, { type: 'array' });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        }
-        if (rows.length < 2) { alert('文件至少需要表头+一行数据'); return; }
-        // 确保表头是数组
-        if (!Array.isArray(rows[0])) { alert('文件格式错误：表头不是有效的数组'); return; }
-        const headers = rows[0].map(h => (h || '').toString().toLowerCase());
-        const idCol = headers.findIndex(h => h.includes('学号') || h === 'id' || h === '编号');
-        const nameCol = headers.findIndex(h => h.includes('姓名') || h === 'name');
-        const idIdx = idCol >= 0 ? idCol : 0;
-        const nameIdx = nameCol >= 0 ? nameCol : 1;
-        const existing = (app.students || []).map(s => s.id);
-        const added = [];
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          // 确保row是数组
-          if (!Array.isArray(row)) continue;
-          // 安全地获取ID和姓名，确保值不是undefined
-          const idValue = row[idIdx] != null ? row[idIdx] : row[0];
-          const nameValue = row[nameIdx] != null ? row[nameIdx] : row[1];
-          const id = idValue != null ? idValue.toString().trim() : '';
-          const name = nameValue != null ? nameValue.toString().trim() : '';
-          if (!id && !name) continue;
-          const sid = id || 's' + (existing.length + added.length + 1);
-          if (existing.includes(sid) || added.some(a => a.id === sid)) continue;
-          added.push({ id: sid, name: name || sid, points: 0, avatar: AVATAR_OPTIONS[0] });
-        }
-        app.students = (app.students || []).concat(added);
-        app.saveStudents();
-        app.renderStudents();
-        app.renderDashboard();
-        app.renderPetStudentList();
-        app.renderStudentManage();
-        app.loadBadgeAwardStudents();
-        app.renderStore();
-        if (added.length === 0) {
-          alert('没有导入到新学生：请检查学号是否重复，或表头是否包含“学号/姓名”');
-        } else {
-          alert('成功导入 ' + added.length + ' 名学生');
-        }
-      } catch (err) {
-        alert('导入失败：' + (err.message || err));
-      }
-      e.target.value = '';
-    };
-    if (file.name.endsWith('.csv')) reader.readAsArrayBuffer(file);
-    else reader.readAsArrayBuffer(file);
+    app.handleImportData(e);
   });
 
   window.app = app;
