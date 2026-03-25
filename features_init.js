@@ -48,11 +48,25 @@ function patchHonorTab(){
 
 function buildDailyStar(){
   var sel=document.getElementById('dailyStarStudent');if(!sel||!window.app)return;
-  var today=new Date().toDateString(),sc={};
-  try{var d=getUserData(),cl=d.classes&&window.app.currentClassId?d.classes.find(function(c){return c.id===window.app.currentClassId;}):null;
-    ((cl&&cl.scoreHistory)||[]).forEach(function(h){if(new Date(h.time||h.date).toDateString()===today&&h.points>0)sc[h.studentId]=(sc[h.studentId]||0)+h.points;});}catch(e){}
+  var periodEl=document.querySelector('.honor-period-tab.active');
+  var period=periodEl?periodEl.dataset.period:'day';
+  var periodMs={day:86400000,week:604800000,month:2592000000,semester:15552000000}[period]||86400000;
+  var since=Date.now()-periodMs;
+  // 综合评分：时间段内积分变化+回答次数
+  var sc={};
+  try{
+    var d=getUserData(),cl=d.classes&&window.app.currentClassId?d.classes.find(function(c){return c.id===window.app.currentClassId;}):null;
+    var hist=(cl&&cl.scoreHistory)||[];
+    hist.forEach(function(h){if((h.time||0)>=since&&(h.delta||0)>0){sc[h.studentId]=(sc[h.studentId]||0)+(h.delta||0);}});
+  }catch(e){}
   var arr=(window.app.students||[]).slice().sort(function(a,b){return(sc[b.id]||0)-(sc[a.id]||0);});
-  sel.innerHTML=arr.map(function(s){var p=sc[s.id]||0;return '<option value="'+s.id+'">'+s.name+(p?' (+'+p+'分今日)':'')+'</option>';}).join('');
+  sel.innerHTML=arr.map(function(s,i){
+    var p=sc[s.id]||0;
+    var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    return '<option value="'+s.id+'">'+medal+s.name+(p?' (+'+p+'分)':'')+'</option>';
+  }).join('');
+  // 自动选中排名第一
+  if(arr.length)sel.value=arr[0].id;
 }
 window.buildDailyStarCandidates=buildDailyStar;
 

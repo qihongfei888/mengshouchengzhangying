@@ -8254,6 +8254,61 @@
       alert('已保存');
     },
 
+    // 保存排名奖励设置
+    saveRankBonusSettings() {
+      const bonus1 = parseInt(document.getElementById('rankBonus1').value, 10) || 5;
+      const bonus2 = parseInt(document.getElementById('rankBonus2').value, 10) || 3;
+      const bonus3 = parseInt(document.getElementById('rankBonus3').value, 10) || 1;
+      const period = document.getElementById('rankBonusPeriod').value || 'day';
+      const u = getUserData();
+      const cls = this.currentClassId ? (u.classes || []).find(c => c.id === this.currentClassId) : null;
+      if (cls) {
+        cls.rankBonus = { bonus1, bonus2, bonus3, period };
+        setUserData(u);
+      }
+      alert('排名奖励设置已保存');
+    },
+
+    // 立即结算排名奖励
+    applyRankBonus() {
+      const u = getUserData();
+      const cls = this.currentClassId ? (u.classes || []).find(c => c.id === this.currentClassId) : null;
+      if (!cls) { alert('请先选择班级'); return; }
+      const rankBonus = cls.rankBonus || { bonus1: 5, bonus2: 3, bonus3: 1, period: 'day' };
+      // 读取设置页当前值（如果有）
+      const b1 = parseInt(document.getElementById('rankBonus1') ? document.getElementById('rankBonus1').value : rankBonus.bonus1, 10) || rankBonus.bonus1;
+      const b2 = parseInt(document.getElementById('rankBonus2') ? document.getElementById('rankBonus2').value : rankBonus.bonus2, 10) || rankBonus.bonus2;
+      const b3 = parseInt(document.getElementById('rankBonus3') ? document.getElementById('rankBonus3').value : rankBonus.bonus3, 10) || rankBonus.bonus3;
+      const period = document.getElementById('rankBonusPeriod') ? document.getElementById('rankBonusPeriod').value : (rankBonus.period || 'day');
+      const periodMs = { day: 86400000, week: 604800000, month: 2592000000, semester: 15552000000 }[period] || 86400000;
+      const since = Date.now() - periodMs;
+
+      // 综合排名：按时间段内积分变化排序
+      const ranked = this.students.map(s => {
+        const periodPts = (s.scoreHistory || []).filter(h => (h.time || 0) >= since).reduce((sum, h) => sum + (h.delta || 0), 0);
+        return { s, periodPts };
+      }).sort((a, b) => b.periodPts - a.periodPts);
+
+      const bonuses = [b1, b2, b3];
+      const names = [];
+      ranked.slice(0, 3).forEach((item, idx) => {
+        if (item.periodPts <= 0) return;
+        const bonus = bonuses[idx];
+        if (!bonus) return;
+        item.s.points = (item.s.points || 0) + bonus;
+        if (!item.s.scoreHistory) item.s.scoreHistory = [];
+        item.s.scoreHistory.push({ delta: bonus, reason: `排名第${idx+1}名奖励(${period})`, time: Date.now() });
+        names.push(`${['🥇','🥈','🥉'][idx]} ${item.s.name} +${bonus}分`);
+      });
+
+      if (names.length === 0) { alert('本周期内暂无得分记录，无法结算'); return; }
+      this.saveStudents();
+      this.renderStudents();
+      this.renderDashboard();
+      this.renderHonor();
+      alert('排名奖励已发放！\n' + names.join('\n'));
+    },
+
     exportAllData() {
       const userList = getUserList();
       let currentUserId = null;

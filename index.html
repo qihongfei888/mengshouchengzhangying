@@ -453,6 +453,35 @@
             </div>
             <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存</button>
           </div>
+
+          <!-- 排名奖励设置 -->
+          <div class="settings-card settings-card-cute">
+            <h3>🏆 排名自动奖励</h3>
+            <p class="form-hint">结算时，自动为当前排名周期前三名发放积分奖励。</p>
+            <div class="setting-item">
+              <label>🥇 冠军奖励积分</label>
+              <input type="number" id="rankBonus1" min="0" value="5" class="login-input" style="width:100px">
+            </div>
+            <div class="setting-item">
+              <label>🥈 亚军奖励积分</label>
+              <input type="number" id="rankBonus2" min="0" value="3" class="login-input" style="width:100px">
+            </div>
+            <div class="setting-item">
+              <label>🥉 季军奖励积分</label>
+              <input type="number" id="rankBonus3" min="0" value="1" class="login-input" style="width:100px">
+            </div>
+            <div class="setting-item">
+              <label>排名周期</label>
+              <select id="rankBonusPeriod" class="login-input">
+                <option value="day">每日</option>
+                <option value="week">每周</option>
+                <option value="month">每月</option>
+                <option value="semester">学期</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary btn-cute" onclick="app.saveRankBonusSettings()">💾 保存奖励设置</button>
+            <button class="btn btn-primary btn-cute" style="margin-left:8px" onclick="app.applyRankBonus()">🎁 立即结算奖励</button>
+          </div>
           <!-- 照片存储配置 - 仅管理员可见 -->
           <div id="photoStorageConfig" class="settings-card settings-card-cute" style="display: none;">
             <h3>📸 照片存储配置（管理员）</h3>
@@ -1291,5 +1320,5 @@
 <script src="./db.js?v=3"></script>
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
-<script src="./app-loader.js?v=36"></script>
+<script src="./app-loader.js?v=37"></script>
 </body></html>
