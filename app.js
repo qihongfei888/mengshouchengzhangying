@@ -3980,7 +3980,7 @@
           <div class="student-card-v2-info">
             <div class="student-name-row">
               <span class="student-name-v2" style="color: ${theme.primary};">${this.escape(s.name)}</span>
-              ${s.pet ? `<span class="student-pet-type">${this.escape(s.pet.isCustom ? (s.pet.customName || '自定义') : (((window.PET_TYPES || []).find(t => t.id === s.pet.typeId) || {}).name || s.pet.typeId || '神兽'))}</span>` : '<span class="student-pet-type">未领养</span>'}
+              ${s.pet ? `<span class="student-pet-type">${this.escape(s.pet.isCustom ? (s.pet.customName || '自定义') : (((window.PET_TYPES || []).find(t => t.id === s.pet.typeId) || {}).name || ({qinglong:'青龙',baihu:'白虎',zhuque:'朱雀',xuanwu:'玄武',fenghuang:'凤凰',qinlin:'麒麟',qilin:'麒麟',pixiu:'貔貅',yinglong:'应龙',zhulong:'烛龙',taotie:'饕餮',hundun:'混沌',jiuweihu:'九尾狐',jingwei:'精卫',jinwu:'金乌',yutu:'玉兔',xiezhi:'獬豸',baize:'白泽',tiangou:'天狗',bifang:'毕方',shanxiao:'山魈'})[s.pet.typeId] || '神兽'))}</span>` : '<span class="student-pet-type">未领养</span>'}
             </div>
             ${extraInfoHtml}
             <div class="student-progress-row">
@@ -4016,8 +4016,8 @@
         const intro = (type && type.desc) || (window.BEAST_DESC && window.BEAST_DESC[s.pet.typeId]) || '';
         const photo = s.pet.typeId ? this.getStagePhotoPath(s.pet.typeId, s.pet.stage || 1) : '';
         const progress = s.pet.stageProgress || 0;
-        const need = this.getStagePointsByStage(stage || 1);
         const stage = s.pet.stage || 0;
+        const need = this.getStagePointsByStage(stage || 1);
         const canFeed = !s.pet.hatching && stage < totalStages && (s.points || 0) >= 1;
         const foodLabel = this.getPetFood(s);
         petSection = `
