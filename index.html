@@ -219,6 +219,21 @@
               <div class="tool-card-main">神兽医院</div>
               <div class="tool-card-sub">治疗生病 / 复活神兽</div>
             </button>
+            <button class="tool-card" onclick="app.openAssassinKingGame()">
+              <div class="tool-card-icon">🗡️</div>
+              <div class="tool-card-main">刺杀国王</div>
+              <div class="tool-card-sub">小组密谋 / 角色对抗</div>
+            </button>
+            <button class="tool-card" onclick="app.openTongueTwisterGame()">
+              <div class="tool-card-icon">👄</div>
+              <div class="tool-card-main">嘴瓢大挑战</div>
+              <div class="tool-card-sub">绕口令 / 断句挑战</div>
+            </button>
+            <button class="tool-card" onclick="app.openPassingFlowerGame()">
+              <div class="tool-card-icon">🥁</div>
+              <div class="tool-card-main">击鼓传花</div>
+              <div class="tool-card-sub">随机停鼓点名</div>
+            </button>
             <button class="tool-card" onclick="window.LuckyDraw&&LuckyDraw.open()">
               <div class="tool-card-icon">🎰</div>
               <div class="tool-card-main">幸运大抽奖</div>
@@ -396,6 +411,14 @@
               </div>
             </div>
             <div class="monopoly-log-panel">
+              <h3>🃏 对抗卡牌</h3>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                <button class="btn btn-small btn-secondary" onclick="Monopoly.useCard('challenge')">⚔️ 挑战卡</button>
+                <button class="btn btn-small btn-secondary" onclick="Monopoly.useCard('opportunity')">🎯 机会卡</button>
+                <button class="btn btn-small btn-secondary" onclick="Monopoly.useCard('reverse')">🔁 反转卡</button>
+                <button class="btn btn-small btn-secondary" onclick="Monopoly.useCard('steal')">🧲 抽抽卡</button>
+              </div>
+              <div id="monopolyCardHint" style="font-size:12px;color:#8B1A1A;margin-bottom:8px;">卡牌参数可在系统设置中配置</div>
               <h3>📜 事件日志</h3>
               <div id="monopolyLog" class="monopoly-log"></div>
             </div>
@@ -596,6 +619,26 @@
               <input type="number" id="settingMonopolyRollCost" min="0" value="1">
             </div>
             <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存医院与PK设置</button>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>🎯 大PK卡牌设置</h3>
+            <div class="setting-item">
+              <label>挑战卡成功加分</label>
+              <input type="number" id="settingMonopolyChallengePoints" min="1" value="3">
+            </div>
+            <div class="setting-item">
+              <label>机会卡任务（老师可改）</label>
+              <input type="text" id="settingMonopolyOpportunityTask" value="全组30秒内回答3题">
+            </div>
+            <div class="setting-item">
+              <label>机会卡完成奖励分</label>
+              <input type="number" id="settingMonopolyOpportunityPoints" min="1" value="4">
+            </div>
+            <div class="setting-item">
+              <label>抽抽卡抽取积分</label>
+              <input type="number" id="settingMonopolyStealPoints" min="1" value="2">
+            </div>
+            <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存卡牌设置</button>
           </div>
           <div class="settings-card settings-card-cute full-width">
             <h3>👦 学生管理</h3>
@@ -1385,6 +1428,82 @@
     </div>
   </div>
 
+  <!-- 刺杀国王游戏 -->
+  <div id="assassinKingModal" class="modal">
+    <div class="modal-content modal-content-large">
+      <button class="modal-close" onclick="app.closeModal('assassinKingModal')">&times;</button>
+      <h3>🗡️ 刺杀国王</h3>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label>参战小组A</label>
+          <select id="kingGameGroupA" class="login-input" onchange="app.renderAssassinKingRoles()"></select>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>参战小组B</label>
+          <select id="kingGameGroupB" class="login-input" onchange="app.renderAssassinKingRoles()"></select>
+        </div>
+        <div class="form-group" style="width:180px;">
+          <label>可刺杀所需答题数</label>
+          <input id="kingGameNeedAnswers" type="number" class="login-input" min="1" value="3">
+        </div>
+      </div>
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="form-group" style="flex:1;">
+          <label>答题加分</label>
+          <input id="kingGameAnswerPoints" type="number" class="login-input" min="1" value="2">
+        </div>
+        <button class="btn btn-secondary" onclick="app.initAssassinKingBattle()">开始对局</button>
+      </div>
+      <div id="assassinKingRoleBoard" class="score-history-list" style="max-height:260px;"></div>
+      <div class="form-row" style="margin-top:8px;">
+        <button class="btn btn-primary" onclick="app.addAssassinKingAnswer('A')">A组答对+1</button>
+        <button class="btn btn-primary" onclick="app.addAssassinKingAnswer('B')">B组答对+1</button>
+        <button class="btn btn-danger" onclick="app.assassinKingAction('A')">A组发起刺杀</button>
+        <button class="btn btn-danger" onclick="app.assassinKingAction('B')">B组发起刺杀</button>
+      </div>
+      <div id="assassinKingLog" class="score-history-list" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- 嘴瓢大挑战 -->
+  <div id="tongueTwisterModal" class="modal">
+    <div class="modal-content modal-content-large">
+      <button class="modal-close" onclick="app.closeModal('tongueTwisterModal')">&times;</button>
+      <h3>👄 嘴瓢大挑战</h3>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label>选择学生</label>
+          <select id="tongueStudentSelect" class="login-input"></select>
+        </div>
+        <div class="form-group" style="width:180px;">
+          <label>通过加分</label>
+          <input id="tongueAwardPoints" type="number" class="login-input" min="1" value="2">
+        </div>
+      </div>
+      <div id="tongueSentenceCard" style="padding:14px;border-radius:12px;background:linear-gradient(120deg,#fff8ef,#f4f9ff);border:1px solid #ffd7ad;margin:8px 0;font-size:1.08rem;line-height:1.7;"></div>
+      <div class="form-row">
+        <button class="btn btn-secondary" onclick="app.generateTongueSentence()">🎲 换一句</button>
+        <button class="btn btn-primary" onclick="app.applyTongueAward(true)">✅ 读对加分</button>
+        <button class="btn btn-outline" onclick="app.applyTongueAward(false)">😵 嘴瓢重来</button>
+      </div>
+      <div id="tongueLog" class="score-history-list" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- 击鼓传花 -->
+  <div id="passingFlowerModal" class="modal">
+    <div class="modal-content modal-content-large">
+      <button class="modal-close" onclick="app.closePassingFlowerGame()">&times;</button>
+      <h3>🥁 击鼓传花</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="passingFlowerToggleBtn" onclick="app.togglePassingFlower()">开始击鼓</button>
+        <span id="passingFlowerState" style="font-weight:700;color:#8B1A1A;">等待开始</span>
+      </div>
+      <div id="passingFlowerCurrent" style="margin-top:12px;padding:12px;border-radius:12px;background:#fff8e9;border:1px solid #ffd48a;min-height:76px;"></div>
+      <div id="passingFlowerLog" class="score-history-list" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
   <!-- 特效容器 -->
   <div id="effectContainer" class="effect-container"></div>
 
@@ -1413,5 +1532,5 @@
 <script src="./db.js?v=3"></script>
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
-<script src="./app-loader.js?v=39"></script>
+<script src="./app-loader.js?v=40"></script>
 </body></html>

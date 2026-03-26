@@ -1367,6 +1367,10 @@
           const sickDaysEl = document.getElementById('settingSickDays');
           const hospitalProjectsEl = document.getElementById('settingHospitalProjects');
           const monopolyRollCostEl = document.getElementById('settingMonopolyRollCost');
+          const monopolyChallengePointsEl = document.getElementById('settingMonopolyChallengePoints');
+          const monopolyOpportunityTaskEl = document.getElementById('settingMonopolyOpportunityTask');
+          const monopolyOpportunityPointsEl = document.getElementById('settingMonopolyOpportunityPoints');
+          const monopolyStealPointsEl = document.getElementById('settingMonopolyStealPoints');
           
           if (stagePointsEl) stagePointsEl.value = currentClass.stagePoints || 20;
           if (stagesEl) stagesEl.value = currentClass.totalStages || 10;
@@ -1383,6 +1387,10 @@
             hospitalProjectsEl.value = list.map(p => `${p.name}|${p.cost}|${p.type}`).join('\n');
           }
           if (monopolyRollCostEl) monopolyRollCostEl.value = parseInt(currentClass.monopolyRollCost, 10) || 1;
+          if (monopolyChallengePointsEl) monopolyChallengePointsEl.value = parseInt(currentClass.monopolyChallengePoints, 10) || 3;
+          if (monopolyOpportunityTaskEl) monopolyOpportunityTaskEl.value = currentClass.monopolyOpportunityTask || '全组30秒内回答3题';
+          if (monopolyOpportunityPointsEl) monopolyOpportunityPointsEl.value = parseInt(currentClass.monopolyOpportunityPoints, 10) || 4;
+          if (monopolyStealPointsEl) monopolyStealPointsEl.value = parseInt(currentClass.monopolyStealPoints, 10) || 2;
         } else {
           // 没有选择班级时的默认值
           this.students = [];
@@ -1397,6 +1405,10 @@
           const sickDaysEl = document.getElementById('settingSickDays');
           const hospitalProjectsEl = document.getElementById('settingHospitalProjects');
           const monopolyRollCostEl = document.getElementById('settingMonopolyRollCost');
+          const monopolyChallengePointsEl = document.getElementById('settingMonopolyChallengePoints');
+          const monopolyOpportunityTaskEl = document.getElementById('settingMonopolyOpportunityTask');
+          const monopolyOpportunityPointsEl = document.getElementById('settingMonopolyOpportunityPoints');
+          const monopolyStealPointsEl = document.getElementById('settingMonopolyStealPoints');
           
           if (stagePointsEl) stagePointsEl.value = 20;
           if (stagesEl) stagesEl.value = 10;
@@ -1405,6 +1417,10 @@
           if (sickDaysEl) sickDaysEl.value = 3;
           if (hospitalProjectsEl) hospitalProjectsEl.value = '复活针|8|revive\n急救药|3|cure';
           if (monopolyRollCostEl) monopolyRollCostEl.value = 1;
+          if (monopolyChallengePointsEl) monopolyChallengePointsEl.value = 3;
+          if (monopolyOpportunityTaskEl) monopolyOpportunityTaskEl.value = '全组30秒内回答3题';
+          if (monopolyOpportunityPointsEl) monopolyOpportunityPointsEl.value = 4;
+          if (monopolyStealPointsEl) monopolyStealPointsEl.value = 2;
         }
         
         console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
@@ -2548,6 +2564,10 @@
               { name: '急救药', cost: 3, type: 'cure' }
             ],
             monopolyRollCost: 1,
+            monopolyChallengePoints: 3,
+            monopolyOpportunityTask: '全组30秒内回答3题',
+            monopolyOpportunityPoints: 4,
+            monopolyStealPoints: 2,
             customQuizQuestions: []
           };
           data.classes.push(newClass);
@@ -2573,6 +2593,10 @@
           const sickDaysEl = document.getElementById('settingSickDays');
           const hospitalProjectsEl = document.getElementById('settingHospitalProjects');
           const monopolyRollCostEl = document.getElementById('settingMonopolyRollCost');
+          const monopolyChallengePointsEl = document.getElementById('settingMonopolyChallengePoints');
+          const monopolyOpportunityTaskEl = document.getElementById('settingMonopolyOpportunityTask');
+          const monopolyOpportunityPointsEl = document.getElementById('settingMonopolyOpportunityPoints');
+          const monopolyStealPointsEl = document.getElementById('settingMonopolyStealPoints');
           
           currentClass.stagePoints = stagePointsEl ? parseInt(stagePointsEl.value) || 20 : 20;
           currentClass.totalStages = stagesEl ? parseInt(stagesEl.value) || 10 : 10;
@@ -2587,6 +2611,10 @@
           currentClass.petCategoryPhotos = this.getPetCategoryPhotos();
           currentClass.sickDays = sickDaysEl ? (parseInt(sickDaysEl.value, 10) || 3) : (parseInt(currentClass.sickDays, 10) || 3);
           currentClass.monopolyRollCost = monopolyRollCostEl ? (parseInt(monopolyRollCostEl.value, 10) || 1) : (parseInt(currentClass.monopolyRollCost, 10) || 1);
+          currentClass.monopolyChallengePoints = monopolyChallengePointsEl ? (parseInt(monopolyChallengePointsEl.value, 10) || 3) : (parseInt(currentClass.monopolyChallengePoints, 10) || 3);
+          currentClass.monopolyOpportunityTask = monopolyOpportunityTaskEl ? (monopolyOpportunityTaskEl.value || '全组30秒内回答3题') : (currentClass.monopolyOpportunityTask || '全组30秒内回答3题');
+          currentClass.monopolyOpportunityPoints = monopolyOpportunityPointsEl ? (parseInt(monopolyOpportunityPointsEl.value, 10) || 4) : (parseInt(currentClass.monopolyOpportunityPoints, 10) || 4);
+          currentClass.monopolyStealPoints = monopolyStealPointsEl ? (parseInt(monopolyStealPointsEl.value, 10) || 2) : (parseInt(currentClass.monopolyStealPoints, 10) || 2);
           currentClass.hospitalProjects = hospitalProjectsEl
             ? hospitalProjectsEl.value.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
                 const parts = line.split('|');
@@ -3715,6 +3743,10 @@
           })
           .filter(x => x.name),
         monopolyRollCost: parseInt(document.getElementById('settingMonopolyRollCost')?.value, 10) || 1,
+        monopolyChallengePoints: parseInt(document.getElementById('settingMonopolyChallengePoints')?.value, 10) || 3,
+        monopolyOpportunityTask: document.getElementById('settingMonopolyOpportunityTask')?.value || '全组30秒内回答3题',
+        monopolyOpportunityPoints: parseInt(document.getElementById('settingMonopolyOpportunityPoints')?.value, 10) || 4,
+        monopolyStealPoints: parseInt(document.getElementById('settingMonopolyStealPoints')?.value, 10) || 2,
         customQuizQuestions: []
       };
       
@@ -3998,6 +4030,259 @@
         if (!s.scoreHistory) s.scoreHistory = [];
         s.scoreHistory.unshift({ time: Date.now(), delta, reason });
         if (delta < 0) this.applyPetDegenerationOnScoreChange(s, delta);
+      }
+    },
+
+    openAssassinKingGame() {
+      const modal = document.getElementById('assassinKingModal');
+      if (!modal) return;
+      const a = document.getElementById('kingGameGroupA');
+      const b = document.getElementById('kingGameGroupB');
+      const options = '<option value="">请选择</option>' + this.groups.map(g => `<option value="${g.id}">${this.escape(g.name)}</option>`).join('');
+      if (a) a.innerHTML = options;
+      if (b) b.innerHTML = options;
+      const board = document.getElementById('assassinKingRoleBoard');
+      const log = document.getElementById('assassinKingLog');
+      if (board) board.innerHTML = '<p class="placeholder-text">先选择参战小组并点击「开始对局」</p>';
+      if (log) log.innerHTML = '';
+      this._assassinKing = null;
+      modal.style.display = 'flex';
+    },
+
+    initAssassinKingBattle() {
+      const groupAId = document.getElementById('kingGameGroupA')?.value;
+      const groupBId = document.getElementById('kingGameGroupB')?.value;
+      const needAnswers = Math.max(1, parseInt(document.getElementById('kingGameNeedAnswers')?.value, 10) || 3);
+      const answerPoints = Math.max(1, parseInt(document.getElementById('kingGameAnswerPoints')?.value, 10) || 2);
+      if (!groupAId || !groupBId || groupAId === groupBId) {
+        alert('请选择两个不同小组');
+        return;
+      }
+      const groupA = this.groups.find(g => g.id === groupAId);
+      const groupB = this.groups.find(g => g.id === groupBId);
+      if (!groupA || !groupB) return;
+      const teamA = this._buildAssassinTeam(groupA);
+      const teamB = this._buildAssassinTeam(groupB);
+      if (!teamA || !teamB) {
+        alert('参战小组人数至少需要3人');
+        return;
+      }
+      this._assassinKing = {
+        needAnswers,
+        answerPoints,
+        A: { groupId: groupA.id, groupName: groupA.name, answers: 0, roster: teamA },
+        B: { groupId: groupB.id, groupName: groupB.name, answers: 0, roster: teamB },
+        log: []
+      };
+      this.renderAssassinKingRoles();
+      this._pushAssassinKingLog(`对局开始：${groupA.name} VS ${groupB.name}`);
+    },
+
+    _buildAssassinTeam(group) {
+      const members = this.getGroupMembers(group.id) || [];
+      if (members.length < 3) return null;
+      const shuffled = [...members].sort(() => Math.random() - 0.5);
+      const roles = ['king', 'prince', 'knight'];
+      const names = { king: '国王', prince: '王子', knight: '骑士' };
+      const roster = shuffled.map((m, idx) => {
+        const role = roles[idx] || 'knight';
+        return { studentId: m.studentId, name: m.name, avatar: m.avatar || '👤', role, roleName: names[role], alive: true };
+      });
+      const king = roster.find(x => x.role === 'king');
+      const prince = roster.find(x => x.role === 'prince');
+      const knight = roster.find(x => x.role === 'knight');
+      return { members: roster, kingId: king?.studentId || '', princeId: prince?.studentId || '', knightId: knight?.studentId || '' };
+    },
+
+    renderAssassinKingRoles() {
+      const board = document.getElementById('assassinKingRoleBoard');
+      if (!board) return;
+      if (!this._assassinKing) {
+        board.innerHTML = '<p class="placeholder-text">先选择参战小组并点击「开始对局」</p>';
+        return;
+      }
+      const renderTeam = (key) => {
+        const t = this._assassinKing[key];
+        const cards = t.roster.members.map(m => {
+          const deadClass = m.alive ? '' : 'opacity:0.45;filter:grayscale(1);';
+          return `<div style="padding:8px;border:1px solid #ffd7ad;border-radius:10px;background:#fff;${deadClass}">
+            <div style="font-size:22px;">${this.escape(m.avatar || '👤')}</div>
+            <div style="font-weight:700;">${this.escape(m.name)}</div>
+            <div style="font-size:12px;color:#8B1A1A;">${m.roleName}</div>
+          </div>`;
+        }).join('');
+        return `<div style="flex:1;min-width:260px;background:linear-gradient(135deg,#fffaf0,#f5fbff);padding:10px;border-radius:12px;border:1px solid #ffd3a6;">
+          <div style="font-weight:800;color:#8B1A1A;margin-bottom:6px;">${this.escape(t.groupName)} ｜ 答题进度 ${t.answers}/${this._assassinKing.needAnswers}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:8px;">${cards}</div>
+        </div>`;
+      };
+      board.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;">${renderTeam('A')}${renderTeam('B')}</div>`;
+      const logEl = document.getElementById('assassinKingLog');
+      if (logEl) logEl.innerHTML = this._assassinKing.log.map(x => `<div class="withdraw-item"><span>${this.escape(x)}</span></div>`).join('');
+    },
+
+    _pushAssassinKingLog(text) {
+      if (!this._assassinKing) return;
+      this._assassinKing.log.unshift(`${new Date().toLocaleTimeString()} ${text}`);
+      this._assassinKing.log = this._assassinKing.log.slice(0, 30);
+      this.renderAssassinKingRoles();
+    },
+
+    addAssassinKingAnswer(side) {
+      if (!this._assassinKing) return;
+      const t = this._assassinKing[side];
+      if (!t) return;
+      t.answers += 1;
+      const g = this.groups.find(x => x.id === t.groupId);
+      if (g) g.points = (g.points || 0) + this._assassinKing.answerPoints;
+      setStorage(STORAGE_KEYS.groups, this.groups);
+      this.saveData();
+      this.renderGroups();
+      this._pushAssassinKingLog(`${t.groupName} 答对 +1（小组+${this._assassinKing.answerPoints}分）`);
+    },
+
+    assassinKingAction(side) {
+      if (!this._assassinKing) return;
+      const atk = this._assassinKing[side];
+      const def = side === 'A' ? this._assassinKing.B : this._assassinKing.A;
+      if (atk.answers < this._assassinKing.needAnswers) {
+        alert(`还未达到刺杀次数，需先答对 ${this._assassinKing.needAnswers} 题`);
+        return;
+      }
+      atk.answers = 0;
+      const alive = def.roster.members.filter(m => m.alive);
+      const king = alive.find(m => m.role === 'king');
+      if (!king) {
+        this._pushAssassinKingLog(`${atk.groupName} 发起刺杀，但对方国王已不在场`);
+        return;
+      }
+      const success = Math.random() < 0.5;
+      if (!success) {
+        this._pushAssassinKingLog(`${atk.groupName} 刺杀失败！`);
+        return;
+      }
+      king.alive = false;
+      this._pushAssassinKingLog(`💥 ${atk.groupName} 刺杀成功！${def.groupName} 国王出局`);
+      const prince = def.roster.members.find(m => m.alive && m.role === 'prince');
+      if (prince) {
+        prince.role = 'king';
+        prince.roleName = '国王';
+        this._pushAssassinKingLog(`👑 ${def.groupName} 王子 ${prince.name} 继位为新国王`);
+      }
+      const knight = def.roster.members.find(m => m.alive && m.role === 'knight');
+      if (knight) {
+        const atkAlive = atk.roster.members.filter(m => m.alive);
+        const target = atkAlive[Math.floor(Math.random() * atkAlive.length)];
+        if (target) {
+          target.alive = false;
+          this._pushAssassinKingLog(`🛡️ ${def.groupName} 骑士反杀 ${atk.groupName} 的 ${target.name}`);
+        }
+      }
+      this.renderAssassinKingRoles();
+    },
+
+    openTongueTwisterGame() {
+      const modal = document.getElementById('tongueTwisterModal');
+      if (!modal) return;
+      const sel = document.getElementById('tongueStudentSelect');
+      if (sel) {
+        sel.innerHTML = '<option value="">请选择学生</option>' + this.students.map(s => `<option value="${s.id}">${this.escape(s.name)}（${this.escape(s.id)}）</option>`).join('');
+      }
+      const log = document.getElementById('tongueLog');
+      if (log) log.innerHTML = '';
+      this.generateTongueSentence();
+      modal.style.display = 'flex';
+    },
+
+    generateTongueSentence() {
+      const corpus = [
+        '黑化肥发灰会挥发，灰化肥挥发会发黑。',
+        '牛郎恋刘娘，刘娘念牛郎，牛郎年年恋刘娘，刘娘年年念牛郎。',
+        '四是四，十是十，十四是十四，四十是四十。',
+        '请在三秒内断句：今天下雨天留客天留我不留。',
+        '请连读：红凤凰粉凤凰红粉凤凰花凤凰。',
+        '长句断句挑战：如果今天你说得特别顺那么明天请你再来一遍并且更快一点。',
+        '请读：吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮。'
+      ];
+      const txt = corpus[Math.floor(Math.random() * corpus.length)];
+      this._tongueCurrent = txt;
+      const card = document.getElementById('tongueSentenceCard');
+      if (card) card.textContent = txt;
+    },
+
+    applyTongueAward(success) {
+      const sid = document.getElementById('tongueStudentSelect')?.value;
+      const pts = Math.max(1, parseInt(document.getElementById('tongueAwardPoints')?.value, 10) || 2);
+      const log = document.getElementById('tongueLog');
+      if (!sid) { alert('请先选择学生'); return; }
+      const s = this.students.find(x => x.id === sid);
+      if (!s) return;
+      if (success) {
+        s.points = (s.points || 0) + pts;
+        if (!s.scoreHistory) s.scoreHistory = [];
+        s.scoreHistory.unshift({ time: Date.now(), delta: pts, reason: '嘴瓢大挑战-读对' });
+        this.saveStudents();
+        this.renderStudents();
+        this.renderDashboard();
+      }
+      if (log) {
+        const msg = `${new Date().toLocaleTimeString()} ${s.name}：${success ? '读对 +'+pts+'分' : '嘴瓢，继续挑战'} ｜ ${this._tongueCurrent || ''}`;
+        log.innerHTML = `<div class="withdraw-item"><span>${this.escape(msg)}</span></div>` + log.innerHTML;
+      }
+      if (success) this.generateTongueSentence();
+    },
+
+    openPassingFlowerGame() {
+      const modal = document.getElementById('passingFlowerModal');
+      if (!modal) return;
+      this._passingFlower = { running: false, timer: null };
+      const state = document.getElementById('passingFlowerState');
+      const current = document.getElementById('passingFlowerCurrent');
+      const btn = document.getElementById('passingFlowerToggleBtn');
+      const log = document.getElementById('passingFlowerLog');
+      if (state) state.textContent = '等待开始';
+      if (current) current.innerHTML = '<div>点击「开始击鼓」，花会在学生间快速传递。</div>';
+      if (btn) btn.textContent = '开始击鼓';
+      if (log) log.innerHTML = '';
+      modal.style.display = 'flex';
+    },
+
+    closePassingFlowerGame() {
+      if (this._passingFlower && this._passingFlower.timer) clearInterval(this._passingFlower.timer);
+      this._passingFlower = { running: false, timer: null };
+      this.closeModal('passingFlowerModal');
+    },
+
+    togglePassingFlower() {
+      if (!this.students.length) {
+        alert('暂无学生');
+        return;
+      }
+      if (!this._passingFlower) this._passingFlower = { running: false, timer: null };
+      const state = document.getElementById('passingFlowerState');
+      const current = document.getElementById('passingFlowerCurrent');
+      const btn = document.getElementById('passingFlowerToggleBtn');
+      const log = document.getElementById('passingFlowerLog');
+      if (!this._passingFlower.running) {
+        this._passingFlower.running = true;
+        if (btn) btn.textContent = '随机停鼓';
+        if (state) state.textContent = '鼓声进行中…';
+        this._passingFlower.timer = setInterval(() => {
+          const s = this.students[Math.floor(Math.random() * this.students.length)];
+          if (current && s) current.innerHTML = `<strong style="font-size:18px;">🌸 ${this.escape(s.name)}</strong><div style="font-size:12px;color:#777;">${this.escape(s.id)}</div>`;
+          this._passingFlower.currentId = s ? s.id : null;
+        }, 120);
+      } else {
+        this._passingFlower.running = false;
+        if (this._passingFlower.timer) clearInterval(this._passingFlower.timer);
+        this._passingFlower.timer = null;
+        if (btn) btn.textContent = '再次击鼓';
+        if (state) state.textContent = '鼓声已停';
+        const s = this.students.find(x => x.id === this._passingFlower.currentId);
+        if (log && s) {
+          const msg = `${new Date().toLocaleTimeString()} 鼓停在：${s.name}`;
+          log.innerHTML = `<div class="withdraw-item"><span>${this.escape(msg)}</span></div>` + log.innerHTML;
+        }
       }
     },
 
@@ -8553,6 +8838,10 @@
       if (currentClass) {
         currentClass.sickDays = parseInt(document.getElementById('settingSickDays')?.value, 10) || currentClass.sickDays || 3;
         currentClass.monopolyRollCost = parseInt(document.getElementById('settingMonopolyRollCost')?.value, 10) || currentClass.monopolyRollCost || 1;
+        currentClass.monopolyChallengePoints = parseInt(document.getElementById('settingMonopolyChallengePoints')?.value, 10) || currentClass.monopolyChallengePoints || 3;
+        currentClass.monopolyOpportunityTask = document.getElementById('settingMonopolyOpportunityTask')?.value || currentClass.monopolyOpportunityTask || '全组30秒内回答3题';
+        currentClass.monopolyOpportunityPoints = parseInt(document.getElementById('settingMonopolyOpportunityPoints')?.value, 10) || currentClass.monopolyOpportunityPoints || 4;
+        currentClass.monopolyStealPoints = parseInt(document.getElementById('settingMonopolyStealPoints')?.value, 10) || currentClass.monopolyStealPoints || 2;
         currentClass.hospitalProjects = (document.getElementById('settingHospitalProjects')?.value || '复活针|8|revive\n急救药|3|cure')
           .split('\n')
           .map(line => line.trim())
