@@ -222,24 +222,35 @@ body::before {
 /* 首页 - 可爱风格 */
 .dashboard-welcome {
   text-align: center;
-  padding: 36px 24px;
-  background: linear-gradient(135deg, var(--secondary) 0%, #fff 50%, rgba(255,230,109,0.3) 100%);
-  border-radius: 24px;
+  padding: 40px 24px;
+  background:
+    radial-gradient(circle at 15% 18%, rgba(255,255,255,.85) 0 14%, transparent 14.5%),
+    radial-gradient(circle at 82% 16%, rgba(255,255,255,.8) 0 12%, transparent 12.5%),
+    linear-gradient(135deg, #fff0bd 0%, #ffe4b8 36%, #ffd7c9 70%, #ffe7f4 100%);
+  border-radius: 28px;
   margin-bottom: 28px;
-  border: 2px solid var(--border);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  border: 2px solid #ffd79a;
+  box-shadow: 0 12px 28px rgba(255, 138, 101, 0.18);
   position: relative;
   overflow: hidden;
 }
 .dashboard-welcome::before {
-  content: '🐾';
+  content: '🐾 ✨';
   position: absolute;
-  font-size: 4rem;
-  opacity: 0.15;
+  font-size: 3.2rem;
+  opacity: 0.2;
   top: 10px; right: 20px;
 }
-.dashboard-welcome h2 { font-size: 1.5rem; margin-bottom: 10px; color: var(--primary); }
-.dashboard-welcome p { font-size: 1rem; color: var(--text-muted); }
+.dashboard-welcome::after {
+  content: '🐉';
+  position: absolute;
+  left: 24px;
+  bottom: 8px;
+  font-size: 2.4rem;
+  opacity: .25;
+}
+.dashboard-welcome h2 { font-size: 1.65rem; margin-bottom: 10px; color: #a93f2a; text-shadow: 0 2px 0 #fff3df; }
+.dashboard-welcome p { font-size: 1rem; color: #7b4e3a; }
 .quick-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; margin-bottom: 28px; }
 .stat-card {
   background: var(--card-bg);
@@ -250,22 +261,30 @@ body::before {
   border: 2px solid var(--border);
 }
 .stat-card-cute {
-  border-radius: 20px;
+  border-radius: 22px;
   padding: 24px 20px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+  background: linear-gradient(180deg,#fffef7 0%,#fff8eb 100%);
+  border: 2px solid #ffdcae;
+  box-shadow: 0 6px 20px rgba(255,153,102,0.15);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.stat-card-cute:hover { transform: translateY(-4px); box-shadow: 0 10px 28px var(--shadow); }
-.stat-card-cute .stat-icon { display: block; font-size: 2.2rem; margin-bottom: 8px; }
-.stat-num { display: block; font-size: 2rem; font-weight: bold; color: var(--primary); }
-.stat-label { font-size: 0.85rem; color: var(--text-muted); }
+.stat-card-cute:hover { transform: translateY(-4px) scale(1.01); box-shadow: 0 12px 28px rgba(255,138,101,.28); }
+.stat-card-cute .stat-icon { display: block; font-size: 2.2rem; margin-bottom: 8px; animation: bunnyBounce 2.2s ease-in-out infinite; }
+.stat-num { display: block; font-size: 2rem; font-weight: bold; color: #d6513b; }
+.stat-label { font-size: 0.85rem; color: #9a5d47; }
 .dashboard-actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
 .btn-cute {
-  border-radius: 22px;
-  padding: 12px 22px;
+  border-radius: 24px;
+  padding: 12px 24px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background-image: linear-gradient(120deg, rgba(255,255,255,.25), rgba(255,255,255,0));
 }
 .btn-cute:hover { transform: translateY(-2px) scale(1.02); }
+
+@keyframes bunnyBounce {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(-4deg); }
+}
 
 /* 按钮 - 可爱圆润 */
 .btn {
@@ -2479,20 +2498,23 @@ body::before {
 /* 小工具面板 */
 .tool-grid{
   margin-top: 26px;
-  padding: 18px 20px 14px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,245,245,0.96));
-  box-shadow: 0 16px 40px rgba(255,107,107,0.08);
-  border: 1px solid rgba(255,255,255,0.9);
+  padding: 20px 22px 16px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 10% 15%, rgba(255,255,255,.72) 0 11%, transparent 12%),
+    radial-gradient(circle at 90% 24%, rgba(255,255,255,.6) 0 8%, transparent 9%),
+    linear-gradient(135deg, #fffef7, #fff4f8 55%, #fff8ec);
+  box-shadow: 0 18px 40px rgba(255,107,107,0.11);
+  border: 1px solid #ffd8cf;
 }
 .tool-grid-title{
   display:flex;
   align-items:center;
-  gap:6px;
-  font-size: 1.02rem;
+  gap:8px;
+  font-size: 1.05rem;
   margin-bottom: 12px;
-  color: var(--text);
-  font-weight: 600;
+  color: #a5452f;
+  font-weight: 700;
 }
 .tool-grid-list{
   display: grid;
@@ -2501,8 +2523,8 @@ body::before {
 }
 .tool-card{
   border: none;
-  background: #fff;
-  border-radius: 16px;
+  background: linear-gradient(180deg,#fff,#fff8f2);
+  border-radius: 18px;
   padding: 12px 16px;
   display:flex;
   flex-direction:column;
@@ -2510,26 +2532,36 @@ body::before {
   gap:4px;
   cursor:pointer;
   text-align:left;
-  box-shadow: 0 10px 26px rgba(0,0,0,0.04);
-  transition: all 0.15s ease;
+  box-shadow: 0 10px 26px rgba(255,130,94,0.08);
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  border: 1px solid #ffe2c7;
+}
+.tool-card::after{
+  content:'';
+  position:absolute;
+  inset:auto -30% -55% auto;
+  width:120px;
+  height:120px;
+  background: radial-gradient(circle, rgba(255,205,161,.35), transparent 70%);
 }
 .tool-card:hover{
-  transform: translateY(-3px);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 16px 38px rgba(255,128,97,0.16);
 }
 .tool-card-icon{
-  font-size: 1.7rem;
+  font-size: 1.8rem;
   margin-bottom: 6px;
 }
 .tool-card-main{
-  font-weight: 600;
-  font-size: 1.02rem;
+  font-weight: 700;
+  font-size: 1.03rem;
+  color:#8e3d2d;
 }
 .tool-card-sub{
   font-size: 0.85rem;
-  color: var(--text-muted);
+  color: #a26c5a;
 }
 
 /* 期末评语 */
