@@ -1423,8 +1423,17 @@
   <div id="petHospitalModal" class="modal">
     <div class="modal-content modal-content-large">
       <button class="modal-close" onclick="app.closeModal('petHospitalModal')">&times;</button>
-      <h3>🏥 神兽医院</h3>
-      <div id="petHospitalList" class="score-history-list"></div>
+      <h3>🏥 神兽医院商店</h3>
+      <p class="hint" style="margin-top:-4px;">像班级商店一样购买治疗道具，给神兽治病或复活。</p>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label>选择学生</label>
+          <select id="petHospitalStudentSelect" class="login-input" onchange="app.renderPetHospitalShop()"></select>
+        </div>
+      </div>
+      <div id="petHospitalStudentInfo" style="padding:10px;border:1px solid #ffd7ad;border-radius:12px;background:linear-gradient(120deg,#fff8ef,#f5fbff);margin-bottom:10px;"></div>
+      <div id="petHospitalShop" class="store-goods-grid"></div>
+      <div id="petHospitalList" class="score-history-list" style="margin-top:10px;"></div>
     </div>
   </div>
 
@@ -1543,5 +1552,5 @@
 <script src="./db.js?v=3"></script>
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
-<script src="./app-loader.js?v=43"></script>
+<script src="./app-loader.js?v=44"></script>
 </body></html>

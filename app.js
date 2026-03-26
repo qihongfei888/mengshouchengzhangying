@@ -3857,25 +3857,49 @@
 
     openPetHospitalTool() {
       const modal = document.getElementById('petHospitalModal');
+      const selectEl = document.getElementById('petHospitalStudentSelect');
       const listEl = document.getElementById('petHospitalList');
-      if (!modal || !listEl) return;
+      if (!modal || !selectEl || !listEl) return;
+      const petStudents = this.students.filter(s => s.pet);
+      selectEl.innerHTML = '<option value="">请选择学生</option>' + petStudents.map(s => `<option value="${s.id}">${this.escape(s.name)}（${this.escape(s.id)}）</option>`).join('');
+      if (!selectEl.value && petStudents.length) selectEl.value = petStudents[0].id;
+      this.renderPetHospitalShop();
+      listEl.innerHTML = '<p class="placeholder-text">购买记录会显示在这里</p>';
+      modal.style.display = 'flex';
+    },
+
+    renderPetHospitalShop() {
+      const studentId = document.getElementById('petHospitalStudentSelect')?.value;
+      const infoEl = document.getElementById('petHospitalStudentInfo');
+      const shopEl = document.getElementById('petHospitalShop');
+      if (!infoEl || !shopEl) return;
+      const s = this.students.find(x => x.id === studentId);
+      if (!s || !s.pet) {
+        infoEl.innerHTML = '<span class="placeholder-text">请先选择一个有神兽的学生</span>';
+        shopEl.innerHTML = '';
+        return;
+      }
+      this.ensurePetHealthStatus(s);
+      const p = s.pet;
+      const status = p.isBrokenEgg || p.isDead ? '🥚💥 宠物蛋碎裂' : (p.isSick ? '🤒 生病中' : '✅ 健康');
+      infoEl.innerHTML = `<strong>${this.escape(s.name)}</strong> ｜ 当前积分：${s.points || 0} ｜ 状态：${status}`;
+
+      const iconMap = { revive: '💉', cure: '🩹' };
+      const descMap = { revive: '复活后回到第2阶段', cure: '治愈生病状态' };
       const projects = this.getHospitalProjects();
-      const rows = this.students.filter(s => s.pet).map(s => {
-        this.ensurePetHealthStatus(s);
-        const p = s.pet;
-        const status = p.isBrokenEgg || p.isDead ? '🥚💥 宠物蛋碎裂' : (p.isSick ? '🤒 生病' : '✅ 健康');
-        const actions = projects.map((proj, idx) => {
-          const canUse = (proj.type === 'revive' && (p.isBrokenEgg || p.isDead)) || (proj.type === 'cure' && p.isSick);
-          const disabled = canUse ? '' : 'disabled';
-          return `<button class="btn btn-small ${canUse ? 'btn-primary' : 'btn-secondary'}" ${disabled} onclick="app.treatPetInHospital('${s.id}',${idx})">${this.escape(proj.name)}（${proj.cost}分）</button>`;
-        }).join(' ');
-        return `<div class="withdraw-item" style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
-          <div><strong>${this.escape(s.name)}</strong>：${status}（当前积分 ${s.points || 0}）</div>
-          <div>${actions}</div>
+      shopEl.innerHTML = projects.map((proj, idx) => {
+        const canUse = (proj.type === 'revive' && (p.isBrokenEgg || p.isDead)) || (proj.type === 'cure' && p.isSick);
+        const enough = (s.points || 0) >= proj.cost;
+        const disabled = (!canUse || !enough) ? 'disabled' : '';
+        const buttonText = !canUse ? '当前不可用' : (!enough ? '积分不足' : '购买并使用');
+        return `<div class="goods-card" style="border-color:${canUse ? '#ffd7ad' : '#e5e5e5'};opacity:${canUse ? '1' : '0.75'};">
+          <div class="goods-icon">${iconMap[proj.type] || '🏥'}</div>
+          <div class="goods-name">${this.escape(proj.name)}</div>
+          <div class="goods-cost">${proj.cost} 积分</div>
+          <div class="goods-stock">${descMap[proj.type] || '医疗道具'}</div>
+          <button class="btn btn-primary btn-block" ${disabled} onclick="app.treatPetInHospital('${s.id}',${idx})">${buttonText}</button>
         </div>`;
       }).join('');
-      listEl.innerHTML = rows || '<p class="placeholder-text">暂无需要治疗的宠物</p>';
-      modal.style.display = 'flex';
     },
 
     treatPetInHospital(studentId, projectIndex) {
@@ -3908,10 +3932,15 @@
       }
       if (!s.scoreHistory) s.scoreHistory = [];
       s.scoreHistory.unshift({ time: Date.now(), delta: -cost, reason: `神兽医院-${proj.name}` });
+      const listEl = document.getElementById('petHospitalList');
+      if (listEl) {
+        const msg = `${new Date().toLocaleTimeString()} ${s.name} 购买 ${proj.name}，消耗 ${cost} 分`;
+        listEl.innerHTML = `<div class="withdraw-item"><span>${this.escape(msg)}</span></div>` + listEl.innerHTML;
+      }
       this.saveStudents();
       this.renderStudents();
       this.renderDashboard();
-      this.openPetHospitalTool();
+      this.renderPetHospitalShop();
     },
 
     openCustomQuizPKTool() {
