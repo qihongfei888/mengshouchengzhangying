@@ -3966,6 +3966,7 @@
       const importRow = document.getElementById('quizImportRow');
       const textWrap = document.getElementById('quizTextareaWrap');
       const answerRow = document.getElementById('quizAnswerRow');
+      const quickRow = document.getElementById('quizQuickJudgeRow');
       if (setupBtn) {
         setupBtn.classList.toggle('btn-primary', this._quizViewMode === 'setup');
         setupBtn.classList.toggle('btn-outline', this._quizViewMode !== 'setup');
@@ -3977,6 +3978,10 @@
       if (importRow) importRow.style.display = this._quizViewMode === 'setup' ? 'flex' : 'none';
       if (textWrap) textWrap.style.display = this._quizViewMode === 'setup' ? 'block' : 'none';
       if (answerRow) answerRow.style.display = this._quizViewMode === 'setup' ? 'flex' : 'none';
+      if (quickRow) quickRow.style.display = this._quizViewMode === 'stage' ? 'flex' : 'none';
+      if (this._quizViewMode === 'stage' && !this._quizBattle) {
+        alert('请先点击“开始PK”，系统会自动进入舞台视图');
+      }
       this.renderQuizBattleStage();
     },
 
@@ -4105,6 +4110,33 @@
 
     _normalizeAnswer(v) {
       return String(v || '').trim().toLowerCase().replace(/\s+/g, '');
+    },
+
+    quickQuizDelta(side, sign) {
+      const b = this._quizBattle;
+      if (!b) return;
+      const targetId = side === 'A' ? b.targetA : b.targetB;
+      const base = side === 'A' ? (b.winPoints || 2) : (b.winPoints || 2);
+      const value = sign > 0 ? base : -Math.max(1, b.losePoints || 1);
+      this.applyQuizDelta(b.mode, targetId, value, `课堂快速判分-${side}`);
+      const who = side === 'A' ? 'A方' : 'B方';
+      b.log.unshift(`${new Date().toLocaleTimeString()} ${who}${value > 0 ? '+' : ''}${value}分（快速判分）`);
+      document.getElementById('quizBattleLog').innerHTML = b.log.slice(0, 20).map(x => `<div class="withdraw-item"><span>${this.escape(x)}</span></div>`).join('');
+      this.saveStudents();
+      this.renderGroups();
+      this.renderStudents();
+      this.renderDashboard();
+    },
+
+    quizNextRound() {
+      const b = this._quizBattle;
+      if (!b) return;
+      b.idx += 1;
+      if (b.idx >= b.questions.length) {
+        document.getElementById('quizCurrentQuestion').textContent = 'PK结束，可关闭弹窗';
+        return;
+      }
+      this._renderQuizQuestion();
     },
 
     judgeCustomQuizRound() {
@@ -4259,6 +4291,9 @@
       if (stageBtn) {
         stageBtn.classList.toggle('btn-primary', this._assassinViewMode === 'stage');
         stageBtn.classList.toggle('btn-outline', this._assassinViewMode !== 'stage');
+      }
+      if (this._assassinViewMode === 'stage' && !this._assassinKing) {
+        alert('请先点击“开始对局”，随后会自动进入PK舞台视图');
       }
       this.renderAssassinKingRoles();
     },
@@ -4523,17 +4558,22 @@
     _playDrumHit() {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.value = 120;
-        gain.gain.setValueAtTime(0.001, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.2);
+        const hit = (freq, gainV, dur, type = 'triangle') => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(30, freq * 0.55), ctx.currentTime + dur);
+          gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(gainV, ctx.currentTime + 0.008);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + dur + 0.02);
+        };
+        hit(95, 0.85, 0.32, 'sine');
+        hit(180, 0.35, 0.14, 'triangle');
       } catch (e) {
         console.warn('播放鼓声失败:', e);
       }
@@ -7145,18 +7185,14 @@
 
     randomRollCall() {
       if (!this.students.length) { alert('暂无学生'); return; }
-
-      // 最终点到的学生：从全体学生里随机，保证公平
       const chosen = this.students[Math.floor(Math.random() * this.students.length)];
-
-      // 构建名字螺旋滚动旋转效果（非3D）
       const overlay = document.createElement('div');
       overlay.className = 'rollcall-overlay';
       overlay.innerHTML = `
-        <div class="rollcall-spiral">
+        <div class="rollcall-spiral" style="background:radial-gradient(circle,#1f2433,#0f1220);color:#fff;border:2px solid #ffd08a;box-shadow:0 0 30px #ffbb6680;">
           <div class="rollcall-spiral-center">
-            <div class="rollcall-spiral-title">随机点名</div>
-            <div class="rollcall-spiral-sub">点击空白处可关闭</div>
+            <div class="rollcall-spiral-title" style="color:#ffd08a;">🎯 星光点名</div>
+            <div class="rollcall-spiral-sub" style="color:#ffc;">名字风暴中...</div>
           </div>
           <div class="rollcall-spiral-names"></div>
         </div>
@@ -7164,45 +7200,40 @@
       overlay.onclick = () => overlay.remove();
       document.body.appendChild(overlay);
 
-      // 取一部分学生参与动画，避免学生太多造成卡顿
-      const pool = this.students.slice();
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-      }
-      const maxNames = Math.min(60, Math.max(18, pool.length));
-      const animList = pool.slice(0, maxNames);
-
       const namesBox = overlay.querySelector('.rollcall-spiral-names');
-      animList.forEach((stu, i) => {
-        const el = document.createElement('div');
-        el.className = 'rollcall-name';
-        const angle = i * 0.6;
-        const radius = 10 + i * 6.2;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
-        el.style.transform = `translate(${x}px, ${y}px) rotate(${angle}rad)`;
-        el.textContent = stu.name || '';
-        namesBox.appendChild(el);
-      });
+      const all = [...this.students];
+      let tick = 0;
+      const interval = setInterval(() => {
+        tick += 1;
+        namesBox.innerHTML = '';
+        for (let i = 0; i < 26; i++) {
+          const s = all[Math.floor(Math.random() * all.length)];
+          const el = document.createElement('div');
+          el.className = 'rollcall-name';
+          const angle = i * 0.7 + tick * 0.08;
+          const radius = 18 + i * 5.2;
+          const x = Math.cos(angle) * radius;
+          const y = Math.sin(angle) * radius;
+          el.style.transform = `translate(${x}px, ${y}px)`;
+          el.style.color = i % 2 ? '#ffd08a' : '#fff';
+          el.textContent = s ? s.name : '';
+          namesBox.appendChild(el);
+        }
+      }, 90);
 
-      // 动画持续一小段时间后停下并显示结果
-      const DURATION_MS = 2600;
-      window.setTimeout(() => {
-        try {
-          const result = document.createElement('div');
-          result.className = 'rollcall-display rollcall-display-final';
-          result.innerHTML = `${chosen.avatar || '👦'} ${this.escape(chosen.name)}`;
-          overlay.querySelector('.rollcall-spiral').appendChild(result);
-          // 语音播报
-          this.speak(`请${chosen.name}回答问题`);
-        } catch (e) {}
-      }, DURATION_MS);
+      setTimeout(() => {
+        clearInterval(interval);
+        const result = document.createElement('div');
+        result.className = 'rollcall-display rollcall-display-final';
+        result.style.cssText = 'font-size:2rem;color:#ffd08a;text-shadow:0 0 14px #ff9f40;';
+        result.innerHTML = `${chosen.avatar || '🌟'} ${this.escape(chosen.name)}`;
+        overlay.querySelector('.rollcall-spiral').appendChild(result);
+        this.speak(`请${chosen.name}开始挑战`);
+      }, 2600);
 
-      // 自动关闭稍后关闭
-      window.setTimeout(() => {
+      setTimeout(() => {
         if (overlay && overlay.parentNode) overlay.remove();
-      }, DURATION_MS + 2200);
+      }, 5200);
     },
 
     toggleToolsMenu(e) {

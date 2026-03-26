@@ -1435,6 +1435,13 @@
           <input id="quizAnswerA" class="login-input" placeholder="A方答案" style="flex:1;">
           <input id="quizAnswerB" class="login-input" placeholder="B方答案" style="flex:1;">
         </div>
+        <div class="form-row" id="quizQuickJudgeRow" style="margin-top:8px;display:none;">
+          <button class="btn btn-primary" onclick="app.quickQuizDelta('A', 1)">A方 +分</button>
+          <button class="btn btn-outline" onclick="app.quickQuizDelta('A', -1)">A方 -分</button>
+          <button class="btn btn-primary" onclick="app.quickQuizDelta('B', 1)">B方 +分</button>
+          <button class="btn btn-outline" onclick="app.quickQuizDelta('B', -1)">B方 -分</button>
+          <button class="btn btn-secondary" onclick="app.quizNextRound()">下一题 ▶</button>
+        </div>
         <div class="form-group" style="margin-top:8px;">
           <button class="btn btn-secondary" onclick="app.judgeCustomQuizRound()">🗡️ 判题并下一题</button>
         </div>
@@ -1465,8 +1472,9 @@
   <div id="assassinKingModal" class="modal">
     <div class="modal-content modal-content-large">
       <button class="modal-close" onclick="app.closeModal('assassinKingModal')">&times;</button>
-      <h3>🗡️ 刺杀国王</h3>
-      <p class="hint" style="margin-top:-4px;">先选参战小组，老师可在下方直接给每位学生设定国王/王子/骑士。</p>
+      <h3 style="background:linear-gradient(90deg,#8b1a1a,#d95f02);color:#fff;padding:8px 12px;border-radius:10px;display:inline-block;">🗡️ 刺杀国王 · 暗夜对决</h3>
+      <div style="margin-top:6px;padding:8px 10px;border-radius:10px;background:linear-gradient(120deg,#fff1e6,#ffe4cc);border:1px solid #ffce9f;color:#7a2f00;font-weight:600;">👑 隐藏身份 · 🛡️ 骑士反杀 · 💥 王位更替</div>
+      <p class="hint" style="margin-top:6px;">先选参战小组，老师可在下方直接给每位学生设定国王/王子/骑士。</p>
       <div class="form-row" style="margin-top:4px;">
         <button class="btn btn-primary" id="assassinViewSetupBtn" onclick="app.setAssassinViewMode('setup')">👩‍🏫 教师设置视图</button>
         <button class="btn btn-outline" id="assassinViewStageBtn" onclick="app.setAssassinViewMode('stage')">🗡️ PK舞台视图（隐藏身份）</button>
@@ -1596,7 +1604,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=49"></script>
+<script src="./app-loader.js?v=50"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
