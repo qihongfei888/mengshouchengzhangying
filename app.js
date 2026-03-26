@@ -2761,9 +2761,23 @@
         if (btnUpload) btnUpload.disabled = false;
         if (btnDownload) btnDownload.disabled = false;
       }
+      this.updateSyncDigest();
       return true;
     },
-    
+
+    async syncAllNow() {
+      const statusEl = document.getElementById('cloudSyncStatus');
+      if (statusEl) statusEl.textContent = '云同步状态：执行一键双向同步中…';
+      const up = await this.syncToCloud();
+      const down = await this.syncFromCloud();
+      this.updateSyncDigest();
+      if (up || down) {
+        if (statusEl) statusEl.textContent = '云同步状态：✅ 双向同步完成，数据已对齐';
+      } else {
+        if (statusEl) statusEl.textContent = '云同步状态：⚠️ 本次未发生数据变更';
+      }
+    },
+
     // 从云存储同步授权码（无需用户ID），使用 Supabase
     async syncLicensesFromCloud() {
       if (!navigator.onLine) {
@@ -3314,6 +3328,7 @@
         }
       }
       
+      this.updateSyncDigest();
       return syncSuccess;
   },
     
@@ -4904,6 +4919,8 @@
       this.loadBroadcastSettings(); 
       this.loadScreenLockSettings();
       this.loadBadgeAwardStudents();
+      this.renderCallStudentOptions();
+      this.updateSyncDigest();
       this.renderBackupStatus();
       this.renderAccessoriesList();
       this.checkAndShowPhotoStorageConfig();
@@ -9515,6 +9532,7 @@
       this.renderDashboard();
       this.renderPetStudentList();
       this.renderStudentManage();
+      this.renderCallStudentOptions();
       this.renderScoreHistory();
       this.loadBadgeAwardStudents();
       this.renderStore();
@@ -10369,6 +10387,45 @@
       });
     },
 
+    renderCallStudentOptions() {
+      const select = document.getElementById('callStudentSelect');
+      if (!select) return;
+      select.innerHTML = '<option value="">请选择学生</option>';
+      this.students.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.name}（${s.id}）`;
+        select.appendChild(opt);
+      });
+    },
+
+    callStudentNow() {
+      const sid = document.getElementById('callStudentSelect')?.value;
+      const msgInput = document.getElementById('callStudentMessage');
+      const s = this.students.find(x => x.id === sid);
+      if (!s) {
+        alert('请先选择要呼叫的学生');
+        return;
+      }
+      const text = (msgInput?.value || '').trim() || `请${s.name}同学到老师这里来`; 
+      this.showWinBanner(`📣 ${s.name} 同学请注意`, text);
+      this.showScoreRain(16);
+      this.speak(text);
+      this.addBroadcastMessage(s.name, 0, `老师呼叫：${text}`);
+      if (msgInput) msgInput.value = '';
+    },
+
+    updateSyncDigest() {
+      const el = document.getElementById('syncDigest');
+      if (!el) return;
+      const data = getUserData();
+      const classes = Array.isArray(data.classes) ? data.classes : [];
+      const totalStudents = classes.reduce((n, c) => n + ((c.students && c.students.length) || 0), 0);
+      const totalGroups = classes.reduce((n, c) => n + ((c.groups && c.groups.length) || 0), 0);
+      const ts = data.lastModified ? new Date(data.lastModified).toLocaleString() : '暂无';
+      el.textContent = `数据摘要：班级 ${classes.length} 个 ｜ 学生 ${totalStudents} 人 ｜ 小组 ${totalGroups} 个 ｜ 本机最后更新 ${ts}`;
+    },
+
     deleteStudentFromSettings() {
       const select = document.getElementById('studentManageSelect');
       if (!select || !select.value) {
@@ -10391,6 +10448,7 @@
       this.renderHonor();
       this.renderDashboard();
       this.renderStudentManage();
+      this.renderCallStudentOptions();
       this.renderScoreHistory();
       this.loadBadgeAwardStudents();
       this.renderStore();
@@ -10418,6 +10476,7 @@
       this.renderHonor();
       this.renderDashboard();
       this.renderStudentManage();
+      this.renderCallStudentOptions();
       this.renderScoreHistory();
       this.loadBadgeAwardStudents();
       this.renderStore();

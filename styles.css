@@ -2018,13 +2018,30 @@ body::before {
 .student-card-v2-actions {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
   padding: 10px;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .student-card-v2-actions .btn {
-  margin: 0 5px;
+  margin: 0;
 }
+.sync-super-card{
+  background:
+    radial-gradient(circle at 15% 16%, rgba(255,255,255,.8) 0 10%, transparent 11%),
+    linear-gradient(135deg,#fff7ef,#fff2fd 52%,#eef6ff);
+  border-color:#ffd2b5;
+}
+.sync-action-row .btn{ min-width: 200px; }
+.teacher-call-box{
+  margin-top:16px;
+  padding:14px;
+  border-radius:16px;
+  border:2px dashed #ffc37f;
+  background: linear-gradient(135deg,#fffaf0,#fff3e4);
+}
+.teacher-call-box h4{ margin-bottom:8px; color:#a44d00; }
 
 .dress-up-section {
   margin-bottom: 20px;

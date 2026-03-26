@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=14">
+  <link rel="stylesheet" href="./styles.css?v=15">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -756,11 +756,11 @@
             <div id="accessoriesList" class="accessories-list"></div>
             <button type="button" class="btn btn-primary btn-cute" onclick="app.openAccessoryModal()">➕ 添加装扮</button>
           </div>
-          <div class="settings-card settings-card-cute full-width">
+          <div class="settings-card settings-card-cute full-width sync-super-card">
             <h3>💾 数据备份与多端同步</h3>
             <p class="setting-hint">推荐做法：在【有数据的设备】点击「上传到云端」，在【新设备】登录后点击「从云端恢复到本机」，这样可安全完成多端同步。</p>
             <div id="backupStatus" class="backup-status"></div>
-            <div class="export-buttons">
+            <div class="export-buttons sync-action-row">
               <button type="button" id="btnSyncToCloud" class="btn btn-primary btn-cute" onclick="app.syncToCloud()">
                 <svg class="btn-icon" aria-hidden="true"><use href="#icon-upload"/></svg>
                 上传到云端（Supabase）
@@ -769,14 +769,31 @@
                 <svg class="btn-icon" aria-hidden="true"><use href="#icon-download"/></svg>
                 从云端恢复到本机
               </button>
+              <button type="button" class="btn btn-cute" style="background:linear-gradient(135deg,#ffd166,#ff8fab);color:#7a2f00;" onclick="app.syncAllNow()">🔄 一键双向同步校准</button>
               <button type="button" class="btn btn-secondary btn-cute" onclick="app.exportAllData()">📦 导出本地备份（JSON）</button>
             </div>
             <p id="cloudSyncStatus" class="setting-hint" style="margin-top:8px;color:#888;">云同步状态：等待操作</p>
+            <div id="syncDigest" class="setting-hint" style="margin-top:4px;color:#a855f7;"></div>
             <div class="import-section" style="margin-top: 20px; padding-top: 20px; border-top: 2px dashed var(--border);">
               <h4>📥 从文件导入本地数据</h4>
               <p class="setting-hint">适用于离线备份。支持导入备份文件(.json)或学生名单(.xlsx/.csv)</p>
               <input type="file" id="importDataFile" accept=".json,.xlsx,.csv" style="display: none;" onchange="app.handleImportData(event)">
               <button type="button" class="btn btn-primary btn-cute" onclick="document.getElementById('importDataFile').click()">📥 选择文件导入</button>
+            </div>
+            <div class="teacher-call-box">
+              <h4>📣 一键喊人（办公室/手机都可用）</h4>
+              <p class="setting-hint">选中学生后，一键语音呼叫 + 全屏横幅提醒。</p>
+              <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                  <label>选择学生</label>
+                  <select id="callStudentSelect" class="login-input"><option value="">请选择学生</option></select>
+                </div>
+                <div class="form-group" style="flex:2;">
+                  <label>呼叫内容</label>
+                  <input type="text" id="callStudentMessage" class="login-input" placeholder="例如：请李明同学到办公室找老师">
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary btn-cute" onclick="app.callStudentNow()">📢 一键喊人</button>
             </div>
           </div>
           <div class="settings-card settings-card-cute full-width">
@@ -1684,7 +1701,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=62"></script>
+<script src="./app-loader.js?v=63"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
