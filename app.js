@@ -1464,10 +1464,8 @@
           this.loadUserData();
           this.dataLoaded = true;
         }
-        setTimeout(() => {
-          this.preheatCurrentClassPetImages();
-          this.preheatPetAdoptImages();
-        }, 120);
+        this.schedulePetPreheat('showApp_class', () => this.preheatCurrentClassPetImages(), 1200);
+        this.schedulePetPreheat('showApp_adopt', () => this.preheatPetAdoptImages(), 1800);
         // 分帧初始化，避免主线程长时间阻塞导致“页面无响应”
         if (!this._initScheduled) {
           this._initScheduled = true;
@@ -3668,7 +3666,30 @@
         this._petImagePreloadCache[src] = 1;
       });
     },
+    schedulePetPreheat(taskKey, fn, timeout = 1500) {
+      if (!taskKey || typeof fn !== 'function') return;
+      if (!this._petPreheatPending) this._petPreheatPending = Object.create(null);
+      if (this._petPreheatPending[taskKey]) return;
+      this._petPreheatPending[taskKey] = 1;
+      const run = () => {
+        try {
+          fn();
+        } catch (e) {
+          console.error('宠物图片预热失败:', e);
+        } finally {
+          this._petPreheatPending[taskKey] = 0;
+        }
+      };
+      if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(run, { timeout });
+      } else {
+        setTimeout(run, 80);
+      }
+    },
     preheatCurrentClassPetImages() {
+      const now = Date.now();
+      if (this._lastClassPetPreheatAt && now - this._lastClassPetPreheatAt < 12000) return;
+      this._lastClassPetPreheatAt = now;
       if (!this.students || !this.students.length) return;
       const countMap = Object.create(null);
       this.students.forEach(s => {
@@ -3684,6 +3705,9 @@
       });
     },
     preheatPetAdoptImages() {
+      const now = Date.now();
+      if (this._lastPetAdoptPreheatAt && now - this._lastPetAdoptPreheatAt < 8000) return;
+      this._lastPetAdoptPreheatAt = now;
       const ids = (typeof PHOTO_TYPE_IDS !== 'undefined' && Array.isArray(PHOTO_TYPE_IDS) && PHOTO_TYPE_IDS.length)
         ? PHOTO_TYPE_IDS
         : ((window.PET_TYPES || []).map(t => t.id).filter(Boolean));
@@ -3872,8 +3896,8 @@
         this.loadBroadcastSettings();
         this.updateBroadcastContent();
         setTimeout(() => {
-          this.preheatCurrentClassPetImages();
-          this.preheatPetAdoptImages();
+          this.schedulePetPreheat('switchClass_class', () => this.preheatCurrentClassPetImages(), 1200);
+          this.schedulePetPreheat('switchClass_adopt', () => this.preheatPetAdoptImages(), 1800);
         }, 80);
         alert('已切换到班级：' + selectedClass.name);
       }
@@ -6255,7 +6279,7 @@
     },
 
     renderPetAdopt() {
-      this.preheatPetAdoptImages();
+      this.schedulePetPreheat('renderPetAdopt', () => this.preheatPetAdoptImages(), 1200);
       this.renderPetStudentList();
       if (this.currentStudentId) {
         const s = this.students.find(x => x.id === this.currentStudentId);
