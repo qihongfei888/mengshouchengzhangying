@@ -544,10 +544,11 @@ body::before {
 .student-card-v2-pet .student-pet-preview {
   width: 100%;
   height: 100%;
-  background: transparent;
-  box-shadow: none;
+  background: linear-gradient(155deg, #0b1220, #1f2a3b 62%, #0f172a);
+  box-shadow: 0 18px 34px rgba(2,6,23,.38);
   position: relative;
   overflow: hidden;
+  border-radius: 18px;
 }
 .student-card-v2-pet .student-pet-preview::before{
   content:'';
@@ -555,14 +556,23 @@ body::before {
   top:4px;
   left:8px;
   right:8px;
-  height:36%;
-  border-radius: 16px 16px 30px 30px;
-  background: linear-gradient(180deg, rgba(255,255,255,.46), rgba(255,255,255,.06) 65%, transparent 100%);
+  height:34%;
+  border-radius: 14px 14px 24px 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,.08) 66%, transparent 100%);
   pointer-events:none;
-  z-index: 2;
+  z-index:3;
 }
-.student-card-v2:hover .student-pet-preview::before{
-  background: linear-gradient(180deg, rgba(255,255,255,.60), rgba(255,255,255,.10) 65%, transparent 100%);
+.student-card-v2-pet .student-pet-preview::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 84% 84%, rgba(0,0,0,.34) 0%, transparent 40%),
+    linear-gradient(180deg, transparent 55%, rgba(0,0,0,.26) 100%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+  pointer-events:none;
+  z-index:2;
 }
 .student-card-v2-pet .pet-img { font-size: 5rem; }
 .student-card-v2-pet .pet-img-stage {
@@ -889,13 +899,15 @@ body::before {
 .student-pet-preview {
   width: 120px;
   height: 120px;
-  background: linear-gradient(135deg, var(--bg) 0%, var(--secondary) 100%);
+  background:
+    linear-gradient(165deg, rgba(255,255,255,.16), rgba(255,255,255,0) 40%),
+    linear-gradient(135deg, #1f2937 0%, #374151 100%);
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 10px 26px rgba(0,0,0,.22);
   overflow: hidden;
 }
 .student-pet-preview .pet-img { font-size: 4.5rem; }
@@ -906,6 +918,7 @@ body::before {
   border-radius: 16px;
   border: none;
   box-shadow: none;
+  filter: contrast(1.14) saturate(1.08) brightness(0.96);
 }
 .student-pet-preview .pet-img-custom {
   width: 100%;
@@ -1182,7 +1195,7 @@ body::before {
 .egg-stage .egg-icon { font-size: 5rem; animation: eggWiggle 1.5s ease-in-out infinite; }
 .feed-food-icon { font-weight: bold; color: var(--primary); }
 .modal-feed-section .feed-btn { display: inline-flex; align-items: center; gap: 6px; }
-@keyframes eggWiggle { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes eggWiggle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .pet-growth-area { text-align: center; padding: 20px; }
 .pet-display-box {
   display: inline-block;
@@ -1484,7 +1497,7 @@ body::before {
 .completed-pet-img {
   width: 60px;
   height: 60px;
-  border-radius: 50%;
+  border-radius: 12px;
   object-fit: cover;
 }
 .completed-pet-icon {

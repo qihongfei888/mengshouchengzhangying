@@ -5345,7 +5345,7 @@
         petSection = `
           <div class="modal-feed-section">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-              ${photo ? `<img src="${photo}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;border:2px solid #f59e0b;" loading="eager" decoding="async" data-type-id="${s.pet.typeId || ''}" data-stage="${Math.max(1, Math.min(5, parseInt(s.pet.stage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)"><span style="display:none;font-size:2rem;">${icon}</span>` : `<span style="font-size:2rem;">${icon}</span>`}
+              ${photo ? `<img src="${photo}" style="width:56px;height:56px;object-fit: cover;border-radius:16px;border:2px solid #f59e0b;" loading="eager" decoding="async" data-type-id="${s.pet.typeId || ''}" data-stage="${Math.max(1, Math.min(5, parseInt(s.pet.stage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)"><span style="display:none;font-size:2rem;">${icon}</span>` : `<span style="font-size:2rem;">${icon}</span>`}
               <div>
                 <p><strong>宠物进度</strong>：第 ${stage}/${totalStages} 阶段，本阶段 ${progress}/${need} 分</p>
                 <p><strong>亲密度</strong>：${s.pet.affinity || 0}（${this.getPetAffinityTitle(s.pet.affinity || 0)}）</p>
@@ -6324,13 +6324,13 @@
           const canFeed = (s.points || 0) >= 1 && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead;
           let petDisplay, foodStr;
           if (s.pet.isCustom && s.pet.customImage) {
-            petDisplay = `<img src="${s.pet.customImage}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; filter: grayscale(50%); margin-bottom: 16px;">`;
+            petDisplay = `<img src="${s.pet.customImage}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 18px; filter: grayscale(50%); margin-bottom: 16px;">`;
             foodStr = '🍖';
           } else {
             const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
             const eggPath = this.getStagePhotoPath(s.pet.typeId, 1);
             petDisplay = `
-              <img src="${eggPath}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin-bottom: 16px;" loading="eager" decoding="async" data-type-id="${s.pet.typeId || ''}" data-stage="1" onerror="app.handleStagePhotoError(this)">
+              <img src="${eggPath}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 18px; margin-bottom: 16px;" loading="eager" decoding="async" data-type-id="${s.pet.typeId || ''}" data-stage="1" onerror="app.handleStagePhotoError(this)">
               <span style="display:none;font-size:3.2rem;">🥚</span>
             `;
             foodStr = type && type.food ? type.food : '🍖';
@@ -6349,14 +6349,14 @@
           if (isComplete) {
             let petDisplay, petName;
             if (s.pet.isCustom && s.pet.customImage) {
-              petDisplay = `<img src="${s.pet.customImage}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;">`;
+              petDisplay = `<img src="${s.pet.customImage}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 18px; margin-bottom: 8px;">`;
               petName = s.pet.customName;
             } else {
               const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
               const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
               const photoPath = this.getStagePhotoPath(type.id, stage);
               petDisplay = `
-                <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" loading="eager" decoding="async" data-type-id="${type && type.id ? type.id : ''}" data-stage="${Math.max(1, Math.min(5, parseInt(stage, 10) || 1))}" onerror="app.handleStagePhotoError(this)">
+                <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 18px; margin-bottom: 8px;" loading="eager" decoding="async" data-type-id="${type && type.id ? type.id : ''}" data-stage="${Math.max(1, Math.min(5, parseInt(stage, 10) || 1))}" onerror="app.handleStagePhotoError(this)">
                 <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
               `;
               petName = PHOTO_TYPE_NAME_MAP[type.id] || (breed && breed.name) || (type && type.name);
@@ -6375,7 +6375,7 @@
           } else {
             let petDisplay, petDisplayContent = '', petName, foodStr;
             if (s.pet.isCustom && s.pet.customImage) {
-              petDisplay = `<img src="${s.pet.customImage}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;">`;
+              petDisplay = `<img src="${s.pet.customImage}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 18px; margin-bottom: 8px;">`;
               petName = s.pet.customName;
               foodStr = '🍖';
             } else {
@@ -6385,14 +6385,14 @@
               if (stage === 1) {
                 const eggPath = this.getStagePhotoPath(type.id, 1);
                 petDisplayContent = `
-                  <img src="${eggPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" loading="eager" decoding="async" data-type-id="${type && type.id ? type.id : ''}" data-stage="1" onerror="app.handleStagePhotoError(this)">
+                  <img src="${eggPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 18px; margin-bottom: 8px;" loading="eager" decoding="async" data-type-id="${type && type.id ? type.id : ''}" data-stage="1" onerror="app.handleStagePhotoError(this)">
                   <span class="breed-icon" style="display:none">🥚</span>
                 `;
               } else if (isComplete) {
                 // 已完成：成熟期 - 调用本地照片
                 const photoPath = this.getStagePhotoPath(type.id, stage);
                 petDisplayContent = `
-                  <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" loading="eager" decoding="async" data-type-id="${type && type.id ? type.id : ''}" data-stage="${Math.max(1, Math.min(5, parseInt(stage, 10) || 1))}" onerror="app.handleStagePhotoError(this)">
+                  <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 18px; margin-bottom: 8px;" loading="eager" decoding="async" data-type-id="${type && type.id ? type.id : ''}" data-stage="${Math.max(1, Math.min(5, parseInt(stage, 10) || 1))}" onerror="app.handleStagePhotoError(this)">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
                 `;
               } else {
@@ -6400,7 +6400,7 @@
                 if (type && breed && type.id && breed.id) {
                 const photoPath = this.getStagePhotoPath(type.id, stage);
                 petDisplayContent = `
-                  <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" loading="eager" decoding="async" data-type-id="${type && type.id ? type.id : ''}" data-stage="${Math.max(1, Math.min(5, parseInt(stage, 10) || 1))}" onerror="app.handleStagePhotoError(this)">
+                  <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 18px; margin-bottom: 8px;" loading="eager" decoding="async" data-type-id="${type && type.id ? type.id : ''}" data-stage="${Math.max(1, Math.min(5, parseInt(stage, 10) || 1))}" onerror="app.handleStagePhotoError(this)">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
                 `;
                 } else {
