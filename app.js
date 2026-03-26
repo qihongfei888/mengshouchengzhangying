@@ -3952,9 +3952,103 @@
       if (textEl && saved.length) {
         textEl.value = saved.map(q => `${q.q}|${q.a}`).join('\n');
       }
+      this._quizViewMode = 'setup';
+      this.setQuizViewMode('setup');
       document.getElementById('quizBattlePanel').style.display = 'none';
       this.renderQuizTargets();
       modal.style.display = 'flex';
+    },
+
+    setQuizViewMode(mode) {
+      this._quizViewMode = mode === 'stage' ? 'stage' : 'setup';
+      const setupBtn = document.getElementById('quizViewSetupBtn');
+      const stageBtn = document.getElementById('quizViewStageBtn');
+      const importRow = document.getElementById('quizImportRow');
+      const textWrap = document.getElementById('quizTextareaWrap');
+      const answerRow = document.getElementById('quizAnswerRow');
+      if (setupBtn) {
+        setupBtn.classList.toggle('btn-primary', this._quizViewMode === 'setup');
+        setupBtn.classList.toggle('btn-outline', this._quizViewMode !== 'setup');
+      }
+      if (stageBtn) {
+        stageBtn.classList.toggle('btn-primary', this._quizViewMode === 'stage');
+        stageBtn.classList.toggle('btn-outline', this._quizViewMode !== 'stage');
+      }
+      if (importRow) importRow.style.display = this._quizViewMode === 'setup' ? 'flex' : 'none';
+      if (textWrap) textWrap.style.display = this._quizViewMode === 'setup' ? 'block' : 'none';
+      if (answerRow) answerRow.style.display = this._quizViewMode === 'setup' ? 'flex' : 'none';
+      this.renderQuizBattleStage();
+    },
+
+    async importCustomQuizFile() {
+      const input = document.getElementById('quizImportFile');
+      const textEl = document.getElementById('quizQuestionsText');
+      if (!input || !input.files || !input.files[0] || !textEl) {
+        alert('请先选择文件');
+        return;
+      }
+      const file = input.files[0];
+      const name = (file.name || '').toLowerCase();
+      try {
+        let text = '';
+        if (name.endsWith('.txt') || name.endsWith('.csv')) {
+          text = await file.text();
+        } else if (name.endsWith('.docx')) {
+          if (!window.mammoth || typeof window.mammoth.extractRawText !== 'function') {
+            alert('当前环境未加载Word解析库，请先用复制粘贴方式导入');
+            return;
+          }
+          const arr = await file.arrayBuffer();
+          const res = await window.mammoth.extractRawText({ arrayBuffer: arr });
+          text = res.value || '';
+        } else {
+          alert('暂不支持该文件类型，请使用 txt/docx/csv');
+          return;
+        }
+        const normalized = this.normalizeQuizImportText(text);
+        if (!normalized.length) {
+          alert('未解析到题目，请检查格式');
+          return;
+        }
+        textEl.value = normalized.join('\n');
+        alert(`导入成功，共 ${normalized.length} 题`);
+      } catch (e) {
+        console.error('导入题库失败:', e);
+        alert('导入失败，请检查文件内容');
+      }
+    },
+
+    normalizeQuizImportText(text) {
+      return String(text || '')
+        .split('\n')
+        .map(x => x.trim())
+        .filter(Boolean)
+        .map(line => {
+          if (line.includes('|')) return line;
+          if (line.includes('答案：')) {
+            const [q, a] = line.split('答案：');
+            return `${(q || '').replace(/^\d+[\.、\s]*/, '').trim()}|${(a || '').trim()}`;
+          }
+          return '';
+        })
+        .filter(Boolean);
+    },
+
+    renderQuizBattleStage() {
+      const stage = document.getElementById('quizBattleStage');
+      if (!stage) return;
+      if (!this._quizBattle) {
+        stage.innerHTML = '<div style="font-weight:700;color:#8B1A1A;">⚔️ PK舞台待命中</div><div style="color:#777;font-size:12px;">开始PK后显示双方气氛面板</div>';
+        return;
+      }
+      const b = this._quizBattle;
+      const leftName = (b.mode === 'group' ? this.groups.find(g => g.id === b.targetA)?.name : this.students.find(s => s.id === b.targetA)?.name) || 'A方';
+      const rightName = (b.mode === 'group' ? this.groups.find(g => g.id === b.targetB)?.name : this.students.find(s => s.id === b.targetB)?.name) || 'B方';
+      stage.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="flex:1;text-align:center;padding:8px;border-radius:10px;background:#fff;border:1px solid #ffcf9f;"><div style="font-size:22px;">⚔️</div><strong>${this.escape(leftName)}</strong></div>
+        <div style="font-size:18px;font-weight:900;color:#8B1A1A;">🗡️ VS 🛡️</div>
+        <div style="flex:1;text-align:center;padding:8px;border-radius:10px;background:#fff;border:1px solid #ffcf9f;"><div style="font-size:22px;">⚔️</div><strong>${this.escape(rightName)}</strong></div>
+      </div>`;
     },
 
     renderQuizTargets() {
@@ -3991,6 +4085,8 @@
       }
       document.getElementById('quizBattlePanel').style.display = 'block';
       document.getElementById('quizBattleLog').innerHTML = '';
+      this.setQuizViewMode('stage');
+      this.renderQuizBattleStage();
       this._renderQuizQuestion();
     },
 
@@ -4017,10 +4113,19 @@
       const q = b.questions[b.idx];
       if (!q) return;
       const ans = this._normalizeAnswer(q.a);
-      const a1 = this._normalizeAnswer(document.getElementById('quizAnswerA')?.value || '');
-      const a2 = this._normalizeAnswer(document.getElementById('quizAnswerB')?.value || '');
-      const aOk = a1 && a1 === ans;
-      const bOk = a2 && a2 === ans;
+      let aOk = false;
+      let bOk = false;
+      if (this._quizViewMode === 'stage') {
+        const winner = prompt('舞台判定：输入 A / B / T（平局）');
+        const v = String(winner || '').trim().toUpperCase();
+        aOk = v === 'A';
+        bOk = v === 'B';
+      } else {
+        const a1 = this._normalizeAnswer(document.getElementById('quizAnswerA')?.value || '');
+        const a2 = this._normalizeAnswer(document.getElementById('quizAnswerB')?.value || '');
+        aOk = a1 && a1 === ans;
+        bOk = a2 && a2 === ans;
+      }
       const reason = `答题PK-第${b.idx + 1}题`;
       if (aOk && !bOk) {
         this.applyQuizDelta(b.mode, b.targetA, b.winPoints, reason + '胜');
