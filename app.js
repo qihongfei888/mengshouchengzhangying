@@ -4074,6 +4074,8 @@
         B: { groupId: groupB.id, groupName: groupB.name, answers: 0, roster: teamB },
         log: []
       };
+      this._normalizeAssassinRoles('A');
+      this._normalizeAssassinRoles('B');
       this.renderAssassinKingRoles();
       this._pushAssassinKingLog(`对局开始：${groupA.name} VS ${groupB.name}`);
     },
@@ -4081,17 +4083,52 @@
     _buildAssassinTeam(group) {
       const members = this.getGroupMembers(group.id) || [];
       if (members.length < 3) return null;
-      const shuffled = [...members].sort(() => Math.random() - 0.5);
-      const roles = ['king', 'prince', 'knight'];
       const names = { king: '国王', prince: '王子', knight: '骑士' };
-      const roster = shuffled.map((m, idx) => {
-        const role = roles[idx] || 'knight';
+      const roster = members.map((m, idx) => {
+        const role = idx === 0 ? 'king' : (idx === 1 ? 'prince' : 'knight');
         return { studentId: m.studentId, name: m.name, avatar: m.avatar || '👤', role, roleName: names[role], alive: true };
       });
       const king = roster.find(x => x.role === 'king');
       const prince = roster.find(x => x.role === 'prince');
-      const knight = roster.find(x => x.role === 'knight');
-      return { members: roster, kingId: king?.studentId || '', princeId: prince?.studentId || '', knightId: knight?.studentId || '' };
+      return { members: roster, kingId: king?.studentId || '', princeId: prince?.studentId || '', knightId: '' };
+    },
+
+    setAssassinRole(side, studentId, role) {
+      if (!this._assassinKing || !this._assassinKing[side]) return;
+      const team = this._assassinKing[side].roster;
+      const member = team.members.find(x => x.studentId === studentId);
+      if (!member) return;
+      member.role = role;
+      this._normalizeAssassinRoles(side);
+      this.renderAssassinKingRoles();
+    },
+
+    _normalizeAssassinRoles(side) {
+      if (!this._assassinKing || !this._assassinKing[side]) return;
+      const team = this._assassinKing[side].roster;
+      const names = { king: '国王', prince: '王子', knight: '骑士' };
+      const aliveMembers = team.members;
+
+      // 国王唯一
+      const kings = aliveMembers.filter(m => m.role === 'king');
+      if (kings.length === 0 && aliveMembers.length) aliveMembers[0].role = 'king';
+      if (kings.length > 1) kings.slice(1).forEach(m => { m.role = 'knight'; });
+
+      // 王子唯一
+      const princes = aliveMembers.filter(m => m.role === 'prince');
+      if (princes.length === 0) {
+        const cand = aliveMembers.find(m => m.role !== 'king');
+        if (cand) cand.role = 'prince';
+      }
+      if (princes.length > 1) princes.slice(1).forEach(m => { m.role = 'knight'; });
+
+      aliveMembers.forEach(m => { m.roleName = names[m.role] || '骑士'; });
+      const king = aliveMembers.find(m => m.role === 'king');
+      const prince = aliveMembers.find(m => m.role === 'prince');
+      const knight = aliveMembers.find(m => m.role === 'knight');
+      team.kingId = king ? king.studentId : '';
+      team.princeId = prince ? prince.studentId : '';
+      team.knightId = knight ? knight.studentId : '';
     },
 
     renderAssassinKingRoles() {
@@ -4105,10 +4142,18 @@
         const t = this._assassinKing[key];
         const cards = t.roster.members.map(m => {
           const deadClass = m.alive ? '' : 'opacity:0.45;filter:grayscale(1);';
+          const roleSelector = m.alive
+            ? `<select class="login-input" style="padding:4px 6px;font-size:12px;margin-top:4px;" onchange="app.setAssassinRole('${key}','${m.studentId}',this.value)">
+                <option value="king" ${m.role === 'king' ? 'selected' : ''}>国王</option>
+                <option value="prince" ${m.role === 'prince' ? 'selected' : ''}>王子</option>
+                <option value="knight" ${m.role === 'knight' ? 'selected' : ''}>骑士</option>
+              </select>`
+            : `<div style="font-size:12px;color:#999;margin-top:4px;">已出局</div>`;
           return `<div style="padding:8px;border:1px solid #ffd7ad;border-radius:10px;background:#fff;${deadClass}">
             <div style="font-size:22px;">${this.escape(m.avatar || '👤')}</div>
             <div style="font-weight:700;">${this.escape(m.name)}</div>
             <div style="font-size:12px;color:#8B1A1A;">${m.roleName}</div>
+            ${roleSelector}
           </div>`;
         }).join('');
         return `<div style="flex:1;min-width:260px;background:linear-gradient(135deg,#fffaf0,#f5fbff);padding:10px;border-radius:12px;border:1px solid #ffd3a6;">
@@ -4169,6 +4214,7 @@
         prince.roleName = '国王';
         this._pushAssassinKingLog(`👑 ${def.groupName} 王子 ${prince.name} 继位为新国王`);
       }
+      this._normalizeAssassinRoles(side === 'A' ? 'B' : 'A');
       const knight = def.roster.members.find(m => m.alive && m.role === 'knight');
       if (knight) {
         const atkAlive = atk.roster.members.filter(m => m.alive);
