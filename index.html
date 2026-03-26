@@ -385,13 +385,14 @@
             <!-- 大PK 神兽大富翁 -->
       <section id="page-monopoly" class="page">
         <div class="page-header">
-          <h2>🎯 神兽大PK · 大富翁</h2>
-          <p class="page-header-hint">各小组选神兽出战，掷骰前进，遇奖励得分，踩地雷扣分！</p>
+          <h2>🎯 神兽大PK · 互动大富翁</h2>
+          <p class="page-header-hint">小组掷骰前进，触发格子卡片事件，顶部可发起互动对抗。</p>
           <div class="page-actions">
             <button class="btn btn-primary" onclick="Monopoly.startGame()">🎮 开始游戏</button>
             <button class="btn btn-secondary" onclick="Monopoly.resetGame()">🔄 重置</button>
           </div>
         </div>
+        <div id="monopolyInteractionBar" style="margin-bottom:10px;padding:10px;border-radius:12px;background:linear-gradient(120deg,#fff7ed,#eef7ff);border:1px solid #ffd6ad;"></div>
         <div class="monopoly-layout">
           <div class="monopoly-sidebar">
             <div class="monopoly-groups-panel">
@@ -1576,5 +1577,5 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=47"></script>
+<script src="./app-loader.js?v=48"></script>
 </body></html>

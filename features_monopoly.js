@@ -1,137 +1,30 @@
-/* features_monopoly.js - 神兽大富翁PK游戏 */
-(function(){
-'use strict';
-function _esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function _speak(t){if(!window.speechSynthesis)return;var u=new SpeechSynthesisUtterance(t);u.lang='zh-CN';u.rate=1;window.speechSynthesis.speak(u);} 
-function _getCurrentClass(){
-  try {
-    var d=typeof getUserData==='function'?getUserData():null;
-    if(!d||!d.classes||!window.app||!window.app.currentClassId)return null;
-    return d.classes.find(function(c){return c.id===window.app.currentClassId;})||null;
-  } catch(e){return null;}
-}
+(function(){'use strict';
+function e(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function c(){try{var d=getUserData();if(!d||!d.classes||!window.app||!window.app.currentClassId)return null;return d.classes.find(function(x){return x.id===window.app.currentClassId;})||null;}catch(_){return null;}}
+function save(mut){try{var d=getUserData();if(!d||!d.classes||!window.app)return;var cls=d.classes.find(function(x){return x.id===window.app.currentClassId;});if(!cls)return;mut(cls);setUserData(d);}catch(_){}}
 var CE={START:'#06D6A0',FINISH:'#FFD23F',NORMAL:'#f0f8ff',MINE:'#EF476F',BONUS:'#06D6A0',PORTAL:'#9B59F7',SKIP:'#FF9F1C',DOUBLE:'#1B98F5',BACK:'#EF476F'};
 var CI={START:'🏁',FINISH:'🏆',NORMAL:'⬜',MINE:'💣',BONUS:'🎁',PORTAL:'🌀',SKIP:'⏭',DOUBLE:'✖',BACK:'⬅'};
 window.Monopoly={
-  s:{n:32,mines:[{p:6,v:-2,l:'走神扣2分'},{p:13,v:-3,l:'未交作业扣3分'},{p:20,v:-2,l:'违纪扣2分'}],bonuses:[{p:4,v:3,l:'发言加3分'},{p:10,v:2,l:'作业优秀加2分'},{p:17,v:5,l:'满分加5分'}],portal:true,skip:true,dbl:true,back:true},
-  groups:[],cells:[],turn:0,on:false,busy:false,
-  build:function(){
-    var s=this.s,n=s.n,self=this;this.cells=[];
-    for(var i=0;i<n;i++)this.cells.push({t:'NORMAL',l:'',v:0});
-    this.cells[0].t='START';this.cells[0].l='起点';
-    this.cells[n-1].t='FINISH';this.cells[n-1].l='终点';
-    s.mines.forEach(function(m){if(m.p>0&&m.p<n-1){self.cells[m.p].t='MINE';self.cells[m.p].l=m.l;self.cells[m.p].v=m.v;}});
-    s.bonuses.forEach(function(b){if(b.p>0&&b.p<n-1){self.cells[b.p].t='BONUS';self.cells[b.p].l=b.l;self.cells[b.p].v=b.v;}});
-    var av=[];for(var j=2;j<n-2;j++)if(this.cells[j].t==='NORMAL')av.push(j);
-    av.sort(function(){return Math.random()-0.5;});var ai=0;
-    [{t:'PORTAL',l:'传送门'},{t:'SKIP',l:'跳过回合'},{t:'DOUBLE',l:'积分翻倍'},{t:'BACK',l:'后退3格'}].forEach(function(x){if(ai<av.length){self.cells[av[ai]].t=x.t;self.cells[av[ai]].l=x.l;ai++;}});
-  },
-  getConfig:function(){
-    var cls=_getCurrentClass()||{};
-    return {
-      rollCost: Math.max(0, parseInt((document.getElementById('monopolyRollCost')&&document.getElementById('monopolyRollCost').value) || cls.monopolyRollCost,10) || 1),
-      challengePoints: Math.max(1, parseInt(cls.monopolyChallengePoints,10) || 3),
-      opportunityTask: cls.monopolyOpportunityTask || '全组30秒内回答3题',
-      opportunityPoints: Math.max(1, parseInt(cls.monopolyOpportunityPoints,10) || 4),
-      stealPoints: Math.max(1, parseInt(cls.monopolyStealPoints,10) || 2)
-    };
-  },
-  loadG:function(){
-    var raw=[];try{var cls=_getCurrentClass();raw=(cls&&Array.isArray(cls.groups))?cls.groups:[];}catch(e){}
-    var cols=['#FF6B35','#1B98F5','#06D6A0','#9B59F7','#FFD23F','#EF476F'];
-    this.groups=raw.map(function(g,i){return{id:g.id,name:g.name||'小组',beastId:g.beastId||(window.BEASTS&&window.BEASTS[0]?window.BEASTS[0].id:'qinglong'),icon:g.icon||'🐉',pos:0,score:parseInt(g.points,10)||0,skip:false,color:g.color||cols[i%6]};});
-    if(!this.groups.length)this.groups=[{id:'g1',name:'龙组',beastId:'qinglong',icon:'🐉',pos:0,score:0,skip:false,color:'#FF6B35'},{id:'g2',name:'凤组',beastId:'fenghuang',icon:'🦚',pos:0,score:0,skip:false,color:'#1B98F5'}];
-  },
-  persistGroupsToClass:function(){
-    try{
-      if(!window.app||!Array.isArray(window.app.groups))return;
-      this.groups.forEach(function(g){var x=window.app.groups.find(function(k){return k.id===g.id;});if(x){x.points=g.score;x.beastId=g.beastId;}});
-      if(typeof window.app.saveStudents==='function') window.app.saveStudents();
-      if(typeof window.app.renderGroups==='function') window.app.renderGroups();
-    }catch(e){console.warn('同步PK小组数据失败:',e);}
-  },
-  setGroupBeast:function(index,beastId){var g=this.groups[index];if(!g)return;g.beastId=beastId;this.persistGroupsToClass();this.render();},
-  getCurrentGroup:function(){if(!this.groups.length)return null;return this.groups[this.turn%this.groups.length]||null;},
-  render:function(){
-    if(!this.on)this.loadG();if(!this.cells.length)this.build();
-    var board=document.getElementById('monopolyBoard');if(!board)return;
-    var n=this.cells.length;
-    board.style.gridTemplateColumns='repeat(8,1fr)';board.innerHTML='';
-    for(var i=0;i<n;i++){
-      var cell=this.cells[i],col=CE[cell.t]||'#f0f8ff',div=document.createElement('div');
-      div.className='monopoly-cell';div.style.background=col+'22';div.style.borderColor=col;
-      var here=this.groups.filter(function(g){return g.pos===i;});
-      var pw=here.map(function(g){var img=window.app&&window.app.getBeastPhoto?window.app.getBeastPhoto(g.beastId,5):'';return '<div class="mp-pawn" style="border-color:'+g.color+'"><img src="'+img+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'"></div>';}).join('');
-      div.innerHTML='<span class="mp-num">'+i+'</span><span class="mp-ico">'+(CI[cell.t]||'⬜')+'</span><span class="mp-lbl">'+cell.l+'</span><div class="mp-pawns">'+pw+'</div>';
-      if(here.length)div.style.boxShadow='0 0 10px '+here[0].color;
-      board.appendChild(div);
-    }
-    this.renderSide();
-  },
-  renderSide:function(){
-    var el=document.getElementById('monopolyGroupsList');if(!el)return;
-    var self=this,ai=this.turn%Math.max(this.groups.length,1),cfg=this.getConfig();
-    el.innerHTML=this.groups.map(function(g,i){var img=window.app&&window.app.getBeastPhoto?window.app.getBeastPhoto(g.beastId,5):'';var bdr=(self.on&&i===ai)?'border:3px solid '+g.color:'border:2px solid #eee';return '<div class="mp-group-card" style="'+bdr+'"><img src="'+img+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'"><div><strong>'+_esc(g.name)+'</strong><br><span style="color:'+g.color+'">⭐'+g.score+'分 📍第'+g.pos+'格</span>'+(g.skip?'<span style="color:#EF476F"> ⏭跳过</span>':'')+'</div></div>';}).join('');
-    if(!this.on){this.groups.forEach(function(g,i){var opts=(window.BEASTS||[]).map(function(b){return '<option value="'+b.id+'"'+(b.id===g.beastId?' selected':'')+'>'+b.icon+' '+b.name+'</option>';}).join('');el.innerHTML+='<div style="margin-top:6px"><label>'+_esc(g.name)+'：</label><select onchange="Monopoly.setGroupBeast('+i+',this.value)">'+opts+'</select></div>';});}
-    var info=document.getElementById('monopolyTurnInfo'),rb=document.getElementById('monopolyRollBtn'),hint=document.getElementById('monopolyCardHint');
-    if(info&&this.on){var g=this.groups[ai];if(g)info.innerHTML='<strong style="color:'+g.color+'">'+_esc(g.name)+'</strong> 的回合！'+(g.skip?'<br><span style="color:#EF476F">本回合跳过</span>':'');}
-    else if(info)info.innerHTML='<p style="color:#888">点击「开始游戏」</p>';
-    if(hint) hint.textContent='挑战卡+'+cfg.challengePoints+'分｜机会卡+'+cfg.opportunityPoints+'分｜抽抽卡-'+cfg.stealPoints+'分';
-    if(rb)rb.disabled=!this.on;
-  },
-  startGame:function(){this.loadG();this.build();this.groups.forEach(function(g){g.pos=0;g.skip=false;});this.turn=0;this.on=true;this.render();this.log('🎮 游戏开始！','#FF6B35');_speak('神兽大PK游戏开始！');},
-  resetGame:function(){this.on=false;this.turn=0;this.cells=[];this.groups.forEach(function(g){g.pos=0;g.skip=false;});this.persistGroupsToClass();this.render();this.log('🔄 重置','#888');},
-  rollDice:function(){
-    if(!this.on||this.busy)return;var ai=this.turn%this.groups.length,g=this.groups[ai],self=this;if(!g)return;
-    if(g.skip){g.skip=false;this.log(g.name+' 跳过回合',g.color);this.next();return;}
-    var rollCost=this.getConfig().rollCost;
-    if((g.score||0)<rollCost){this.log(g.name+' 积分不足，无法掷骰（需'+rollCost+'分）','#EF476F');_speak(g.name+'积分不足，无法掷骰');this.next();return;}
-    g.score-=rollCost;this.persistGroupsToClass();
-    this.busy=true;var t=0,roll=Math.floor(Math.random()*6)+1,de=document.getElementById('monopolyDice');
-    var iv=setInterval(function(){if(de)de.textContent=Math.floor(Math.random()*6)+1;if(++t>18){clearInterval(iv);if(de)de.textContent=roll;self.move(ai,roll);self.busy=false;}},80);
-  },
-  move:function(idx,steps){var g=this.groups[idx],n=this.cells.length,self=this,np=Math.min(g.pos+steps,n-1);this.log(g.name+' 掷出'+steps+'，到第'+np+'格',g.color);_speak(g.name+'掷出'+steps+'点');var cur=g.pos;function step(){cur=Math.min(cur+1,np);g.pos=cur;self.render();if(cur<np)setTimeout(step,200);else self.applyCell(idx);}setTimeout(step,200);},
-  applyCell:function(idx){
-    var g=this.groups[idx],cell=this.cells[g.pos],self=this;
-    if(cell.t==='FINISH'){this.log(g.name+' 到达终点！','#FFD23F');_speak(g.name+'到达终点，获得胜利！');this.persistGroupsToClass();this.showWin(g);return;}
-    if(cell.t==='MINE'){g.score+=cell.v;this.log(g.name+' 踩雷！'+cell.l,'#EF476F');}
-    else if(cell.t==='BONUS'){g.score+=cell.v;this.log(g.name+' 获奖！'+cell.l,'#06D6A0');}
-    else if(cell.t==='PORTAL'){var d=Math.floor(Math.random()*this.cells.length);g.pos=d;this.log(g.name+' 传送到第'+d+'格','#9B59F7');this.render();}
-    else if(cell.t==='SKIP'){g.skip=true;this.log(g.name+' 下回合跳过','#FF9F1C');}
-    else if(cell.t==='DOUBLE'){g.score*=2;this.log(g.name+' 积分翻倍！当前'+g.score+'分','#1B98F5');}
-    else if(cell.t==='BACK'){g.pos=Math.max(0,g.pos-3);this.log(g.name+' 后退3格','#EF476F');this.render();}
-    this.persistGroupsToClass();setTimeout(function(){self.next();},700);
-  },
-  useCard:function(type){
-    if(!this.on){alert('请先开始游戏');return;}
-    var cur=this.getCurrentGroup(),cfg=this.getConfig();
-    if(!cur)return;
-    if(type==='challenge'){
-      var target=this.groups.find(function(g){return g.id!==cur.id;});
-      if(!target){alert('没有可挑战的对手');return;}
-      var ok=confirm('挑战 '+target.name+'：由老师判定是否挑战成功，成功后本组加'+cfg.challengePoints+'分。\n点击“确定”=成功，点击“取消”=失败');
-      if(ok){cur.score+=cfg.challengePoints;this.log('⚔️ '+cur.name+' 挑战成功，+'+cfg.challengePoints+'分',cur.color);}else{this.log('⚔️ '+cur.name+' 挑战失败', '#999');}
-    } else if(type==='opportunity'){
-      var done=confirm('机会卡任务：'+cfg.opportunityTask+'\n完成后可获得 '+cfg.opportunityPoints+' 分。\n点击“确定”=完成');
-      if(done){cur.score+=cfg.opportunityPoints;this.log('🎯 '+cur.name+' 完成机会任务，+'+cfg.opportunityPoints+'分',cur.color);}else{this.log('🎯 '+cur.name+' 未完成机会任务', '#999');}
-    } else if(type==='reverse'){
-      var enemy=this.groups.find(function(g){return g.id!==cur.id;});
-      if(!enemy){alert('没有可反转的对手');return;}
-      enemy.pos=Math.max(0,enemy.pos-1);
-      this.log('🔁 '+cur.name+' 使用反转卡，'+enemy.name+' 回退一步',cur.color);
-    } else if(type==='steal'){
-      var victim=this.groups.find(function(g){return g.id!==cur.id;});
-      if(!victim){alert('没有可抽取的对手');return;}
-      var take=Math.min(cfg.stealPoints,Math.max(0,victim.score||0));
-      victim.score=Math.max(0,(victim.score||0)-take);
-      cur.score=(cur.score||0)+take;
-      this.log('🧲 '+cur.name+' 使用抽抽卡，从 '+victim.name+' 抽取 '+take+' 分',cur.color);
-    }
-    this.persistGroupsToClass();
-    this.render();
-  },
-  next:function(){this.turn++;this.renderSide();var ai=this.turn%this.groups.length,g=this.groups[ai];if(g)_speak('轮到'+g.name+'掷骰子了！');},
-  log:function(msg,color){var el=document.getElementById('monopolyLog');if(!el)return;var d=document.createElement('div');d.style.cssText='padding:4px 8px;border-radius:6px;margin-bottom:4px;font-size:0.85rem;border-left:3px solid '+(color||'#FF6B35');d.textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' '+msg;el.insertBefore(d,el.firstChild);if(el.children.length>40)el.lastChild.remove();},
-  showWin:function(g){var el=document.createElement('div');el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10003;pointer-events:none;text-align:center;width:260px;background:#fff;border:4px solid '+g.color+';border-radius:24px;padding:30px 20px;box-shadow:0 0 60px '+g.color+'88;';el.innerHTML='<div style="font-size:3rem">🏆</div><div style="font-size:1.5rem;font-weight:bold;color:'+g.color+'">'+_esc(g.name)+'</div><div style="color:#888;margin-top:8px">到达终点，获得胜利！</div>';document.body.appendChild(el);setTimeout(function(){el.remove();},3200);if(window.launchFireworks)window.launchFireworks();_speak('恭喜'+g.name+'获得神兽大PK冠军！');}
+ s:{n:32,mines:[{p:6,v:-2,l:'踩坑扣2分'},{p:13,v:-3,l:'压制扣3分'},{p:20,v:-2,l:'失误扣2分'}],bonuses:[{p:4,v:3,l:'连击加3分'},{p:10,v:2,l:'协作加2分'},{p:17,v:5,l:'爆发加5分'}]},
+ groups:[],cells:[],turn:0,on:false,busy:false,
+ cfg:function(){var cls=c()||{};return{rollCost:Math.max(0,parseInt((document.getElementById('monopolyRollCost')&&document.getElementById('monopolyRollCost').value)||cls.monopolyRollCost,10)||1),challengePoints:Math.max(1,parseInt(cls.monopolyChallengePoints,10)||3),opportunityTask:cls.monopolyOpportunityTask||'全组完成一个互动挑战',opportunityPoints:Math.max(1,parseInt(cls.monopolyOpportunityPoints,10)||4),stealPoints:Math.max(1,parseInt(cls.monopolyStealPoints,10)||2)};},
+ loadG:function(){var cls=c(),raw=(cls&&Array.isArray(cls.groups))?cls.groups:[],cols=['#FF6B35','#1B98F5','#06D6A0','#9B59F7','#FFD23F','#EF476F'];this.groups=raw.map(function(g,i){return{id:g.id,name:g.name||'小组',beastId:g.beastId||(window.BEASTS&&window.BEASTS[0]?window.BEASTS[0].id:'qinglong'),pos:0,lastPos:0,score:parseInt(g.points,10)||0,skip:false,color:g.color||cols[i%6]};});if(!this.groups.length)this.groups=[{id:'g1',name:'龙组',beastId:'qinglong',pos:0,lastPos:0,score:0,skip:false,color:'#FF6B35'},{id:'g2',name:'凤组',beastId:'fenghuang',pos:0,lastPos:0,score:0,skip:false,color:'#1B98F5'}];},
+ build:function(){var n=this.s.n,self=this,cls=c();this.cells=[];for(var i=0;i<n;i++)this.cells.push({t:'NORMAL',l:'',v:0,customLabel:''});this.cells[0].t='START';this.cells[0].l='起点';this.cells[n-1].t='FINISH';this.cells[n-1].l='终点';this.s.mines.forEach(function(m){if(m.p>0&&m.p<n-1){self.cells[m.p].t='MINE';self.cells[m.p].l=m.l;self.cells[m.p].v=m.v;}});this.s.bonuses.forEach(function(b){if(b.p>0&&b.p<n-1){self.cells[b.p].t='BONUS';self.cells[b.p].l=b.l;self.cells[b.p].v=b.v;}});var a=[];for(var j=2;j<n-2;j++)if(this.cells[j].t==='NORMAL')a.push(j);a.sort(function(){return Math.random()-0.5;});[{t:'PORTAL',l:'传送门'},{t:'SKIP',l:'暂停回合'},{t:'DOUBLE',l:'积分翻倍'},{t:'BACK',l:'后退3格'}].forEach(function(x,k){var p=a[k];if(p){self.cells[p].t=x.t;self.cells[p].l=x.l;}});if(cls&&Array.isArray(cls.monopolyCustomCells))cls.monopolyCustomCells.forEach(function(cc){if(cc&&cc.index>0&&cc.index<n-1&&self.cells[cc.index])self.cells[cc.index].customLabel=cc.label||'';});},
+ sync:function(){try{if(!window.app||!Array.isArray(window.app.groups))return;this.groups.forEach(function(g){var x=window.app.groups.find(function(k){return k.id===g.id;});if(x){x.points=g.score;x.beastId=g.beastId;}});window.app.saveStudents&&window.app.saveStudents();window.app.renderGroups&&window.app.renderGroups();}catch(_){}} ,
+ editCell:function(i){if(i<=0||i>=this.cells.length-1)return;var cell=this.cells[i];var t=prompt('设置第'+i+'格内容（可写互动任务）',cell.customLabel||cell.l||'');if(t===null)return;cell.customLabel=String(t||'').trim();save(function(cls){if(!Array.isArray(cls.monopolyCustomCells))cls.monopolyCustomCells=[];var o=cls.monopolyCustomCells.find(function(x){return x.index===i;});if(o)o.label=cell.customLabel;else cls.monopolyCustomCells.push({index:i,label:cell.customLabel});});this.log('📝 已更新第'+i+'格：'+(cell.customLabel||'空'),'#8f8f8f');this.render();},
+ render:function(){if(!this.on)this.loadG();if(!this.cells.length)this.build();var b=document.getElementById('monopolyBoard');if(!b)return;var n=this.cells.length,self=this;b.style.gridTemplateColumns='repeat(8,1fr)';b.innerHTML='';for(var i=0;i<n;i++){var c0=this.cells[i],co=CE[c0.t]||'#f0f8ff',d=document.createElement('div'),lb=c0.customLabel||c0.l;d.className='monopoly-cell';d.style.background=co+'22';d.style.borderColor=co;d.style.cursor=(i>0&&i<n-1)?'pointer':'default';var here=this.groups.filter(function(g){return g.pos===i;});var pw=here.map(function(g){var img=window.app&&window.app.getBeastPhoto?window.app.getBeastPhoto(g.beastId,5):'';return '<div class="mp-pawn" style="border-color:'+g.color+'"><img src="'+img+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'"></div>';}).join('');d.innerHTML='<span class="mp-num">'+i+'</span><span class="mp-ico">'+(c0.customLabel?'🃏':(CI[c0.t]||'⬜'))+'</span><span class="mp-lbl">'+e(lb||'')+'</span><div class="mp-pawns">'+pw+'</div>';if(here.length)d.style.boxShadow='0 0 10px '+here[0].color;(function(ix){if(ix>0&&ix<n-1)d.addEventListener('click',function(){self.editCell(ix);});})(i);b.appendChild(d);}this.side();this.topBar();},
+ topBar:function(){var el=document.getElementById('monopolyInteractionBar');if(!el)return;var g=this.groups.length?this.groups[this.turn%this.groups.length]:null;el.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><strong style="color:#8B1A1A;">🔥 当前互动：'+e(g?g.name:'--')+'</strong><button class="btn btn-small btn-secondary" onclick="Monopoly.card(\'challenge\')">⚔️ 挑战卡</button><button class="btn btn-small btn-secondary" onclick="Monopoly.card(\'opportunity\')">🎯 机会卡</button><button class="btn btn-small btn-secondary" onclick="Monopoly.card(\'reverse\')">🔁 反转卡</button><button class="btn btn-small btn-secondary" onclick="Monopoly.card(\'steal\')">🧲 抽抽卡</button><span style="font-size:12px;color:#777;">老师可点击任意格子编辑内容</span></div>';},
+ side:function(){var el=document.getElementById('monopolyGroupsList');if(!el)return;var self=this,ai=this.turn%Math.max(this.groups.length,1),cfg=this.cfg();el.innerHTML=this.groups.map(function(g,i){var img=window.app&&window.app.getBeastPhoto?window.app.getBeastPhoto(g.beastId,5):'';var bd=(self.on&&i===ai)?'border:3px solid '+g.color:'border:2px solid #eee';return '<div class="mp-group-card" style="'+bd+'"><img src="'+img+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'"><div><strong>'+e(g.name)+'</strong><br><span style="color:'+g.color+'">⭐'+g.score+'分 📍第'+g.pos+'格</span>'+(g.skip?'<span style="color:#EF476F"> ⏭跳过</span>':'')+'</div></div>';}).join('');if(!this.on){this.groups.forEach(function(g,i){var opts=(window.BEASTS||[]).map(function(b){return '<option value="'+b.id+'"'+(b.id===g.beastId?' selected':'')+'>'+b.icon+' '+b.name+'</option>';}).join('');el.innerHTML+='<div style="margin-top:6px"><label>'+e(g.name)+'：</label><select onchange="Monopoly.setGroupBeast('+i+',this.value)">'+opts+'</select></div>';});}var info=document.getElementById('monopolyTurnInfo'),rb=document.getElementById('monopolyRollBtn'),hint=document.getElementById('monopolyCardHint');if(info&&this.on){var g0=this.groups[ai];if(g0)info.innerHTML='<strong style="color:'+g0.color+'">'+e(g0.name)+'</strong> 的回合！'+(g0.skip?'<br><span style="color:#EF476F">本回合跳过</span>':'');}else if(info)info.innerHTML='<p style="color:#888">点击「开始游戏」</p>';if(hint)hint.textContent='挑战卡+'+cfg.challengePoints+'分｜机会卡+'+cfg.opportunityPoints+'分｜抽抽卡-'+cfg.stealPoints+'分';if(rb)rb.disabled=!this.on;},
+ setGroupBeast:function(i,id){var g=this.groups[i];if(!g)return;g.beastId=id;this.sync();this.render();},
+ startGame:function(){this.loadG();this.build();this.groups.forEach(function(g){g.pos=0;g.lastPos=0;g.skip=false;});this.turn=0;this.on=true;this.render();this.log('🎮 游戏开始！','#FF6B35');},
+ resetGame:function(){this.on=false;this.turn=0;this.cells=[];this.groups.forEach(function(g){g.pos=0;g.lastPos=0;g.skip=false;});this.sync();this.render();this.log('🔄 重置','#888');},
+ rollDice:function(){if(!this.on||this.busy)return;var ai=this.turn%this.groups.length,g=this.groups[ai],self=this;if(!g)return;if(g.skip){g.skip=false;this.log(g.name+' 跳过回合',g.color);this.next();return;}var cost=this.cfg().rollCost;if((g.score||0)<cost){this.log(g.name+' 积分不足，无法掷骰（需'+cost+'分）','#EF476F');this.next();return;}g.score-=cost;this.sync();this.busy=true;var t=0,r=Math.floor(Math.random()*6)+1,de=document.getElementById('monopolyDice');var iv=setInterval(function(){if(de)de.textContent=Math.floor(Math.random()*6)+1;if(++t>18){clearInterval(iv);if(de)de.textContent=r;self.move(ai,r);self.busy=false;}},80);},
+ move:function(i,s){var g=this.groups[i],n=this.cells.length,self=this,np=Math.min(g.pos+s,n-1);g.lastPos=g.pos;this.log(g.name+' 掷出'+s+'，到第'+np+'格',g.color);var cur=g.pos;function step(){cur=Math.min(cur+1,np);g.pos=cur;self.render();if(cur<np)setTimeout(step,180);else self.apply(i);}setTimeout(step,180);},
+ apply:function(i){var g=this.groups[i],c0=this.cells[g.pos],self=this;if(c0.t==='FINISH'){this.log(g.name+' 到达终点！','#FFD23F');this.sync();this.win(g);return;}if(c0.customLabel)this.log('🃏 '+g.name+' 触发：'+c0.customLabel,g.color);else if(c0.t==='MINE'){g.score+=c0.v;this.log(g.name+' 踩雷：'+c0.l,'#EF476F');}else if(c0.t==='BONUS'){g.score+=c0.v;this.log(g.name+' 奖励：'+c0.l,'#06D6A0');}else if(c0.t==='PORTAL'){var d=Math.floor(Math.random()*this.cells.length);g.pos=d;this.log(g.name+' 传送到第'+d+'格','#9B59F7');this.render();}else if(c0.t==='SKIP'){g.skip=true;this.log(g.name+' 下回合跳过','#FF9F1C');}else if(c0.t==='DOUBLE'){g.score*=2;this.log(g.name+' 积分翻倍！当前'+g.score+'分','#1B98F5');}else if(c0.t==='BACK'){g.pos=Math.max(0,g.pos-3);this.log(g.name+' 后退3格','#EF476F');this.render();}this.sync();setTimeout(function(){self.next();},700);},
+ card:function(t){if(!this.on){alert('请先开始游戏');return;}var cur=this.groups[this.turn%this.groups.length],cfg=this.cfg(),enemy=this.groups.find(function(g){return g.id!==cur.id;});if(!cur)return;if(t==='challenge'){if(!enemy)return;var ok=confirm('向 '+enemy.name+' 发起互动挑战，确定=成功');if(ok){cur.score+=cfg.challengePoints;this.log('⚔️ '+cur.name+' 挑战成功 +'+cfg.challengePoints+'分',cur.color);}else this.log('⚔️ '+cur.name+' 挑战失败','#999');}else if(t==='opportunity'){var done=confirm('机会任务：'+cfg.opportunityTask+'\n确定=完成');if(done){cur.score+=cfg.opportunityPoints;this.log('🎯 '+cur.name+' 完成机会任务 +'+cfg.opportunityPoints+'分',cur.color);}else this.log('🎯 '+cur.name+' 未完成机会任务','#999');}else if(t==='reverse'){if(!enemy)return;enemy.pos=Math.max(0,(enemy.lastPos||enemy.pos)-1);this.log('🔁 '+cur.name+' 反转 '+enemy.name+' 回退',cur.color);}else if(t==='steal'){if(!enemy)return;var take=Math.min(cfg.stealPoints,Math.max(0,enemy.score||0));enemy.score=Math.max(0,(enemy.score||0)-take);cur.score=(cur.score||0)+take;this.log('🧲 '+cur.name+' 抽取 '+enemy.name+' '+take+'分',cur.color);}this.sync();this.render();},
+ useCard:function(t){return this.card(t);},
+ next:function(){this.turn++;this.side();this.topBar();},
+ log:function(msg,color){var el=document.getElementById('monopolyLog');if(!el)return;var d=document.createElement('div');d.style.cssText='padding:4px 8px;border-radius:6px;margin-bottom:4px;font-size:0.85rem;border-left:3px solid '+(color||'#FF6B35');d.textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' '+msg;el.insertBefore(d,el.firstChild);if(el.children.length>40)el.lastChild.remove();},
+ win:function(g){var el=document.createElement('div');el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10003;pointer-events:none;text-align:center;width:260px;background:#fff;border:4px solid '+g.color+';border-radius:24px;padding:30px 20px;box-shadow:0 0 60px '+g.color+'88;';el.innerHTML='<div style="font-size:3rem">🏆</div><div style="font-size:1.5rem;font-weight:bold;color:'+g.color+'">'+e(g.name)+'</div><div style="color:#888;margin-top:8px">到达终点，获得胜利！</div>';document.body.appendChild(el);setTimeout(function(){el.remove();},3200);window.launchFireworks&&window.launchFireworks();}
 };
 })();
