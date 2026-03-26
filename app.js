@@ -5948,13 +5948,13 @@
           const canFeed = (s.points || 0) >= 1 && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead;
           let petDisplay, foodStr;
           if (s.pet.isCustom && s.pet.customImage) {
-            petDisplay = `<img src="${s.pet.customImage}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; filter: grayscale(50%); margin-bottom: 16px;">`;
+            petDisplay = `<img src="${s.pet.customImage}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; filter: grayscale(50%); margin-bottom: 16px;">`;
             foodStr = '🍖';
           } else {
             const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
             const eggPath = this.getStagePhotoPath(s.pet.typeId, 1);
             petDisplay = `
-              <img src="${eggPath}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; margin-bottom: 16px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+              <img src="${eggPath}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin-bottom: 16px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
               <span style="display:none;font-size:3.2rem;">🥚</span>
             `;
             foodStr = type && type.food ? type.food : '🍖';
