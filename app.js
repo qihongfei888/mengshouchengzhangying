@@ -1464,6 +1464,10 @@
           this.loadUserData();
           this.dataLoaded = true;
         }
+        setTimeout(() => {
+          this.preheatCurrentClassPetImages();
+          this.preheatPetAdoptImages();
+        }, 120);
         // 分帧初始化，避免主线程长时间阻塞导致“页面无响应”
         if (!this._initScheduled) {
           this._initScheduled = true;
@@ -3664,6 +3668,30 @@
         this._petImagePreloadCache[src] = 1;
       });
     },
+    preheatCurrentClassPetImages() {
+      if (!this.students || !this.students.length) return;
+      const countMap = Object.create(null);
+      this.students.forEach(s => {
+        const typeId = s && s.pet && s.pet.typeId;
+        if (!typeId) return;
+        countMap[typeId] = (countMap[typeId] || 0) + 1;
+      });
+      const topTypeIds = Object.keys(countMap)
+        .sort((a, b) => (countMap[b] || 0) - (countMap[a] || 0))
+        .slice(0, 10);
+      topTypeIds.forEach(typeId => {
+        for (let st = 1; st <= 5; st++) this.preloadPetStageImages(typeId, st);
+      });
+    },
+    preheatPetAdoptImages() {
+      const ids = (typeof PHOTO_TYPE_IDS !== 'undefined' && Array.isArray(PHOTO_TYPE_IDS) && PHOTO_TYPE_IDS.length)
+        ? PHOTO_TYPE_IDS
+        : ((window.PET_TYPES || []).map(t => t.id).filter(Boolean));
+      ids.slice(0, 24).forEach(typeId => {
+        this.preloadPetStageImages(typeId, 1);
+        this.preloadPetStageImages(typeId, 3);
+      });
+    },
     getTotalStages() {
       const data = getUserData();
       const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
@@ -3843,6 +3871,10 @@
         // 重新加载广播设置，确保班级间广播内容隔离
         this.loadBroadcastSettings();
         this.updateBroadcastContent();
+        setTimeout(() => {
+          this.preheatCurrentClassPetImages();
+          this.preheatPetAdoptImages();
+        }, 80);
         alert('已切换到班级：' + selectedClass.name);
       }
     },
@@ -6223,6 +6255,7 @@
     },
 
     renderPetAdopt() {
+      this.preheatPetAdoptImages();
       this.renderPetStudentList();
       if (this.currentStudentId) {
         const s = this.students.find(x => x.id === this.currentStudentId);
