@@ -10858,6 +10858,61 @@
       }
     },
 
+    openGroupMemberPointModal(groupId) {
+      const group = this.groups.find(g => g.id === groupId);
+      if (!group) return;
+      const members = this.getGroupMembers(groupId);
+      if (!members.length) {
+        alert('该小组暂无成员');
+        return;
+      }
+      const modal = document.getElementById('groupMemberPointModal');
+      if (!modal) return;
+      document.getElementById('memberPointGroupId').value = groupId;
+      document.getElementById('memberPointGroupName').textContent = group.name;
+      const sel = document.getElementById('memberPointStudent');
+      if (sel) {
+        sel.innerHTML = members.map(m => `<option value="${m.studentId}">${this.escape(m.name)}（${this.escape(m.studentId)}）</option>`).join('');
+      }
+      document.getElementById('memberPointDelta').value = '1';
+      document.getElementById('memberPointReason').value = '小组任务表现优秀-个人贡献';
+      modal.style.display = 'flex';
+    },
+
+    addMemberPointFromGroupTask() {
+      const groupId = document.getElementById('memberPointGroupId')?.value;
+      const studentId = document.getElementById('memberPointStudent')?.value;
+      const delta = parseInt(document.getElementById('memberPointDelta')?.value, 10);
+      const reason = (document.getElementById('memberPointReason')?.value || '').trim();
+      if (!groupId || !studentId) {
+        alert('请选择小组成员');
+        return;
+      }
+      if (!Number.isFinite(delta) || delta <= 0) {
+        alert('个人加分必须为正数');
+        return;
+      }
+      if (!reason) {
+        alert('请输入加分原因');
+        return;
+      }
+      const s = this.students.find(x => x.id === studentId);
+      if (!s) {
+        alert('未找到该学生');
+        return;
+      }
+      s.points = (s.points || 0) + delta;
+      if (!s.scoreHistory) s.scoreHistory = [];
+      const group = this.groups.find(g => g.id === groupId);
+      const reasonText = `【小组任务个人奖励】${group ? group.name : ''} ${reason}`.trim();
+      s.scoreHistory.unshift({ time: Date.now(), delta, reason: reasonText });
+      this.saveStudents();
+      this.renderStudents();
+      this.renderDashboard();
+      this.closeModal('groupMemberPointModal');
+      this.showSuccess(`已给 ${s.name} +${delta} 分（个人积分）`);
+    },
+
     addGroupPoint() {
       const groupId = document.getElementById('pointGroupId').value;
       const deltaInput = document.getElementById('pointDelta');

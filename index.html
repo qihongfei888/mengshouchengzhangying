@@ -1318,6 +1318,7 @@
         <h4>🎯 操作</h4>
         <div class="group-detail-actions">
           <button class="btn btn-primary" onclick="app.openGroupPointModal(document.getElementById('detailGroupId').value)">积分操作</button>
+          <button class="btn btn-secondary" onclick="app.openGroupMemberPointModal(document.getElementById('detailGroupId').value)">成员个人加分</button>
           <button class="btn btn-secondary" onclick="app.closeModal('groupDetailModal'); app.openEditGroupModal(document.getElementById('detailGroupId').value)">编辑小组</button>
           <button class="btn btn-danger" onclick="app.closeModal('groupDetailModal'); app.deleteGroup(document.getElementById('detailGroupId').value)">删除小组</button>
         </div>
@@ -1349,6 +1350,32 @@
         <input type="text" id="pointReason" class="login-input" placeholder="请输入积分变化原因">
       </div>
       <button class="btn btn-primary btn-block" onclick="app.addGroupPoint()">确认</button>
+    </div>
+  </div>
+
+  <!-- 小组成员个人加分弹窗 -->
+  <div id="groupMemberPointModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeModal('groupMemberPointModal')">&times;</button>
+      <h3>👤 小组成员个人加分</h3>
+      <input type="hidden" id="memberPointGroupId" value="">
+      <div class="form-group">
+        <label>所属小组</label>
+        <div id="memberPointGroupName" style="padding: 10px; background: var(--bg); border-radius: 8px; font-weight: bold;">-</div>
+      </div>
+      <div class="form-group">
+        <label>选择成员</label>
+        <select id="memberPointStudent" class="login-input"></select>
+      </div>
+      <div class="form-group">
+        <label>个人加分</label>
+        <input type="number" id="memberPointDelta" class="login-input" value="1" min="1">
+      </div>
+      <div class="form-group">
+        <label>原因</label>
+        <input type="text" id="memberPointReason" class="login-input" placeholder="例如：小组任务表现优秀，个人贡献突出">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="app.addMemberPointFromGroupTask()">确认给个人加分</button>
     </div>
   </div>
 
@@ -1612,7 +1639,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=56"></script>
+<script src="./app-loader.js?v=57"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
