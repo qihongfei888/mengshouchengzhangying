@@ -2975,7 +2975,7 @@
     },
 
     // 从云存储同步。skipSessionCheck=true 表示本次是登录流程，不校验“其他设备登录”
-    async syncFromCloud(skipSessionCheck) {
+    async syncFromCloud(skipSessionCheck, forceCloudOverwrite) {
       const statusEl = document.getElementById('cloudSyncStatus');
       const btnUpload = document.getElementById('btnSyncToCloud');
       const btnDownload = document.getElementById('btnSyncFromCloud');
@@ -3048,7 +3048,7 @@
                   } catch (e) {}
                 }
                 const localData = getUserData();
-                if (this.shouldOverwriteLocalWithCloud(localData, updatedData, cloudTimestamp)) {
+                if (forceCloudOverwrite || this.shouldOverwriteLocalWithCloud(localData, updatedData, cloudTimestamp)) {
                   if (!skipSessionCheck && statusEl) statusEl.textContent = '云同步状态：正在写入本地存储…';
                   this.backupSafetySnapshot('before-cloud-overwrite', localData);
                   setUserData(updatedData);
@@ -4946,6 +4946,7 @@
       this.loadBadgeAwardStudents();
       this.renderCallStudentOptions();
       this.updateSyncDigest();
+      this.checkSyncConflict();
       this.renderBackupStatus();
       this.renderAccessoriesList();
       this.checkAndShowPhotoStorageConfig();
@@ -10449,6 +10450,95 @@
       const totalGroups = classes.reduce((n, c) => n + ((c.groups && c.groups.length) || 0), 0);
       const ts = data.lastModified ? new Date(data.lastModified).toLocaleString() : '暂无';
       el.textContent = `数据摘要：班级 ${classes.length} 个 ｜ 学生 ${totalStudents} 人 ｜ 小组 ${totalGroups} 个 ｜ 本机最后更新 ${ts}`;
+    },
+
+    summarizeDataForConflict(data) {
+      const safe = data && typeof data === 'object' ? data : {};
+      const classes = Array.isArray(safe.classes) ? safe.classes : [];
+      const classCount = classes.length;
+      const studentCount = classes.reduce((n, c) => n + ((c && c.students && c.students.length) || 0), 0);
+      const groupCount = classes.reduce((n, c) => n + ((c && c.groups && c.groups.length) || 0), 0);
+      const modifiedAt = safe.lastModified || '';
+      return {
+        classCount,
+        studentCount,
+        groupCount,
+        modifiedAt,
+        modifiedText: modifiedAt ? new Date(modifiedAt).toLocaleString() : '暂无'
+      };
+    },
+
+    renderConflictSummaryList(targetId, summary) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      if (!summary) {
+        el.innerHTML = '<li>暂无数据</li>';
+        return;
+      }
+      el.innerHTML = `
+        <li>最后更新时间：${summary.modifiedText}</li>
+        <li>班级数量：${summary.classCount}</li>
+        <li>学生人数：${summary.studentCount}</li>
+        <li>小组数量：${summary.groupCount}</li>
+      `;
+    },
+
+    async checkSyncConflict() {
+      const hintEl = document.getElementById('conflictHint');
+      const localData = getUserData();
+      const localSummary = this.summarizeDataForConflict(localData);
+      this.renderConflictSummaryList('localConflictSummary', localSummary);
+
+      const userIdStr = this.currentUserId ? String(this.currentUserId).trim() : '';
+      if (!navigator.onLine || !userIdStr) {
+        this.renderConflictSummaryList('cloudConflictSummary', null);
+        if (hintEl) hintEl.textContent = '当前离线或未登录，无法读取云端摘要。';
+        return;
+      }
+
+      try {
+        const rows = await this.fetchUserDataViaRest(userIdStr);
+        const row = rows && rows[0] ? rows[0] : null;
+        let cloudData = row ? row.data : null;
+        const cloudTimestamp = row ? String(row.updatedAt || '') : '';
+        if (typeof cloudData === 'string') {
+          try { cloudData = JSON.parse(cloudData); } catch (e) {}
+        }
+        if (cloudData && cloudTimestamp && !cloudData.lastModified) cloudData.lastModified = cloudTimestamp;
+        const cloudSummary = cloudData ? this.summarizeDataForConflict(cloudData) : null;
+        this.renderConflictSummaryList('cloudConflictSummary', cloudSummary);
+
+        if (!cloudSummary) {
+          if (hintEl) hintEl.textContent = '云端暂无数据：建议点击“保留本机（推送覆盖云端）”。';
+          return;
+        }
+
+        const localTs = Date.parse(localSummary.modifiedAt || '') || 0;
+        const cloudTs = Date.parse(cloudSummary.modifiedAt || '') || 0;
+        if (localTs > cloudTs || localSummary.studentCount > cloudSummary.studentCount) {
+          if (hintEl) hintEl.textContent = '建议：保留本机（本机更新或数据更多）。';
+        } else if (cloudTs > localTs || cloudSummary.studentCount > localSummary.studentCount) {
+          if (hintEl) hintEl.textContent = '建议：采用云端（云端更新或数据更多）。';
+        } else {
+          if (hintEl) hintEl.textContent = '本机与云端看起来一致，可继续正常使用。';
+        }
+      } catch (e) {
+        console.error('检测冲突失败:', e);
+        this.renderConflictSummaryList('cloudConflictSummary', null);
+        if (hintEl) hintEl.textContent = '读取云端摘要失败，请稍后再试。';
+      }
+    },
+
+    async resolveConflictKeepLocal() {
+      await this.syncToCloud();
+      await this.checkSyncConflict();
+      this.showSuccess('已保留本机数据，并推送到云端');
+    },
+
+    async resolveConflictUseCloud() {
+      await this.syncFromCloud(false, true);
+      await this.checkSyncConflict();
+      this.showSuccess('已采用云端数据覆盖本机');
     },
 
     deleteStudentFromSettings() {

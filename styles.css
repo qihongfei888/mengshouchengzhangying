@@ -2047,6 +2047,31 @@ body::before {
   background: linear-gradient(135deg,#fffaf0,#fff3e4);
 }
 .teacher-call-box h4{ margin-bottom:8px; color:#a44d00; }
+.sync-conflict-center{
+  margin-top:16px;
+  padding:14px;
+  border-radius:16px;
+  border:2px dashed #c4b5fd;
+  background: linear-gradient(135deg,#f8f7ff,#eef4ff);
+}
+.sync-conflict-center h4{ margin-bottom:6px; color:#4c1d95; }
+.sync-conflict-grid{
+  display:grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.sync-conflict-col{
+  background: rgba(255,255,255,.85);
+  border:1px solid #ddd6fe;
+  border-radius:12px;
+  padding:10px;
+}
+.sync-conflict-col h5{ margin-bottom:6px; color:#3730a3; }
+.sync-conflict-list{ margin:0; padding-left:16px; color:#4b5563; font-size:.9rem; }
+.sync-conflict-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+@media (max-width: 768px){
+  .sync-conflict-grid{ grid-template-columns: 1fr; }
+}
 
 .dress-up-section {
   margin-bottom: 20px;
