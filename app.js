@@ -1391,6 +1391,8 @@
           if (monopolyOpportunityTaskEl) monopolyOpportunityTaskEl.value = currentClass.monopolyOpportunityTask || '全组30秒内回答3题';
           if (monopolyOpportunityPointsEl) monopolyOpportunityPointsEl.value = parseInt(currentClass.monopolyOpportunityPoints, 10) || 4;
           if (monopolyStealPointsEl) monopolyStealPointsEl.value = parseInt(currentClass.monopolyStealPoints, 10) || 2;
+          const awakenBadgeThresholdEl = document.getElementById('settingAwakenBadgeThreshold');
+          if (awakenBadgeThresholdEl) awakenBadgeThresholdEl.value = parseInt(currentClass.awakenBadgeThreshold, 10) || 8;
         } else {
           // 没有选择班级时的默认值
           this.students = [];
@@ -1421,6 +1423,8 @@
           if (monopolyOpportunityTaskEl) monopolyOpportunityTaskEl.value = '全组30秒内回答3题';
           if (monopolyOpportunityPointsEl) monopolyOpportunityPointsEl.value = 4;
           if (monopolyStealPointsEl) monopolyStealPointsEl.value = 2;
+          const awakenBadgeThresholdEl = document.getElementById('settingAwakenBadgeThreshold');
+          if (awakenBadgeThresholdEl) awakenBadgeThresholdEl.value = 8;
         }
         
         console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
@@ -2568,6 +2572,7 @@
             monopolyOpportunityTask: '全组30秒内回答3题',
             monopolyOpportunityPoints: 4,
             monopolyStealPoints: 2,
+            awakenBadgeThreshold: 8,
             customQuizQuestions: []
           };
           data.classes.push(newClass);
@@ -2597,6 +2602,7 @@
           const monopolyOpportunityTaskEl = document.getElementById('settingMonopolyOpportunityTask');
           const monopolyOpportunityPointsEl = document.getElementById('settingMonopolyOpportunityPoints');
           const monopolyStealPointsEl = document.getElementById('settingMonopolyStealPoints');
+          const awakenBadgeThresholdEl = document.getElementById('settingAwakenBadgeThreshold');
           
           currentClass.stagePoints = stagePointsEl ? parseInt(stagePointsEl.value) || 20 : 20;
           currentClass.totalStages = stagesEl ? parseInt(stagesEl.value) || 10 : 10;
@@ -2615,6 +2621,7 @@
           currentClass.monopolyOpportunityTask = monopolyOpportunityTaskEl ? (monopolyOpportunityTaskEl.value || '全组30秒内回答3题') : (currentClass.monopolyOpportunityTask || '全组30秒内回答3题');
           currentClass.monopolyOpportunityPoints = monopolyOpportunityPointsEl ? (parseInt(monopolyOpportunityPointsEl.value, 10) || 4) : (parseInt(currentClass.monopolyOpportunityPoints, 10) || 4);
           currentClass.monopolyStealPoints = monopolyStealPointsEl ? (parseInt(monopolyStealPointsEl.value, 10) || 2) : (parseInt(currentClass.monopolyStealPoints, 10) || 2);
+          currentClass.awakenBadgeThreshold = awakenBadgeThresholdEl ? Math.max(1, parseInt(awakenBadgeThresholdEl.value, 10) || 8) : (parseInt(currentClass.awakenBadgeThreshold, 10) || 8);
           currentClass.hospitalProjects = hospitalProjectsEl
             ? hospitalProjectsEl.value.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
                 const parts = line.split('|');
@@ -5094,6 +5101,11 @@
       return { key: 'common', label: '普通' };
     },
 
+    getAwakenBadgeThreshold() {
+      const currentClass = (this.classes || []).find(c => c && c.id === this.currentClassId);
+      return Math.max(1, parseInt(currentClass && currentClass.awakenBadgeThreshold, 10) || 8);
+    },
+
     getPetAffinityTier(value) {
       const v = Number(value || 0);
       if (v >= 45) return 3;
@@ -5202,7 +5214,7 @@
       const affinityTitle = this.getPetAffinityTitle(affinity);
       const affinityFace = ['🙂','🥰','🤩','👑'][affinityTier] || '🙂';
       const rarity = this.getCardRarity(currentStage, totalStages);
-      const awakenThreshold = 8;
+      const awakenThreshold = this.getAwakenBadgeThreshold();
       const isAwakened = badgeCount >= awakenThreshold;
       
       // 按照设计图重新设计学生卡片
@@ -9617,6 +9629,7 @@
         currentClass.monopolyOpportunityTask = document.getElementById('settingMonopolyOpportunityTask')?.value || currentClass.monopolyOpportunityTask || '全组30秒内回答3题';
         currentClass.monopolyOpportunityPoints = parseInt(document.getElementById('settingMonopolyOpportunityPoints')?.value, 10) || currentClass.monopolyOpportunityPoints || 4;
         currentClass.monopolyStealPoints = parseInt(document.getElementById('settingMonopolyStealPoints')?.value, 10) || currentClass.monopolyStealPoints || 2;
+        currentClass.awakenBadgeThreshold = Math.max(1, parseInt(document.getElementById('settingAwakenBadgeThreshold')?.value, 10) || currentClass.awakenBadgeThreshold || 8);
         currentClass.hospitalProjects = (document.getElementById('settingHospitalProjects')?.value || '复活针|8|revive\n急救药|3|cure')
           .split('\n')
           .map(line => line.trim())
