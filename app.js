@@ -4448,37 +4448,30 @@
     },
 
     generateTongueSentence() {
-      const corpus = [
-        '【经典绕口令】黑化肥发灰会挥发，灰化肥挥发会发黑；黑化肥挥发发灰会花飞，灰化肥挥发发黑会飞花。',
-        '【经典绕口令】牛郎恋刘娘，刘娘念牛郎；牛郎年年恋刘娘，刘娘年年念牛郎，郎恋娘来娘念郎。',
-        '【经典绕口令】四是四，十是十，十四是十四，四十是四十；别把四十说成十四，也别把十四说成四十。',
-        '【语速挑战】吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮；吐了葡萄皮还要再读一遍不吐葡萄皮。',
-        '【唇齿挑战】红凤凰、粉凤凰、黄凤凰，红粉凤凰花凤凰；凤凰飞，花凤凰追，谁先飞谁先回。',
-        '【平翘舌挑战】山前有四十四棵涩柿子树，山后有四十四只石狮子，四十四只狮子咬死四十四棵涩柿子树。',
-        '【断句挑战】今天下雨天留客天留我不留，请你在不改变文字的情况下读出三种不同断句。',
-        '【断句挑战】明天上课老师说今天不讲昨天讲过的内容，你试着一口气读完并正确停顿。',
-        '【长句挑战】如果你现在能够平稳地读完这一句长句而且中间不打结不吞字不漏字，那么请你继续加快速度再读一遍。',
-        '【长句挑战】请把这句话读成新闻播报的节奏：清晨操场上三十名同学整齐站队进行三分钟深呼吸训练随后进行十分钟朗读。',
-        '【节奏挑战】八百标兵奔北坡，炮兵并排北边跑；标兵怕碰炮兵炮，炮兵怕把标兵碰。',
-        '【节奏挑战】门口吊刀，刀倒吊着；门口到刀，刀到门口；到底是刀到门口还是门口吊刀。',
-        '【数字挑战】一平盆面，烙一平盆饼；饼碰盆，盆碰饼，不知是盆碰饼还是饼碰盆。',
-        '【数字挑战】七巷一个漆匠，西巷一个锡匠，七巷漆匠用了西巷锡匠的锡，西巷锡匠拿了七巷漆匠的漆。',
-        '【场景挑战】东洞庭，西洞庭，洞庭山上一根藤，藤条挂铜铃，风吹藤动铜铃动，风停藤停铜铃停。',
-        '【场景挑战】河里有只鹅，河外有只鸽，鹅过河去追鸽，鸽过河来躲鹅，鹅追鸽，鸽躲鹅，鹅鸽过河都要稳稳说。',
-        '【学科风】请完整朗读：二氧化碳在常温常压下是无色无味气体，而碳酸氢钠在加热条件下会分解产生二氧化碳。',
-        '【学科风】请完整朗读：直角三角形两条直角边分别为三和四时斜边为五，这就是著名的勾股关系。',
-        '【课堂风】请完整朗读：第一小组先回答第二题，第二小组再补充第三题，第三小组最后总结并说明理由。',
-        '【课堂风】请完整朗读：今天的任务是先预习再讨论再展示，展示结束后每位同学写一句反思并互相点评。',
-        '【古诗断句】请断句朗读：春眠不觉晓处处闻啼鸟夜来风雨声花落知多少。',
-        '【古文断句】请断句朗读：学而时习之不亦说乎有朋自远方来不亦乐乎。',
-        '【情境快读】现在你是一名主持人，需要在十秒内清楚说完：欢迎来到萌兽成长营口才挑战赛请各组准备开始。',
-        '【反复快读】请连续读三遍：蓝教练让女旅客来练脑力，女旅客跟蓝教练练脑力，练着练着脑力更给力。',
-        '【终极长句】如果你能把这一整段一口气读顺：从早读到午写从讨论到展示每一位同学都在不断练习表达的准确度清晰度与节奏感那你就是今天的口条王者。'
+      const easy = [
+        '四是四，十是十，十四是十四，四十是四十。',
+        '吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮。',
+        '红凤凰、粉凤凰、黄凤凰，红粉凤凰花凤凰。',
+        '春眠不觉晓处处闻啼鸟，夜来风雨声花落知多少。'
       ];
+      const medium = [
+        '牛郎恋刘娘，刘娘念牛郎；牛郎年年恋刘娘，刘娘年年念牛郎。',
+        '山前有四十四棵涩柿子树，山后有四十四只石狮子。',
+        '八百标兵奔北坡，炮兵并排北边跑；标兵怕碰炮兵炮，炮兵怕把标兵碰。',
+        '今天下雨天留客天留我不留，请你在不改变文字的情况下读出三种不同断句。'
+      ];
+      const hell = [
+        '如果你现在能够平稳地读完这一句长句而且中间不打结不吞字不漏字，那么请你继续加快速度再读一遍。',
+        '请把这句话读成新闻播报节奏：清晨操场上三十名同学整齐站队进行三分钟深呼吸训练随后进行十分钟朗读。',
+        '从早读到午写从讨论到展示每一位同学都在不断练习表达的准确度清晰度与节奏感那你就是今天的口条王者。',
+        '七巷一个漆匠西巷一个锡匠，七巷漆匠用了西巷锡匠的锡，西巷锡匠拿了七巷漆匠的漆。'
+      ];
+      const mode = document.getElementById('tongueDifficulty')?.value || 'medium';
+      const corpus = mode === 'easy' ? easy : (mode === 'hell' ? hell : medium.concat(hell.slice(0,2)));
       const txt = corpus[Math.floor(Math.random() * corpus.length)];
       this._tongueCurrent = txt;
       const card = document.getElementById('tongueSentenceCard');
-      if (card) card.textContent = txt;
+      if (card) card.textContent = `【${mode === 'easy' ? '简单' : (mode === 'hell' ? '地狱' : '中等')}】${txt}`;
     },
 
     applyTongueAward(success) {
@@ -4546,6 +4539,13 @@
       }
     },
 
+    _flashDrumStop() {
+      const fx = document.createElement('div');
+      fx.style.cssText = 'position:fixed;inset:0;background:radial-gradient(circle,#fff8 0%,#ffd98088 45%,transparent 70%);z-index:10004;pointer-events:none;animation:drumFlash .45s ease-out forwards;';
+      document.body.appendChild(fx);
+      setTimeout(() => fx.remove(), 500);
+    },
+
     _getPassingFlowerTasks() {
       const txt = document.getElementById('passingFlowerTasks')?.value || '';
       const arr = txt.split('\n').map(x => x.trim()).filter(Boolean);
@@ -4568,7 +4568,10 @@
         this._passingFlower.running = true;
         if (btn) btn.textContent = '停鼓抽任务';
         if (state) state.textContent = '咚咚咚…鼓声进行中';
-        if (drumBtn) drumBtn.style.transform = 'scale(1.06)';
+        if (drumBtn) {
+          drumBtn.style.transform = 'scale(1.06)';
+          drumBtn.style.animation = 'drumShake .36s infinite';
+        }
 
         this._playDrumHit();
         if (this._passingFlower.beep) clearInterval(this._passingFlower.beep);
@@ -4587,7 +4590,11 @@
         this._passingFlower.beep = null;
         if (btn) btn.textContent = '再次击鼓';
         if (state) state.textContent = '鼓声已停，执行任务';
-        if (drumBtn) drumBtn.style.transform = 'scale(1)';
+        if (drumBtn) {
+          drumBtn.style.transform = 'scale(1)';
+          drumBtn.style.animation = 'none';
+        }
+        this._flashDrumStop();
 
         const s = this.students.find(x => x.id === this._passingFlower.currentId);
         const tasks = this._getPassingFlowerTasks();
@@ -4603,6 +4610,35 @@
           log.innerHTML = `<div class="withdraw-item"><span>${this.escape(msg)}</span></div>` + log.innerHTML;
         }
       }
+    },
+
+    applyMonopolyTemplate() {
+      const type = document.getElementById('monopolyTemplateSelect')?.value || 'show';
+      const map = {
+        show: ['表演一个动作', '模仿一个动物', '说一句夸赞同学的话', '全组做一个欢呼口号', '即兴讲笑话', '唱一句歌'],
+        sport: ['原地开合跳10次', '深蹲8次', '平板支撑10秒', '高抬腿15次', '左右跨步10次', '体态站姿挑战20秒'],
+        coop: ['两人合作说绕口令', '全组接龙成语', '三人合作摆造型', '全组共同说班级目标', '同桌互夸一句', '全组一起拍手节奏']
+      };
+      const pool = map[type] || map.show;
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!cls) return;
+      const n = 32;
+      const customCells = [];
+      for (let i = 1; i < n - 1; i++) {
+        if (Math.random() < 0.55) {
+          const label = pool[Math.floor(Math.random() * pool.length)];
+          customCells.push({ index: i, label });
+        }
+      }
+      cls.monopolyCustomCells = customCells;
+      setUserData(data);
+      if (window.Monopoly) {
+        window.Monopoly.cells = [];
+        window.Monopoly.build();
+        window.Monopoly.render();
+      }
+      alert(`已应用模板：${type}，共填充 ${customCells.length} 个格子`);
     },
 
     bindNav() {

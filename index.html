@@ -393,6 +393,17 @@
           </div>
         </div>
         <div id="monopolyInteractionBar" style="margin-bottom:10px;padding:10px;border-radius:12px;background:linear-gradient(120deg,#fff7ed,#eef7ff);border:1px solid #ffd6ad;"></div>
+        <div class="form-row" style="margin-bottom:10px;">
+          <div class="form-group" style="flex:1;">
+            <label>格子模板库</label>
+            <select id="monopolyTemplateSelect" class="login-input">
+              <option value="show">表演互动模板</option>
+              <option value="sport">运动闯关模板</option>
+              <option value="coop">合作协作模板</option>
+            </select>
+          </div>
+          <button class="btn btn-secondary" onclick="app.applyMonopolyTemplate()">🧩 一键填充格子模板</button>
+        </div>
         <div class="monopoly-layout">
           <div class="monopoly-sidebar">
             <div class="monopoly-groups-panel">
@@ -1509,6 +1520,14 @@
           <select id="tongueStudentSelect" class="login-input"></select>
         </div>
         <div class="form-group" style="width:180px;">
+          <label>难度档位</label>
+          <select id="tongueDifficulty" class="login-input" onchange="app.generateTongueSentence()">
+            <option value="easy">简单</option>
+            <option value="medium" selected>中等</option>
+            <option value="hell">地狱</option>
+          </select>
+        </div>
+        <div class="form-group" style="width:180px;">
           <label>通过加分</label>
           <input id="tongueAwardPoints" type="number" class="login-input" min="1" value="2">
         </div>
@@ -1577,5 +1596,9 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=48"></script>
+<script src="./app-loader.js?v=49"></script>
+<style>
+@keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
+@keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+</style>
 </body></html>
