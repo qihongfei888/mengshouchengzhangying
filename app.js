@@ -5698,7 +5698,7 @@
         if (progress < need) break;
         progress -= need;
         stage++;
-        this.showUpgradeEffect();
+        this.showUpgradeEffect(s.name, stage);
       }
       
       s.pet.stage = stage;
@@ -5718,12 +5718,29 @@
       this.saveStudents();
     },
 
-    showUpgradeEffect() {
-      const el = document.createElement('div');
-      el.className = 'upgrade-effect';
-      el.textContent = '✨ 升级啦！';
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 1000);
+    showUpgradeEffect(studentName, stage) {
+      const container = document.getElementById('effectContainer') || document.body;
+      const badge = document.createElement('div');
+      badge.className = 'upgrade-effect';
+      badge.innerHTML = `<div class="upgrade-main">🐉 Lv.${stage}</div><div class="upgrade-sub">${this.escape(studentName || '神兽')} 进化成功！</div>`;
+      container.appendChild(badge);
+
+      for (let i = 0; i < 18; i++) {
+        const s = document.createElement('div');
+        s.className = 'upgrade-spark';
+        s.textContent = ['✨','🌟','💖','🎉'][Math.floor(Math.random() * 4)];
+        s.style.left = (45 + Math.random() * 10) + '%';
+        s.style.top = (42 + Math.random() * 16) + '%';
+        s.style.setProperty('--dx', (Math.random() * 220 - 110) + 'px');
+        s.style.setProperty('--dy', (Math.random() * -200 - 40) + 'px');
+        s.style.animationDelay = (i * 30) + 'ms';
+        container.appendChild(s);
+        setTimeout(() => s.remove(), 1200);
+      }
+
+      if (window.launchFireworks) window.launchFireworks();
+      this.speak(`太棒了，${studentName || '神兽'}升到${stage}级`);
+      setTimeout(() => badge.remove(), 1400);
     },
     showCompleteEffect() {
       const el = document.createElement('div');
