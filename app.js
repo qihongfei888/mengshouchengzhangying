@@ -5067,6 +5067,7 @@
             </div>
           </div>
           <div class="student-card-v2-actions">
+            ${s.pet ? `<button class="btn btn-small" onclick="event.stopPropagation(); app.interactWithPet('${safeId}')">✨ 互动</button>` : ''}
             ${s.pet ? `<button class="btn btn-small" onclick="event.stopPropagation(); app.dressUpPet('${safeId}')">🎀 装扮</button>` : ''}
           </div>
         </div>`;
@@ -5101,6 +5102,7 @@
               </div>
             </div>
             ${canFeed ? `<button class="btn feed-btn" onclick="app.feedStudentInModal('${s.id}')">${foodLabel} 喂食（消耗1积分）</button>` : '<p class="text-muted">积分不足或已满级</p>'}
+            <button class="btn btn-outline" style="margin-top:8px;" onclick="app.interactWithPet('${s.id}')">💬 抚摸互动</button>
           </div>`;
       } else {
         petSection = '<p>该学生尚未领养宠物，请到「领养宠物」页操作。</p>';
@@ -5240,6 +5242,10 @@
       this.renderHonor();
       // 显示加分减分特效
       this.showScoreEffect(studentId, delta);
+      if (delta > 0) {
+        this.showScoreRain(Math.min(26, 8 + delta * 3));
+        if (delta >= 3) this.showWinBanner(`🎉 ${this.escape(s.name)} 获得 ${delta} 分`, '课堂表现超赞！');
+      }
       // 添加到广播站
       this.addBroadcastMessage(s.name, delta, item.name);
       if (document.getElementById('studentModal').classList.contains('show')) this.openStudentModal(studentId);
@@ -5683,23 +5689,33 @@
     },
 
     interactWithPet(studentId) {
-      const card = document.querySelector('.student-card[data-student-id="' + studentId + '"]');
+      const card = document.querySelector('.student-card-v2[data-student-id="' + studentId + '"]');
       if (!card) return;
-      const preview = card.querySelector('.student-pet-preview');
+      const preview = card.querySelector('.student-card-v2-pet');
       if (preview) {
         preview.classList.add('pet-interact-animate');
-        setTimeout(function () { preview.classList.remove('pet-interact-animate'); }, 600);
+        setTimeout(function () { preview.classList.remove('pet-interact-animate'); }, 700);
+
+        const bubble = document.createElement('div');
+        bubble.className = 'pet-chat-bubble';
+        bubble.textContent = ['我爱学习！', '再来一题吧！', '主人好棒！', '冲冲冲！'][Math.floor(Math.random() * 4)];
+        preview.appendChild(bubble);
+        setTimeout(() => bubble.remove(), 1600);
       }
       const container = document.getElementById('effectContainer');
       if (container) {
-        const el = document.createElement('div');
-        el.className = 'interact-effect';
-        el.textContent = ['💕', '✨', '🌟', '😊'][Math.floor(Math.random() * 4)];
-        el.style.left = (30 + Math.random() * 40) + '%';
-        el.style.top = (20 + Math.random() * 30) + '%';
-        container.appendChild(el);
-        setTimeout(function () { el.remove(); }, 1000);
+        for (let i = 0; i < 4; i++) {
+          const el = document.createElement('div');
+          el.className = 'interact-effect';
+          el.textContent = ['💕', '✨', '🌟', '😊'][Math.floor(Math.random() * 4)];
+          el.style.left = (32 + Math.random() * 36) + '%';
+          el.style.top = (22 + Math.random() * 30) + '%';
+          el.style.animationDelay = (i * 0.08) + 's';
+          container.appendChild(el);
+          setTimeout(function () { el.remove(); }, 1100);
+        }
       }
+      this.speak('做得真棒，继续加油');
     },
 
     feedPet(studentId, amount) {
@@ -5761,6 +5777,7 @@
         setTimeout(() => s.remove(), 1200);
       }
 
+      this.showWinBanner(`✨ ${studentName || '神兽'} 升到 Lv.${stage}`, '继续喂养，冲向下一阶段！');
       if (window.launchFireworks) window.launchFireworks();
       this.speak(`太棒了，${studentName || '神兽'}升到${stage}级`);
       setTimeout(() => badge.remove(), 1400);
@@ -5770,7 +5787,39 @@
       el.className = 'complete-effect';
       el.innerHTML = '🏅 恭喜获得勋章！';
       document.body.appendChild(el);
+      this.showWinBanner('🎊 神兽通关达成！', '恭喜完成全部成长阶段！');
+      this.showScoreRain(30);
       setTimeout(() => el.remove(), 2000);
+    },
+
+    showWinBanner(title, subtitle = '') {
+      const old = document.getElementById('winBannerFx');
+      if (old) old.remove();
+      const banner = document.createElement('div');
+      banner.id = 'winBannerFx';
+      banner.className = 'win-banner';
+      banner.innerHTML = `<div class="win-banner-title">${this.escape(title || '通关成功')}</div>${subtitle ? `<div class="win-banner-sub">${this.escape(subtitle)}</div>` : ''}`;
+      document.body.appendChild(banner);
+      setTimeout(() => banner.classList.add('show'), 20);
+      setTimeout(() => {
+        banner.classList.remove('show');
+        setTimeout(() => banner.remove(), 360);
+      }, 1800);
+    },
+
+    showScoreRain(count = 20) {
+      const wrap = document.getElementById('effectContainer') || document.body;
+      const icons = ['✨', '🏅', '⭐', '🎉', '💫'];
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('div');
+        el.className = 'score-rain-item';
+        el.textContent = icons[Math.floor(Math.random() * icons.length)];
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.animationDelay = (Math.random() * 0.5) + 's';
+        el.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+        wrap.appendChild(el);
+        setTimeout(() => el.remove(), 3300);
+      }
     },
 
     // 显示全屏烟花特效
@@ -5831,14 +5880,25 @@
 
     // 语音播报
     speak(text) {
-      if ('speechSynthesis' in window) {
-        const speech = new SpeechSynthesisUtterance(text);
-        speech.lang = 'zh-CN';
-        speech.volume = 1;
-        speech.rate = 1;
-        speech.pitch = 1;
-        window.speechSynthesis.speak(speech);
+      if (!('speechSynthesis' in window)) return;
+      const speech = new SpeechSynthesisUtterance(text);
+      speech.lang = 'zh-CN';
+      speech.volume = 1;
+      speech.rate = 0.95;
+      speech.pitch = 1.08;
+      const pickVoice = () => {
+        const voices = window.speechSynthesis.getVoices() || [];
+        if (!voices.length) return;
+        const female = voices.find(v => /zh|chinese/i.test(v.lang) && /female|xiaoxiao|xiaoyi|huihui|tingting/i.test((v.name || '').toLowerCase()));
+        const zhAny = voices.find(v => /zh|chinese/i.test(v.lang));
+        speech.voice = female || zhAny || null;
+      };
+      pickVoice();
+      if (!speech.voice) {
+        window.speechSynthesis.onvoiceschanged = () => pickVoice();
       }
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(speech);
     },
 
     showEatEffect() {

@@ -927,6 +927,73 @@ body::before {
   0% { opacity: 1; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
 }
+.pet-chat-bubble{
+  position:absolute;
+  left:50%;
+  top:-8px;
+  transform: translate(-50%, -100%);
+  background:#fff;
+  border:2px solid #ffd39b;
+  border-radius:16px;
+  padding:6px 10px;
+  font-size:.8rem;
+  font-weight:700;
+  color:#8b4b38;
+  white-space:nowrap;
+  box-shadow:0 8px 16px rgba(255,143,102,.25);
+  animation: bubblePop 1.6s ease forwards;
+  z-index:20;
+}
+.pet-chat-bubble::after{
+  content:'';
+  position:absolute;
+  left:50%;
+  bottom:-7px;
+  width:12px;
+  height:12px;
+  background:#fff;
+  border-right:2px solid #ffd39b;
+  border-bottom:2px solid #ffd39b;
+  transform:translateX(-50%) rotate(45deg);
+}
+@keyframes bubblePop {
+  0% { opacity:0; transform: translate(-50%,-90%) scale(.8); }
+  20% { opacity:1; transform: translate(-50%,-102%) scale(1); }
+  80% { opacity:1; }
+  100% { opacity:0; transform: translate(-50%,-120%) scale(1.03); }
+}
+.win-banner{
+  position:fixed;
+  left:50%;
+  top:16px;
+  transform: translate(-50%, -120%);
+  z-index:10020;
+  min-width:300px;
+  max-width:85vw;
+  text-align:center;
+  border-radius:18px;
+  padding:12px 20px;
+  background:linear-gradient(120deg,#ff7ac0,#ffb36b);
+  color:#fff;
+  box-shadow:0 16px 34px rgba(255,116,168,.45);
+  transition: transform .35s ease;
+  border:2px solid rgba(255,255,255,.55);
+}
+.win-banner.show{ transform: translate(-50%, 0); }
+.win-banner-title{ font-size:1.2rem; font-weight:800; }
+.win-banner-sub{ margin-top:2px; font-size:.9rem; opacity:.95; }
+.score-rain-item{
+  position:fixed;
+  top:-24px;
+  font-size:1.4rem;
+  pointer-events:none;
+  z-index:10005;
+  animation: scoreRainFall 2.2s linear forwards;
+}
+@keyframes scoreRainFall {
+  0% { opacity:.95; transform: translateY(0) rotate(0deg); }
+  100% { opacity:0; transform: translateY(110vh) rotate(220deg); }
+}
 .modal-score-section { margin: 16px 0; padding: 12px 0; border-bottom: 1px dashed var(--border); }
 .modal-to-next { font-size: 0.9rem; color: var(--text-muted); margin: 8px 0; }
 .modal-to-next strong { color: var(--primary); }
