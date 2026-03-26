@@ -546,6 +546,23 @@ body::before {
   height: 100%;
   background: transparent;
   box-shadow: none;
+  position: relative;
+  overflow: hidden;
+}
+.student-card-v2-pet .student-pet-preview::before{
+  content:'';
+  position:absolute;
+  top:4px;
+  left:8px;
+  right:8px;
+  height:36%;
+  border-radius: 16px 16px 30px 30px;
+  background: linear-gradient(180deg, rgba(255,255,255,.46), rgba(255,255,255,.06) 65%, transparent 100%);
+  pointer-events:none;
+  z-index: 2;
+}
+.student-card-v2:hover .student-pet-preview::before{
+  background: linear-gradient(180deg, rgba(255,255,255,.60), rgba(255,255,255,.10) 65%, transparent 100%);
 }
 .student-card-v2-pet .pet-img { font-size: 5rem; }
 .student-card-v2-pet .pet-img-stage {
@@ -1176,6 +1193,20 @@ body::before {
   margin-bottom: 16px;
   transition: border-color 0.3s, transform 0.3s;
 }
+.pet-display-box { position: relative; overflow: hidden; border-radius: 16px; }
+.pet-display-box::before{
+  content:'';
+  position:absolute;
+  top:6px;
+  left:10px;
+  right:10px;
+  height:38%;
+  border-radius: 14px 14px 24px 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.40), rgba(255,255,255,.08) 70%, transparent 100%);
+  pointer-events:none;
+  z-index:1;
+}
+.pet-display-box > * { position: relative; z-index: 2; }
 .pet-display-box .pet-stage-img { font-size: 4rem; display: block; margin: 0 auto 8px; }
 .feed-pet-btn { margin-top: 12px; }
 .progress-bar-wrap { height: 12px; background: var(--border); border-radius: 10px; overflow: hidden; margin: 12px 0; }
