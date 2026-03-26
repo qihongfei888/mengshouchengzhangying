@@ -564,7 +564,7 @@ body::before {
 .student-card-v2-pet .pet-img-stage {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
@@ -574,6 +574,9 @@ body::before {
 .student-card-v2:hover .pet-img-stage{
   transform: none !important;
   box-shadow: none !important;
+}
+.student-card-v2 .pet-accessories{
+  display:none !important;
 }
 #currentStudentPetInfo img,
 .pet-breed-option img{
@@ -2098,7 +2101,7 @@ body::before {
 .accessory {
   position: absolute;
   font-size: 1.2rem;
-  animation: float 3s ease-in-out infinite;
+  animation: none;
 }
 
 .accessory:nth-child(1) {
