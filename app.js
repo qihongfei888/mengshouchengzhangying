@@ -3628,8 +3628,27 @@
     },
     getStagePhotoPath(typeId, stage) {
       if (!typeId) return '';
+      const aliasMap = { qilin: 'qinlin' };
+      const safeTypeId = aliasMap[typeId] || typeId;
       const s = Math.max(1, Math.min(5, parseInt(stage, 10) || 1));
-      return `photos/${typeId}/stage${s}.jpg`;
+      return `photos/${safeTypeId}/stage${s}.jpg`;
+    },
+    handleStagePhotoError(imgEl) {
+      if (!imgEl) return;
+      const typeId = imgEl.dataset.typeId || '';
+      let stage = parseInt(imgEl.dataset.stage || '1', 10) || 1;
+      stage -= 1;
+      if (typeId && stage >= 1) {
+        imgEl.dataset.stage = String(stage);
+        imgEl.src = this.getStagePhotoPath(typeId, stage);
+        return;
+      }
+      imgEl.style.display = 'none';
+      if (imgEl.nextElementSibling) {
+        imgEl.nextElementSibling.style.display = 'inline';
+      } else if (imgEl.parentElement) {
+        imgEl.parentElement.innerHTML = '<span class="pet-img">🐾</span>';
+      }
     },
     getTotalStages() {
       const data = getUserData();
@@ -5152,7 +5171,7 @@
           petHtml = `<div class="student-pet-preview pet-empty"><span class="pet-img">🥚💥</span><small>宠物蛋碎裂</small></div>`;
         } else {
           const photoPath = this.getStagePhotoPath(s.pet.typeId, s.pet.stage || 1);
-          petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\"pet-img\">🐾</span>';"></div>`;
+          petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(s.pet.stage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)"><span class="pet-img" style="display:none">🐾</span></div>`;
         }
       } else {
         petHtml = '<div class="student-pet-preview pet-empty"><span class="pet-img">🐣</span><small>未领养</small></div>';
@@ -5279,7 +5298,7 @@
         petSection = `
           <div class="modal-feed-section">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-              ${photo ? `<img src="${photo}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;border:2px solid #f59e0b;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none;font-size:2rem;">${icon}</span>` : `<span style="font-size:2rem;">${icon}</span>`}
+              ${photo ? `<img src="${photo}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;border:2px solid #f59e0b;" data-type-id="${s.pet.typeId || ''}" data-stage="${Math.max(1, Math.min(5, parseInt(s.pet.stage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)"><span style="display:none;font-size:2rem;">${icon}</span>` : `<span style="font-size:2rem;">${icon}</span>`}
               <div>
                 <p><strong>宠物进度</strong>：第 ${stage}/${totalStages} 阶段，本阶段 ${progress}/${need} 分</p>
                 <p><strong>亲密度</strong>：${s.pet.affinity || 0}（${this.getPetAffinityTitle(s.pet.affinity || 0)}）</p>
@@ -6262,7 +6281,7 @@
             const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
             const eggPath = this.getStagePhotoPath(s.pet.typeId, 1);
             petDisplay = `
-              <img src="${eggPath}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin-bottom: 16px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+              <img src="${eggPath}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin-bottom: 16px;" data-type-id="${s.pet.typeId || ''}" data-stage="1" onerror="app.handleStagePhotoError(this)">
               <span style="display:none;font-size:3.2rem;">🥚</span>
             `;
             foodStr = type && type.food ? type.food : '🍖';
@@ -6288,7 +6307,7 @@
               const breed = type && type.breeds.find(b => b.id === s.pet.breedId);
               const photoPath = this.getStagePhotoPath(type.id, stage);
               petDisplay = `
-                <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" data-type-id="${type && type.id ? type.id : ''}" data-stage="${Math.max(1, Math.min(5, parseInt(stage, 10) || 1))}" onerror="app.handleStagePhotoError(this)">
                 <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
               `;
               petName = PHOTO_TYPE_NAME_MAP[type.id] || (breed && breed.name) || (type && type.name);
@@ -6317,14 +6336,14 @@
               if (stage === 1) {
                 const eggPath = this.getStagePhotoPath(type.id, 1);
                 petDisplayContent = `
-                  <img src="${eggPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                  <img src="${eggPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" data-type-id="${type && type.id ? type.id : ''}" data-stage="1" onerror="app.handleStagePhotoError(this)">
                   <span class="breed-icon" style="display:none">🥚</span>
                 `;
               } else if (isComplete) {
                 // 已完成：成熟期 - 调用本地照片
                 const photoPath = this.getStagePhotoPath(type.id, stage);
                 petDisplayContent = `
-                  <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                  <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" data-type-id="${type && type.id ? type.id : ''}" data-stage="${Math.max(1, Math.min(5, parseInt(stage, 10) || 1))}" onerror="app.handleStagePhotoError(this)">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
                 `;
               } else {
@@ -6332,7 +6351,7 @@
                 if (type && breed && type.id && breed.id) {
                 const photoPath = this.getStagePhotoPath(type.id, stage);
                 petDisplayContent = `
-                  <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                  <img src="${photoPath}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 8px;" data-type-id="${type && type.id ? type.id : ''}" data-stage="${Math.max(1, Math.min(5, parseInt(stage, 10) || 1))}" onerror="app.handleStagePhotoError(this)">
                   <span class="breed-icon" style="display:none">${(breed && breed.icon) || (type && type.icon) || '🐾'}</span>
                 `;
                 } else {
@@ -6389,7 +6408,7 @@
             const photoPath = `photos/${type.id}/stage3.jpg`;
             optionsHtml += `
               <div class="pet-breed-option" data-type="${type.id}" data-breed="${breedId}" data-food="${this.escape(type.food)}">
-                <img src="${photoPath}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                <img src="${photoPath}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 8px;" data-type-id="${type && type.id ? type.id : ''}" data-stage="3" onerror="app.handleStagePhotoError(this)">
                 <span class="breed-icon" style="display:none">${breedIcon}</span>
                 <span class="breed-name">${this.escape(breedName || type.name)}</span>
               </div>`;
