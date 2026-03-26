@@ -534,8 +534,8 @@ body::before {
 }
 
 .student-card-v2-pet {
-  width: 182px;
-  height: 182px;
+  width: 214px;
+  height: 214px;
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -544,50 +544,31 @@ body::before {
 .student-card-v2-pet .student-pet-preview {
   width: 100%;
   height: 100%;
-  background: linear-gradient(155deg, #0b1220, #1f2a3b 62%, #0f172a);
-  box-shadow: 0 18px 34px rgba(2,6,23,.38);
+  background: linear-gradient(160deg, #f8fbff 0%, #dbeafe 42%, #f5f3ff 100%);
+  box-shadow: 0 20px 36px rgba(15,23,42,.24), inset 0 1px 0 rgba(255,255,255,.85);
   position: relative;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(148,163,184,.28);
 }
-.student-card-v2-pet .student-pet-preview::before{
-  content:'';
-  position:absolute;
-  top:4px;
-  left:8px;
-  right:8px;
-  height:34%;
-  border-radius: 14px 14px 24px 24px;
-  background: linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,.08) 66%, transparent 100%);
-  pointer-events:none;
-  z-index:3;
-}
+.student-card-v2-pet .student-pet-preview::before,
 .student-card-v2-pet .student-pet-preview::after{
-  content:'';
-  position:absolute;
-  inset:0;
-  background:
-    radial-gradient(circle at 84% 84%, rgba(0,0,0,.34) 0%, transparent 40%),
-    linear-gradient(180deg, transparent 55%, rgba(0,0,0,.26) 100%),
-    repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);
-  mix-blend-mode: multiply;
-  pointer-events:none;
-  z-index:2;
+  content: none;
 }
 .student-card-v2-pet .pet-img { font-size: 5rem; }
 .student-card-v2-pet .pet-img-stage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 14px;
+  border-radius: 20px;
   border: none;
-  box-shadow: 0 14px 26px rgba(15,23,42,.24), inset 0 1px 0 rgba(255,255,255,.45);
-  filter: contrast(1.08) saturate(1.08);
-  transform: translateZ(0);
+  box-shadow: 0 20px 34px rgba(15,23,42,.24), inset 0 1px 0 rgba(255,255,255,.35);
+  filter: contrast(1.12) saturate(1.1) brightness(1.02);
+  transform: scale(1.12) translateZ(0);
 }
 .student-card-v2:hover .pet-img-stage{
-  transform: translateY(-2px) scale(1.015);
-  box-shadow: 0 18px 32px rgba(15,23,42,.30), inset 0 1px 0 rgba(255,255,255,.5);
+  transform: scale(1.16) translateY(-2px);
+  box-shadow: 0 24px 40px rgba(15,23,42,.30), inset 0 1px 0 rgba(255,255,255,.5);
 }
 #currentStudentPetInfo img,
 .pet-breed-option img{
