@@ -4880,6 +4880,29 @@
         if (statStudentsEl) statStudentsEl.textContent = total;
         if (statPetsEl) statPetsEl.textContent = withPet;
         if (statBadgesEl) statBadgesEl.textContent = badges;
+
+        const dayStart = new Date();
+        dayStart.setHours(0, 0, 0, 0);
+        let todayPlus = 0;
+        let petReady = 0;
+        this.students.forEach(s => {
+          const history = Array.isArray(s.scoreHistory) ? s.scoreHistory : [];
+          history.forEach(h => {
+            if ((h.time || 0) >= dayStart.getTime() && (h.delta || 0) > 0) todayPlus += (h.delta || 0);
+          });
+          if (s.pet && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead && (s.pet.stage || 0) < this.getTotalStages()) {
+            const need = this.getStagePointsByStage(s.pet.stage || 1);
+            const left = Math.max(0, need - (s.pet.stageProgress || 0));
+            if ((s.points || 0) >= left && left > 0) petReady += 1;
+          }
+        });
+        const topGroup = [...this.groups].sort((a, b) => (b.points || 0) - (a.points || 0))[0];
+        const plusEl = document.getElementById('dashTodayPlus');
+        const topGroupEl = document.getElementById('dashTopGroup');
+        const petReadyEl = document.getElementById('dashPetReady');
+        if (plusEl) plusEl.textContent = todayPlus;
+        if (topGroupEl) topGroupEl.textContent = topGroup ? `${topGroup.name}（${topGroup.points || 0}）` : '暂无';
+        if (petReadyEl) petReadyEl.textContent = petReady;
       } catch (e) {
         console.error('渲染仪表盘失败:', e);
       }
