@@ -2932,18 +2932,46 @@
       }
     },
 
-    // 是否允许用云端/备份数据覆盖本地（防止空云端覆盖本地有效数据）
-    shouldOverwriteLocalWithCloud(localData, cloudData) {
+    // 是否允许用云端/备份数据覆盖本地（防止空云端或旧云端覆盖本地有效数据）
+    shouldOverwriteLocalWithCloud(localData, cloudData, cloudTimestamp) {
       if (!cloudData || typeof cloudData !== 'object') return false;
       const localClasses = (localData && localData.classes) ? localData.classes : [];
       const cloudClasses = (cloudData.classes && Array.isArray(cloudData.classes)) ? cloudData.classes : [];
       const localHasData = localClasses.some(c => Array.isArray(c.students) && c.students.length > 0);
       const cloudHasData = cloudClasses.some(c => Array.isArray(c.students) && c.students.length > 0);
+
       if (localHasData && !cloudHasData) {
         console.log('跳过用空云端数据覆盖本地数据，保留本地');
         return false;
       }
+
+      const localTs = Date.parse((localData && localData.lastModified) || '') || 0;
+      const cloudTs = Date.parse(cloudTimestamp || (cloudData && cloudData.lastModified) || '') || 0;
+      if (localTs && cloudTs && localTs >= cloudTs) {
+        console.log('本地数据更新（或相同）于云端，保留本地，避免反向覆盖');
+        return false;
+      }
+
+      const sumStudents = (arr) => (arr || []).reduce((n, c) => n + ((c && c.students && c.students.length) || 0), 0);
+      const localStudents = sumStudents(localClasses);
+      const cloudStudents = sumStudents(cloudClasses);
+      if (localStudents > cloudStudents && localHasData) {
+        console.log('本地学生数更多，保留本地避免误覆盖');
+        return false;
+      }
       return true;
+    },
+
+    backupSafetySnapshot(tag, data) {
+      try {
+        const key = this.currentUserId ? `${APP_NAMESPACE}_safety_${this.currentUserId}` : `${APP_NAMESPACE}_safety_default`;
+        const raw = localStorage.getItem(key);
+        const arr = raw ? JSON.parse(raw) : [];
+        arr.unshift({ tag: tag || 'sync', time: new Date().toISOString(), data });
+        localStorage.setItem(key, JSON.stringify(arr.slice(0, 5)));
+      } catch (e) {
+        console.warn('保存安全快照失败:', e);
+      }
     },
 
     // 从云存储同步。skipSessionCheck=true 表示本次是登录流程，不校验“其他设备登录”
@@ -2991,15 +3019,12 @@
             results = results.slice(0, 1);
           }
           const row = results[0];
-          // 单端登录：云端 sessionId 与当前端不一致表示已在其他设备登录，下线前先保存本端数据到云端
+          // 多端并行保护：检测到其他设备会话时，不强制下线，不覆盖当前端本地数据
           if (!skipSessionCheck && row.sessionId) {
             const mySession = localStorage.getItem(SESSION_ID_KEY);
             if (mySession !== row.sessionId) {
-              this.syncing = false;
-              if (row.objectId) {
-                await this.pushDataOnlyToCloud(row.objectId, getUserData());
-              }
-              this.forceLogout('您已在其他设备登录，请重新登录');
+              if (statusEl) statusEl.textContent = '云同步状态：检测到其他设备登录，当前端进入本地保护模式（不覆盖本机）';
+              console.warn('检测到会话不一致，已启用本地保护模式');
               return false;
             }
           }
@@ -3023,8 +3048,9 @@
                   } catch (e) {}
                 }
                 const localData = getUserData();
-                if (this.shouldOverwriteLocalWithCloud(localData, updatedData)) {
+                if (this.shouldOverwriteLocalWithCloud(localData, updatedData, cloudTimestamp)) {
                   if (!skipSessionCheck && statusEl) statusEl.textContent = '云同步状态：正在写入本地存储…';
+                  this.backupSafetySnapshot('before-cloud-overwrite', localData);
                   setUserData(updatedData);
                   syncSuccess = true;
                   console.log('从Bmob REST同步成功，数据已更新');
@@ -3083,9 +3109,8 @@
                 const mySession = localStorage.getItem(SESSION_ID_KEY);
                 if (mySession !== cloudSessionId) {
                   this.syncing = false;
-                  const objId = userDataRecord.id || (userDataRecord.get && userDataRecord.get('objectId'));
-                  if (objId) await this.pushDataOnlyToCloud(objId, getUserData());
-                  this.forceLogout('您已在其他设备登录，请重新登录');
+                  if (statusEl) statusEl.textContent = '云同步状态：检测到其他设备登录，当前端进入本地保护模式（不覆盖本机）';
+                  console.warn('SDK检测到会话不一致，已启用本地保护模式');
                   return false;
                 }
               }
@@ -3305,7 +3330,7 @@
             const currentTimestamp = currentData.lastModified || '1970-01-01T00:00:00.000Z';
             const backupData = parsedData.data;
             const newerTimestamp = parsedData.timestamp > currentTimestamp;
-            if (newerTimestamp && backupData && this.shouldOverwriteLocalWithCloud(currentData, backupData)) {
+            if (newerTimestamp && backupData && this.shouldOverwriteLocalWithCloud(currentData, backupData, parsedData.timestamp)) {
               const updatedData = {
                 ...backupData,
                 lastModified: parsedData.timestamp
