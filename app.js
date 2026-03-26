@@ -5084,6 +5084,16 @@
       return themes[Math.min(stage, themes.length - 1)];
     },
 
+    getCardRarity(stage, totalStages) {
+      const s = Math.max(0, Number(stage || 0));
+      const t = Math.max(1, Number(totalStages || 10));
+      const ratio = s / t;
+      if (ratio >= 0.9 || s >= t) return { key: 'legendary', label: '传说' };
+      if (ratio >= 0.65) return { key: 'epic', label: '史诗' };
+      if (ratio >= 0.35) return { key: 'rare', label: '稀有' };
+      return { key: 'common', label: '普通' };
+    },
+
     getPetAffinityTier(value) {
       const v = Number(value || 0);
       if (v >= 45) return 3;
@@ -5191,13 +5201,15 @@
       const affinityTier = this.getPetAffinityTier(affinity);
       const affinityTitle = this.getPetAffinityTitle(affinity);
       const affinityFace = ['🙂','🥰','🤩','👑'][affinityTier] || '🙂';
+      const rarity = this.getCardRarity(currentStage, totalStages);
       
       // 按照设计图重新设计学生卡片
       const safeId = String(s.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
       return `
-        <div class="student-card-v2 affinity-tier-${affinityTier}" data-id="${s.id}" data-student-id="${s.id}" style="background: ${theme.bg}; border-color: ${theme.border};" onclick="app.openStudentModal('${safeId}')">
+        <div class="student-card-v2 affinity-tier-${affinityTier} rarity-${rarity.key}" data-id="${s.id}" data-student-id="${s.id}" style="background: ${theme.bg}; border-color: ${theme.border};" onclick="app.openStudentModal('${safeId}')">
           <div class="student-card-v2-header">
             <span class="student-level" style="color: ${theme.primary}; background: ${theme.bg};">Lv.${s.pet ? (s.pet.stage || 0) : 0}</span>
+            <span class="rarity-badge rarity-${rarity.key}">${rarity.label}</span>
             ${badgeCount > 0 ? `<span class="student-badge-count">🏆${badgeCount}</span>` : ''}
             ${isMaxLevel ? `<span class="student-crown">👑</span>` : ''}
           </div>

@@ -418,6 +418,47 @@ body::before {
   box-shadow: 0 8px 24px rgba(14, 165, 233, 0.2); 
   border-color: #0ea5e9; 
 }
+.rarity-badge{
+  margin-left:auto;
+  font-size:.72rem;
+  font-weight:800;
+  padding:3px 8px;
+  border-radius:999px;
+  letter-spacing:.5px;
+  border:1px solid transparent;
+}
+.rarity-common{ background:#f3f4f6; color:#4b5563; border-color:#d1d5db; }
+.rarity-rare{ background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
+.rarity-epic{ background:#ede9fe; color:#6d28d9; border-color:#c4b5fd; }
+.rarity-legendary{ background:#fef3c7; color:#b45309; border-color:#fcd34d; }
+
+.student-card-v2.rarity-epic,
+.student-card-v2.rarity-legendary {
+  position: relative;
+}
+.student-card-v2.rarity-epic::before,
+.student-card-v2.rarity-legendary::before{
+  content:'';
+  position:absolute;
+  inset:-2px;
+  border-radius:22px;
+  z-index:0;
+  pointer-events:none;
+}
+.student-card-v2.rarity-epic::before{
+  background: conic-gradient(from 120deg, #c4b5fd, #a78bfa, #60a5fa, #c4b5fd);
+  animation: raritySpin 4.5s linear infinite;
+  opacity:.65;
+}
+.student-card-v2.rarity-legendary::before{
+  background: conic-gradient(from 0deg, #fde68a, #f59e0b, #fca5a5, #fde68a);
+  animation: raritySpin 2.8s linear infinite;
+  opacity:.9;
+  filter: saturate(1.1);
+}
+.student-card-v2.rarity-epic > *,
+.student-card-v2.rarity-legendary > * { position: relative; z-index: 1; }
+@keyframes raritySpin{ to { transform: rotate(360deg); } }
 .student-card-v2-header {
   display: flex;
   justify-content: space-between;
