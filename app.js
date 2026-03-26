@@ -3531,6 +3531,7 @@
       try { this.renderPrizes(); } catch (e) { console.error('renderPrizes失败:', e); }
       try { this.renderLotteryPrizes(); } catch (e) { console.error('renderLotteryPrizes失败:', e); }
       try { this.loadBroadcastSettings(); } catch (e) { console.error('loadBroadcastSettings失败:', e); }
+      try { this.loadScreenLockSettings(); } catch (e) { console.error('loadScreenLockSettings失败:', e); }
       try { this.loadBroadcastMessages(); } catch (e) { console.error('loadBroadcastMessages失败:', e); }
       try {
         const cls = this.getCurrentClassData();
@@ -3671,6 +3672,84 @@
       const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
       return currentClass ? (currentClass.petCategoryPhotos || {}) : {};
     },
+
+    getScreenLockSettings() {
+      const data = getUserData();
+      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      return currentClass ? (currentClass.screenLock || { enabled: false, pin: '', locked: false }) : { enabled: false, pin: '', locked: false };
+    },
+
+    loadScreenLockSettings() {
+      const lock = this.getScreenLockSettings();
+      const enabledEl = document.getElementById('settingScreenLockEnabled');
+      const pinEl = document.getElementById('settingScreenLockPin');
+      if (enabledEl) enabledEl.checked = !!lock.enabled;
+      if (pinEl) pinEl.value = lock.pin || '';
+      this.applyScreenLockState(!!lock.locked, false);
+    },
+
+    saveScreenLockSettings() {
+      const enabled = !!document.getElementById('settingScreenLockEnabled')?.checked;
+      const pin = String(document.getElementById('settingScreenLockPin')?.value || '').trim();
+      if (enabled && pin.length < 4) {
+        alert('解锁密码至少4位');
+        return;
+      }
+      const data = getUserData();
+      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!currentClass) return;
+      const old = currentClass.screenLock || {};
+      currentClass.screenLock = {
+        enabled,
+        pin: enabled ? pin : '',
+        locked: enabled ? !!old.locked : false
+      };
+      setUserData(data);
+      if (!enabled) this.applyScreenLockState(false, false);
+      alert('锁屏设置已保存');
+    },
+
+    lockScreenNow() {
+      const lock = this.getScreenLockSettings();
+      if (!lock.enabled || !lock.pin || lock.pin.length < 4) {
+        alert('请先在设置中启用锁屏并设置4位以上密码');
+        return;
+      }
+      this.applyScreenLockState(true, true);
+    },
+
+    tryUnlockScreen() {
+      const input = document.getElementById('screenLockInput');
+      const val = String(input?.value || '').trim();
+      const lock = this.getScreenLockSettings();
+      if (!lock.pin || val !== lock.pin) {
+        alert('密码错误');
+        if (input) input.value = '';
+        return;
+      }
+      this.applyScreenLockState(false, true);
+      if (input) input.value = '';
+      this.showSuccess('已解锁');
+    },
+
+    applyScreenLockState(locked, persist = true) {
+      const overlay = document.getElementById('screenLockOverlay');
+      if (overlay) overlay.style.display = locked ? 'flex' : 'none';
+      document.body.classList.toggle('screen-locked', !!locked);
+      this.isScreenLocked = !!locked;
+      if (locked) {
+        const input = document.getElementById('screenLockInput');
+        setTimeout(() => input && input.focus(), 50);
+      }
+      if (!persist) return;
+      const data = getUserData();
+      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!currentClass) return;
+      const old = currentClass.screenLock || { enabled: false, pin: '', locked: false };
+      currentClass.screenLock = { ...old, locked: !!locked };
+      setUserData(data);
+    },
+
     switchClass(classId) {
       if (!classId) return;
       
@@ -3747,7 +3826,8 @@
         monopolyOpportunityTask: document.getElementById('settingMonopolyOpportunityTask')?.value || '全组30秒内回答3题',
         monopolyOpportunityPoints: parseInt(document.getElementById('settingMonopolyOpportunityPoints')?.value, 10) || 4,
         monopolyStealPoints: parseInt(document.getElementById('settingMonopolyStealPoints')?.value, 10) || 2,
-        customQuizQuestions: []
+        customQuizQuestions: [],
+        screenLock: { enabled: false, pin: '', locked: false }
       };
       
       if (!data.classes) {
@@ -4822,6 +4902,7 @@
       this.renderStudentManage(); 
       this.renderScoreHistory(); 
       this.loadBroadcastSettings(); 
+      this.loadScreenLockSettings();
       this.loadBadgeAwardStudents();
       this.renderBackupStatus();
       this.renderAccessoriesList();
@@ -5258,7 +5339,14 @@
       if (s) { s.avatar = avatar; this.saveStudents(); this.closeStudentModal(); this.renderStudents(); this.openStudentModal(studentId); }
     },
 
+    ensureUnlocked(actionName = '该操作') {
+      if (!this.isScreenLocked) return true;
+      alert(`${actionName}已被锁定，请老师先解锁`);
+      return false;
+    },
+
     addScoreToStudent(studentId, type, itemIndex) {
+      if (!this.ensureUnlocked('加减分')) return;
       const s = this.students.find(x => x.id === studentId);
       if (!s) return;
       const items = type === 'plus' ? this.getPlusItems() : this.getMinusItems();
@@ -11056,6 +11144,7 @@
     },
 
     quickGroupMemberBonus(scope, delta) {
+      if (!this.ensureUnlocked('批量个人加分')) return;
       const groupId = document.getElementById('memberPointGroupId')?.value;
       if (!groupId) return;
       const reason = scope === 'all' ? '全组任务达成奖励' : '组长组织协调奖励';
@@ -11071,6 +11160,7 @@
     },
 
     addMemberPointFromGroupTask() {
+      if (!this.ensureUnlocked('成员个人加分')) return;
       const groupId = document.getElementById('memberPointGroupId')?.value;
       const scope = document.getElementById('memberPointScope')?.value || 'single';
       const delta = parseInt(document.getElementById('memberPointDelta')?.value, 10);
@@ -11100,6 +11190,7 @@
     },
 
     addGroupPoint() {
+      if (!this.ensureUnlocked('小组积分操作')) return;
       const groupId = document.getElementById('pointGroupId').value;
       const deltaInput = document.getElementById('pointDelta');
       const reasonInput = document.getElementById('pointReason');

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=13">
+  <link rel="stylesheet" href="./styles.css?v=14">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -492,6 +492,25 @@
               </select>
             </div>
             <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存</button>
+          </div>
+
+          <div class="settings-card settings-card-cute">
+            <h3>🔒 静态锁屏</h3>
+            <p class="setting-hint">老师离开时可一键锁屏，防止学生私自加分。</p>
+            <div class="setting-item checkbox-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="settingScreenLockEnabled">
+                <span class="checkbox-text">启用静态锁屏</span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <label>解锁密码（4位以上）</label>
+              <input type="password" id="settingScreenLockPin" class="login-input" placeholder="请输入解锁密码">
+            </div>
+            <div class="setting-item" style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-cute" onclick="app.saveScreenLockSettings()">💾 保存锁屏设置</button>
+              <button class="btn btn-primary btn-cute" onclick="app.lockScreenNow()">🛡️ 立即锁屏</button>
+            </div>
           </div>
 
           <div class="settings-card settings-card-cute">
@@ -1628,6 +1647,15 @@
   </div>
 
   <!-- 特效容器 -->
+  <div id="screenLockOverlay" class="screen-lock-overlay" style="display:none;">
+    <div class="screen-lock-panel">
+      <div class="screen-lock-title">🛡️ 教师锁屏中</div>
+      <p class="screen-lock-sub">请输入老师密码解锁，继续课堂操作</p>
+      <input id="screenLockInput" type="password" class="login-input" placeholder="输入解锁密码" onkeydown="if(event.key==='Enter'){app.tryUnlockScreen();}">
+      <button class="btn btn-primary btn-cute" onclick="app.tryUnlockScreen()">解锁</button>
+    </div>
+  </div>
+
   <div id="effectContainer" class="effect-container"></div>
 
   <!-- 每日之星颁奖弹窗 -->
@@ -1656,7 +1684,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=61"></script>
+<script src="./app-loader.js?v=62"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}

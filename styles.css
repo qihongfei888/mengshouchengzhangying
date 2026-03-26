@@ -2392,6 +2392,39 @@ body::before {
 
 /* 特效 */
 .effect-container { pointer-events: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; overflow: hidden; }
+
+.screen-lock-overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: radial-gradient(circle at 20% 20%, rgba(255,255,255,.12), transparent 40%), rgba(23,27,45,.92);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter: blur(3px);
+}
+.screen-lock-panel{
+  width:min(420px, 92vw);
+  border-radius:20px;
+  padding:22px;
+  background: linear-gradient(145deg,#fff8ee,#fff);
+  border:3px solid #ffd49a;
+  box-shadow:0 18px 36px rgba(0,0,0,.28);
+  text-align:center;
+}
+.screen-lock-title{ font-size:1.35rem; font-weight:800; color:#a74830; margin-bottom:6px; }
+.screen-lock-sub{ color:#7f5f4d; margin:0 0 12px; }
+body.screen-locked .nav-btn,
+body.screen-locked .btn,
+body.screen-locked input,
+body.screen-locked select,
+body.screen-locked textarea {
+  pointer-events: none !important;
+}
+body.screen-locked #screenLockOverlay,
+body.screen-locked #screenLockOverlay * {
+  pointer-events: auto !important;
+}
 .effect-particle {
   position: absolute;
   font-size: 1.5rem;
