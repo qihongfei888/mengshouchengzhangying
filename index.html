@@ -1364,6 +1364,14 @@
         <div id="memberPointGroupName" style="padding: 10px; background: var(--bg); border-radius: 8px; font-weight: bold;">-</div>
       </div>
       <div class="form-group">
+        <label>发放范围</label>
+        <select id="memberPointScope" class="login-input" onchange="app.toggleGroupMemberPointScope()">
+          <option value="single">指定成员</option>
+          <option value="all">全组成员</option>
+          <option value="leader">仅组长</option>
+        </select>
+      </div>
+      <div class="form-group" id="memberPointStudentWrap">
         <label>选择成员</label>
         <select id="memberPointStudent" class="login-input"></select>
       </div>
@@ -1375,7 +1383,11 @@
         <label>原因</label>
         <input type="text" id="memberPointReason" class="login-input" placeholder="例如：小组任务表现优秀，个人贡献突出">
       </div>
-      <button class="btn btn-primary btn-block" onclick="app.addMemberPointFromGroupTask()">确认给个人加分</button>
+      <div class="form-row" style="margin-bottom:8px;">
+        <button class="btn btn-small btn-secondary" onclick="app.quickGroupMemberBonus('all',1)">⚡ 全组每人+1</button>
+        <button class="btn btn-small btn-secondary" onclick="app.quickGroupMemberBonus('leader',2)">⚡ 仅组长+2</button>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="app.addMemberPointFromGroupTask()">确认发放个人加分</button>
     </div>
   </div>
 
@@ -1639,7 +1651,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=57"></script>
+<script src="./app-loader.js?v=58"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}

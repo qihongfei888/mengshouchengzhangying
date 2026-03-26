@@ -10874,18 +10874,68 @@
       if (sel) {
         sel.innerHTML = members.map(m => `<option value="${m.studentId}">${this.escape(m.name)}（${this.escape(m.studentId)}）</option>`).join('');
       }
+      const scopeEl = document.getElementById('memberPointScope');
+      if (scopeEl) scopeEl.value = 'single';
+      this.toggleGroupMemberPointScope();
       document.getElementById('memberPointDelta').value = '1';
       document.getElementById('memberPointReason').value = '小组任务表现优秀-个人贡献';
       modal.style.display = 'flex';
     },
 
+    toggleGroupMemberPointScope() {
+      const scope = document.getElementById('memberPointScope')?.value || 'single';
+      const wrap = document.getElementById('memberPointStudentWrap');
+      if (wrap) wrap.style.display = scope === 'single' ? 'block' : 'none';
+    },
+
+    applyGroupMemberBonus(groupId, scope, delta, reason) {
+      const group = this.groups.find(g => g.id === groupId);
+      if (!group) return { count: 0, names: [] };
+      const members = this.getGroupMembers(groupId);
+      let targets = [];
+      if (scope === 'all') {
+        targets = members;
+      } else if (scope === 'leader') {
+        targets = members.filter(m => m.isLeader);
+      } else {
+        const studentId = document.getElementById('memberPointStudent')?.value;
+        targets = members.filter(m => m.studentId === studentId);
+      }
+      const names = [];
+      targets.forEach(m => {
+        const s = this.students.find(x => x.id === m.studentId);
+        if (!s) return;
+        s.points = (s.points || 0) + delta;
+        if (!s.scoreHistory) s.scoreHistory = [];
+        const reasonText = `【小组任务个人奖励】${group.name} ${reason}`.trim();
+        s.scoreHistory.unshift({ time: Date.now(), delta, reason: reasonText });
+        names.push(s.name);
+      });
+      return { count: names.length, names };
+    },
+
+    quickGroupMemberBonus(scope, delta) {
+      const groupId = document.getElementById('memberPointGroupId')?.value;
+      if (!groupId) return;
+      const reason = scope === 'all' ? '全组任务达成奖励' : '组长组织协调奖励';
+      const res = this.applyGroupMemberBonus(groupId, scope, delta, reason);
+      if (!res.count) {
+        alert(scope === 'leader' ? '该小组尚未设置组长' : '未找到可加分成员');
+        return;
+      }
+      this.saveStudents();
+      this.renderStudents();
+      this.renderDashboard();
+      this.showSuccess(`已发放：${scope === 'all' ? '全组每人' : '组长'} +${delta}（共${res.count}人）`);
+    },
+
     addMemberPointFromGroupTask() {
       const groupId = document.getElementById('memberPointGroupId')?.value;
-      const studentId = document.getElementById('memberPointStudent')?.value;
+      const scope = document.getElementById('memberPointScope')?.value || 'single';
       const delta = parseInt(document.getElementById('memberPointDelta')?.value, 10);
       const reason = (document.getElementById('memberPointReason')?.value || '').trim();
-      if (!groupId || !studentId) {
-        alert('请选择小组成员');
+      if (!groupId) {
+        alert('请先选择小组');
         return;
       }
       if (!Number.isFinite(delta) || delta <= 0) {
@@ -10896,21 +10946,16 @@
         alert('请输入加分原因');
         return;
       }
-      const s = this.students.find(x => x.id === studentId);
-      if (!s) {
-        alert('未找到该学生');
+      const res = this.applyGroupMemberBonus(groupId, scope, delta, reason);
+      if (!res.count) {
+        alert(scope === 'leader' ? '该小组尚未设置组长' : '请选择有效成员');
         return;
       }
-      s.points = (s.points || 0) + delta;
-      if (!s.scoreHistory) s.scoreHistory = [];
-      const group = this.groups.find(g => g.id === groupId);
-      const reasonText = `【小组任务个人奖励】${group ? group.name : ''} ${reason}`.trim();
-      s.scoreHistory.unshift({ time: Date.now(), delta, reason: reasonText });
       this.saveStudents();
       this.renderStudents();
       this.renderDashboard();
       this.closeModal('groupMemberPointModal');
-      this.showSuccess(`已给 ${s.name} +${delta} 分（个人积分）`);
+      this.showSuccess(`已发放个人积分：${res.count}人，每人 +${delta}`);
     },
 
     addGroupPoint() {
