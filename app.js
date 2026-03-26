@@ -4226,6 +4226,7 @@
       if (board) board.innerHTML = '<p class="placeholder-text">先选择参战小组并点击「开始对局」</p>';
       if (log) log.innerHTML = '';
       this._assassinKing = null;
+      this._assassinRolesReady = false;
       this._assassinRoleLocked = false;
       this._assassinViewMode = 'setup';
       const lockBtn = document.getElementById('assassinRoleLockBtn');
@@ -4248,31 +4249,46 @@
         alert('请选择两个不同小组');
         return;
       }
-      const groupA = this.groups.find(g => g.id === groupAId);
-      const groupB = this.groups.find(g => g.id === groupBId);
-      if (!groupA || !groupB) return;
-      const teamA = this._buildAssassinTeam(groupA);
-      const teamB = this._buildAssassinTeam(groupB);
-      if (!teamA || !teamB) {
-        alert('参战小组人数至少需要3人');
+
+      if (!this._assassinKing || this._assassinKing.A.groupId !== groupAId || this._assassinKing.B.groupId !== groupBId) {
+        const groupA = this.groups.find(g => g.id === groupAId);
+        const groupB = this.groups.find(g => g.id === groupBId);
+        if (!groupA || !groupB) return;
+        const teamA = this._buildAssassinTeam(groupA);
+        const teamB = this._buildAssassinTeam(groupB);
+        if (!teamA || !teamB) {
+          alert('参战小组人数至少需要3人');
+          return;
+        }
+        this._assassinKing = {
+          needAnswers,
+          answerPoints,
+          A: { groupId: groupA.id, groupName: groupA.name, answers: 0, roster: teamA },
+          B: { groupId: groupB.id, groupName: groupB.name, answers: 0, roster: teamB },
+          log: []
+        };
+        this._assassinRolesReady = false;
+        this._assassinViewMode = 'setup';
+        this._assassinRoleLocked = false;
+        const lockBtn = document.getElementById('assassinRoleLockBtn');
+        if (lockBtn) lockBtn.textContent = '🔓 角色可编辑';
+        this._normalizeAssassinRoles('A');
+        this._normalizeAssassinRoles('B');
+        this.renderAssassinKingRoles();
+        this._pushAssassinKingLog(`对局已创建：${groupA.name} VS ${groupB.name}，请先随机或指定角色`);
+        alert('请先随机打乱角色或手动指定角色，再点击“开始对局”进入PK舞台');
         return;
       }
-      this._assassinKing = {
-        needAnswers,
-        answerPoints,
-        A: { groupId: groupA.id, groupName: groupA.name, answers: 0, roster: teamA },
-        B: { groupId: groupB.id, groupName: groupB.name, answers: 0, roster: teamB },
-        log: []
-      };
-      this._assassinViewMode = 'stage';
-      this._assassinRoleLocked = false;
-      const lockBtn = document.getElementById('assassinRoleLockBtn');
-      if (lockBtn) lockBtn.textContent = '🔓 角色可编辑';
-      this._normalizeAssassinRoles('A');
-      this._normalizeAssassinRoles('B');
-      this.renderAssassinKingRoles();
-      this._pushAssassinKingLog(`对局开始：${groupA.name} VS ${groupB.name}`);
+
+      if (!this._assassinRolesReady) {
+        alert('请先随机打乱角色或手动指定角色');
+        return;
+      }
+
+      this._assassinKing.needAnswers = needAnswers;
+      this._assassinKing.answerPoints = answerPoints;
       this.setAssassinViewMode('stage');
+      this._pushAssassinKingLog('⚔️ PK舞台开启');
       if (window.launchFireworks) window.launchFireworks();
       this.speak('刺杀国王对决开始');
     },
@@ -4353,6 +4369,7 @@
         const t = this._assassinKing[side];
         if (t) this._pushAssassinKingLog(`${t.groupName} 已随机分配角色`);
       }
+      this._assassinRolesReady = true;
       this.renderAssassinKingRoles();
     },
 
@@ -4364,6 +4381,7 @@
       if (!member) return;
       member.role = role;
       this._normalizeAssassinRoles(side);
+      this._assassinRolesReady = true;
       this.renderAssassinKingRoles();
     },
 
@@ -4371,7 +4389,7 @@
       if (!this._assassinKing || !this._assassinKing[side]) return;
       const team = this._assassinKing[side].roster;
       const names = { king: '国王', prince: '王子', knight: '骑士' };
-      const aliveMembers = team.members;
+      const aliveMembers = team.members.filter(m => m.alive);
 
       // 国王唯一
       const kings = aliveMembers.filter(m => m.role === 'king');
@@ -4463,36 +4481,53 @@
         alert(`还未达到刺杀次数，需先答对 ${this._assassinKing.needAnswers} 题`);
         return;
       }
+      const aliveTargets = def.roster.members.filter(m => m.alive);
+      if (!aliveTargets.length) {
+        this._pushAssassinKingLog(`${atk.groupName} 发起刺杀，但对方无人存活`);
+        return;
+      }
+      const menu = aliveTargets.map((m, idx) => `${idx + 1}. ${m.name}`).join('\n');
+      const pick = parseInt(prompt(`请选择刺杀对象（输入序号）\n${menu}`), 10);
+      if (!Number.isFinite(pick) || pick < 1 || pick > aliveTargets.length) {
+        alert('未选择有效刺杀对象');
+        return;
+      }
+      const target = aliveTargets[pick - 1];
       atk.answers = 0;
-      const alive = def.roster.members.filter(m => m.alive);
-      const king = alive.find(m => m.role === 'king');
-      if (!king) {
-        this._pushAssassinKingLog(`${atk.groupName} 发起刺杀，但对方国王已不在场`);
+
+      if (target.role === 'knight') {
+        const atkAlive = atk.roster.members.filter(m => m.alive);
+        const back = atkAlive[Math.floor(Math.random() * atkAlive.length)];
+        if (back) back.alive = false;
+        this._pushAssassinKingLog(`🛡️ ${atk.groupName} 刺杀了 ${def.groupName} 的骑士 ${target.name}，触发反杀！${back ? back.name : '对方'} 出局`);
+        this.renderAssassinKingRoles();
         return;
       }
-      const success = Math.random() < 0.5;
+
+      if (target.role === 'prince') {
+        target.alive = false;
+        this._pushAssassinKingLog(`🎯 ${atk.groupName} 刺杀命中！目标是王子：${target.name}（身份已暴露）`);
+        this._normalizeAssassinRoles(side === 'A' ? 'B' : 'A');
+        this.renderAssassinKingRoles();
+        return;
+      }
+
+      const success = Math.random() < 0.65;
       if (!success) {
-        this._pushAssassinKingLog(`${atk.groupName} 刺杀失败！`);
+        this._pushAssassinKingLog(`⚠️ ${atk.groupName} 刺杀国王失败，${def.groupName} 国王幸存`);
+        this.renderAssassinKingRoles();
         return;
       }
-      king.alive = false;
-      this._pushAssassinKingLog(`💥 ${atk.groupName} 刺杀成功！${def.groupName} 国王出局`);
+
+      target.alive = false;
+      this._pushAssassinKingLog(`💥 ${atk.groupName} 刺杀国王成功！${def.groupName} 国王 ${target.name} 出局`);
       const prince = def.roster.members.find(m => m.alive && m.role === 'prince');
       if (prince) {
         prince.role = 'king';
         prince.roleName = '国王';
-        this._pushAssassinKingLog(`👑 ${def.groupName} 王子 ${prince.name} 继位为新国王`);
+        this._pushAssassinKingLog(`👑 王子 ${prince.name} 继位为新国王`);
       }
       this._normalizeAssassinRoles(side === 'A' ? 'B' : 'A');
-      const knight = def.roster.members.find(m => m.alive && m.role === 'knight');
-      if (knight) {
-        const atkAlive = atk.roster.members.filter(m => m.alive);
-        const target = atkAlive[Math.floor(Math.random() * atkAlive.length)];
-        if (target) {
-          target.alive = false;
-          this._pushAssassinKingLog(`🛡️ ${def.groupName} 骑士反杀 ${atk.groupName} 的 ${target.name}`);
-        }
-      }
       this.renderAssassinKingRoles();
     },
 

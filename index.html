@@ -1501,7 +1501,7 @@
           <label>答题加分</label>
           <input id="kingGameAnswerPoints" type="number" class="login-input" min="1" value="2">
         </div>
-        <button class="btn btn-secondary" onclick="app.initAssassinKingBattle()">开始对局</button>
+        <button class="btn btn-secondary" id="assassinStartBtn" onclick="app.initAssassinKingBattle()">开始对局</button>
       </div>
       <div class="form-row" style="margin-top:4px;">
         <button class="btn btn-outline" onclick="app.randomizeAssassinRoles('A')">🎲 A组随机角色</button>
@@ -1608,7 +1608,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=52"></script>
+<script src="./app-loader.js?v=53"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
