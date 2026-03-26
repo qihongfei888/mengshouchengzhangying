@@ -512,6 +512,20 @@ body::before {
   align-items: center;
   margin-bottom: 8px;
 }
+.pet-affinity-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:8px;
+  padding:4px 8px;
+  border-radius:10px;
+  background: rgba(255,255,255,.56);
+  font-size:.82rem;
+  color:#8a4a37;
+}
+.affinity-tier-1{ box-shadow: 0 10px 24px rgba(255,166,94,.18); }
+.affinity-tier-2{ box-shadow: 0 12px 26px rgba(255,120,176,.24); border-width:3px; }
+.affinity-tier-3{ box-shadow: 0 14px 28px rgba(118,92,255,.28); border-width:3px; border-color:#c5b8ff !important; }
 .progress-label {
   font-size: 0.85rem;
   color: #64748b;

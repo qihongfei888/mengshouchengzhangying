@@ -4960,6 +4960,35 @@
       return themes[Math.min(stage, themes.length - 1)];
     },
 
+    getPetAffinityTier(value) {
+      const v = Number(value || 0);
+      if (v >= 45) return 3;
+      if (v >= 25) return 2;
+      if (v >= 10) return 1;
+      return 0;
+    },
+
+    getPetAffinityTitle(value) {
+      const tier = this.getPetAffinityTier(value);
+      return ['初识伙伴', '亲密搭档', '灵魂拍档', '守护神契约'][tier] || '初识伙伴';
+    },
+
+    getPetAffinityNextGoal(value) {
+      const v = Number(value || 0);
+      if (v < 10) return 10;
+      if (v < 25) return 25;
+      if (v < 45) return 45;
+      return 45;
+    },
+
+    getPetInteractionLines(value) {
+      const tier = this.getPetAffinityTier(value);
+      if (tier === 3) return ['你就是我的最佳拍档！', '我们一起守护班级荣誉！', '今天也要闪闪发光！'];
+      if (tier === 2) return ['你一来我就超开心！', '我们默契越来越好啦～', '继续努力，离满级更近啦！'];
+      if (tier === 1) return ['我开始信任你啦！', '再陪我互动几次吧～', '一起冲刺今天的任务！'];
+      return ['你好呀，我想和你做朋友！', '轻轻点我会开心哦～', '我们先从每天互动开始吧！'];
+    },
+
     studentCardHtml(s) {
       const totalStages = this.getTotalStages();
       let petHtml = '';
@@ -5034,11 +5063,15 @@
       const feedAction = canFeed ? `onclick="event.stopPropagation(); app.quickFeed('${s.id}')"` : '';
       const feedClass = canFeed ? 'can-feed' : 'cannot-feed';
       const isMaxLevel = s.pet && (s.pet.stage || 0) >= totalStages && s.pet.completed;
+      const affinity = s.pet ? Number(s.pet.affinity || 0) : 0;
+      const affinityTier = this.getPetAffinityTier(affinity);
+      const affinityTitle = this.getPetAffinityTitle(affinity);
+      const affinityFace = ['🙂','🥰','🤩','👑'][affinityTier] || '🙂';
       
       // 按照设计图重新设计学生卡片
       const safeId = String(s.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
       return `
-        <div class="student-card-v2" data-id="${s.id}" data-student-id="${s.id}" style="background: ${theme.bg}; border-color: ${theme.border};" onclick="app.openStudentModal('${safeId}')">
+        <div class="student-card-v2 affinity-tier-${affinityTier}" data-id="${s.id}" data-student-id="${s.id}" style="background: ${theme.bg}; border-color: ${theme.border};" onclick="app.openStudentModal('${safeId}')">
           <div class="student-card-v2-header">
             <span class="student-level" style="color: ${theme.primary}; background: ${theme.bg};">Lv.${s.pet ? (s.pet.stage || 0) : 0}</span>
             ${badgeCount > 0 ? `<span class="student-badge-count">🏆${badgeCount}</span>` : ''}
@@ -5058,6 +5091,7 @@
               <span class="progress-label">${needPointsText}</span>
               <span class="progress-status">${progressText}</span>
             </div>
+            ${s.pet ? `<div class="pet-affinity-row"><span>💞 亲密度 ${affinity}</span><span>${affinityFace} ${affinityTitle}</span></div>` : ''}
             <div class="student-progress-bar">
               <div class="progress-fill" style="width: ${progressPercent}%; background: ${theme.primary};"></div>
             </div>
@@ -5098,6 +5132,7 @@
               ${photo ? `<img src="${photo}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;border:2px solid #f59e0b;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span style="display:none;font-size:2rem;">${icon}</span>` : `<span style="font-size:2rem;">${icon}</span>`}
               <div>
                 <p><strong>宠物进度</strong>：第 ${stage}/${totalStages} 阶段，本阶段 ${progress}/${need} 分</p>
+                <p><strong>亲密度</strong>：${s.pet.affinity || 0}（${this.getPetAffinityTitle(s.pet.affinity || 0)}）</p>
                 ${intro ? `<p class="text-muted" style="margin-top:4px;">📜 ${this.escape(intro)}</p>` : ''}
               </div>
             </div>
@@ -5689,6 +5724,15 @@
     },
 
     interactWithPet(studentId) {
+      const s = this.students.find(x => x.id === studentId);
+      if (!s || !s.pet) return;
+      const before = Number(s.pet.affinity || 0);
+      s.pet.affinity = before + 1;
+      s.pet.lastInteractAt = Date.now();
+      const after = s.pet.affinity;
+      const prevTier = this.getPetAffinityTier(before);
+      const nextTier = this.getPetAffinityTier(after);
+
       const card = document.querySelector('.student-card-v2[data-student-id="' + studentId + '"]');
       if (!card) return;
       const preview = card.querySelector('.student-card-v2-pet');
@@ -5696,9 +5740,10 @@
         preview.classList.add('pet-interact-animate');
         setTimeout(function () { preview.classList.remove('pet-interact-animate'); }, 700);
 
+        const lines = this.getPetInteractionLines(after);
         const bubble = document.createElement('div');
         bubble.className = 'pet-chat-bubble';
-        bubble.textContent = ['我爱学习！', '再来一题吧！', '主人好棒！', '冲冲冲！'][Math.floor(Math.random() * 4)];
+        bubble.textContent = lines[Math.floor(Math.random() * lines.length)];
         preview.appendChild(bubble);
         setTimeout(() => bubble.remove(), 1600);
       }
@@ -5715,7 +5760,20 @@
           setTimeout(function () { el.remove(); }, 1100);
         }
       }
-      this.speak('做得真棒，继续加油');
+
+      if (nextTier > prevTier) {
+        const title = this.getPetAffinityTitle(after);
+        this.showWinBanner(`💞 亲密度升级：${title}`, '解锁专属互动台词与光环边框！');
+        this.showScoreRain(18);
+        this.addBroadcastMessage(s.name, 0, `宠物亲密度升阶：${title}`);
+        this.speak(`恭喜，亲密度升级为${title}`);
+      } else {
+        this.speak('做得真棒，继续加油');
+      }
+
+      this.saveStudents();
+      this.renderStudents();
+      if (document.getElementById('studentModal')?.classList.contains('show')) this.openStudentModal(studentId);
     },
 
     feedPet(studentId, amount) {
