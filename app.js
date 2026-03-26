@@ -1391,8 +1391,8 @@
           if (monopolyOpportunityTaskEl) monopolyOpportunityTaskEl.value = currentClass.monopolyOpportunityTask || '全组30秒内回答3题';
           if (monopolyOpportunityPointsEl) monopolyOpportunityPointsEl.value = parseInt(currentClass.monopolyOpportunityPoints, 10) || 4;
           if (monopolyStealPointsEl) monopolyStealPointsEl.value = parseInt(currentClass.monopolyStealPoints, 10) || 2;
-          const awakenBadgeThresholdEl = document.getElementById('settingAwakenBadgeThreshold');
-          if (awakenBadgeThresholdEl) awakenBadgeThresholdEl.value = parseInt(currentClass.awakenBadgeThreshold, 10) || 8;
+          const awakenPointsThresholdEl = document.getElementById('settingAwakenPointsThreshold');
+          if (awakenPointsThresholdEl) awakenPointsThresholdEl.value = parseInt(currentClass.awakenPointsThreshold, 10) || 100;
         } else {
           // 没有选择班级时的默认值
           this.students = [];
@@ -1423,8 +1423,8 @@
           if (monopolyOpportunityTaskEl) monopolyOpportunityTaskEl.value = '全组30秒内回答3题';
           if (monopolyOpportunityPointsEl) monopolyOpportunityPointsEl.value = 4;
           if (monopolyStealPointsEl) monopolyStealPointsEl.value = 2;
-          const awakenBadgeThresholdEl = document.getElementById('settingAwakenBadgeThreshold');
-          if (awakenBadgeThresholdEl) awakenBadgeThresholdEl.value = 8;
+          const awakenPointsThresholdEl = document.getElementById('settingAwakenPointsThreshold');
+          if (awakenPointsThresholdEl) awakenPointsThresholdEl.value = 100;
         }
         
         console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
@@ -2572,7 +2572,7 @@
             monopolyOpportunityTask: '全组30秒内回答3题',
             monopolyOpportunityPoints: 4,
             monopolyStealPoints: 2,
-            awakenBadgeThreshold: 8,
+            awakenPointsThreshold: 100,
             customQuizQuestions: []
           };
           data.classes.push(newClass);
@@ -2602,7 +2602,7 @@
           const monopolyOpportunityTaskEl = document.getElementById('settingMonopolyOpportunityTask');
           const monopolyOpportunityPointsEl = document.getElementById('settingMonopolyOpportunityPoints');
           const monopolyStealPointsEl = document.getElementById('settingMonopolyStealPoints');
-          const awakenBadgeThresholdEl = document.getElementById('settingAwakenBadgeThreshold');
+          const awakenPointsThresholdEl = document.getElementById('settingAwakenPointsThreshold');
           
           currentClass.stagePoints = stagePointsEl ? parseInt(stagePointsEl.value) || 20 : 20;
           currentClass.totalStages = stagesEl ? parseInt(stagesEl.value) || 10 : 10;
@@ -2621,7 +2621,7 @@
           currentClass.monopolyOpportunityTask = monopolyOpportunityTaskEl ? (monopolyOpportunityTaskEl.value || '全组30秒内回答3题') : (currentClass.monopolyOpportunityTask || '全组30秒内回答3题');
           currentClass.monopolyOpportunityPoints = monopolyOpportunityPointsEl ? (parseInt(monopolyOpportunityPointsEl.value, 10) || 4) : (parseInt(currentClass.monopolyOpportunityPoints, 10) || 4);
           currentClass.monopolyStealPoints = monopolyStealPointsEl ? (parseInt(monopolyStealPointsEl.value, 10) || 2) : (parseInt(currentClass.monopolyStealPoints, 10) || 2);
-          currentClass.awakenBadgeThreshold = awakenBadgeThresholdEl ? Math.max(1, parseInt(awakenBadgeThresholdEl.value, 10) || 8) : (parseInt(currentClass.awakenBadgeThreshold, 10) || 8);
+          currentClass.awakenPointsThreshold = awakenPointsThresholdEl ? Math.max(1, parseInt(awakenPointsThresholdEl.value, 10) || 100) : (parseInt(currentClass.awakenPointsThreshold, 10) || 100);
           currentClass.hospitalProjects = hospitalProjectsEl
             ? hospitalProjectsEl.value.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
                 const parts = line.split('|');
@@ -5101,9 +5101,9 @@
       return { key: 'common', label: '普通' };
     },
 
-    getAwakenBadgeThreshold() {
+    getAwakenPointsThreshold() {
       const currentClass = (this.classes || []).find(c => c && c.id === this.currentClassId);
-      return Math.max(1, parseInt(currentClass && currentClass.awakenBadgeThreshold, 10) || 8);
+      return Math.max(1, parseInt(currentClass && currentClass.awakenPointsThreshold, 10) || 100);
     },
 
     getPetAffinityTier(value) {
@@ -5214,8 +5214,8 @@
       const affinityTitle = this.getPetAffinityTitle(affinity);
       const affinityFace = ['🙂','🥰','🤩','👑'][affinityTier] || '🙂';
       const rarity = this.getCardRarity(currentStage, totalStages);
-      const awakenThreshold = this.getAwakenBadgeThreshold();
-      const isAwakened = badgeCount >= awakenThreshold;
+      const awakenThreshold = this.getAwakenPointsThreshold();
+      const isAwakened = (s.points || 0) >= awakenThreshold;
       
       // 按照设计图重新设计学生卡片
       const safeId = String(s.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -5963,11 +5963,11 @@
       if (stage >= totalStages && !s.pet.completed) {
         s.pet.completed = true;
         s.pet.badgesEarned = 1;
-        this.showCompleteEffect();
+        this.showCompleteEffect(s.id, s.name);
         // 显示全屏烟花特效
         this.showFireworksEffect();
         // 语音播报
-        this.speak(`恭喜${s.name}养成宠物！`);
+        this.speak(`恭喜${s.name}养成宠物！请去领养新宠物`);
       }
       this.saveStudents();
     },
@@ -5997,14 +5997,24 @@
       this.speak(`太棒了，${studentName || '神兽'}升到${stage}级`);
       setTimeout(() => badge.remove(), 1400);
     },
-    showCompleteEffect() {
+    showCompleteEffect(studentId, studentName) {
       const el = document.createElement('div');
       el.className = 'complete-effect';
       el.innerHTML = '🏅 恭喜获得勋章！';
       document.body.appendChild(el);
-      this.showWinBanner('🎊 神兽通关达成！', '恭喜完成全部成长阶段！');
+      const tipName = this.escape(studentName || '该同学');
+      this.showWinBanner('🎊 神兽通关达成！', `${tipName} 已拿到勋章，请前往【领养宠物】领养新的神兽`);
       this.showScoreRain(30);
       setTimeout(() => el.remove(), 2000);
+      if (studentId) {
+        setTimeout(() => {
+          if (confirm(`🎉 ${studentName || '该同学'} 已完成全部升级并获得勋章！\n是否现在前往“领养宠物”页面继续领养新的？`)) {
+            this.changePage('pets');
+            this.currentStudentId = studentId;
+            this.renderPetAdopt();
+          }
+        }, 260);
+      }
     },
 
     showWinBanner(title, subtitle = '') {
@@ -9629,7 +9639,7 @@
         currentClass.monopolyOpportunityTask = document.getElementById('settingMonopolyOpportunityTask')?.value || currentClass.monopolyOpportunityTask || '全组30秒内回答3题';
         currentClass.monopolyOpportunityPoints = parseInt(document.getElementById('settingMonopolyOpportunityPoints')?.value, 10) || currentClass.monopolyOpportunityPoints || 4;
         currentClass.monopolyStealPoints = parseInt(document.getElementById('settingMonopolyStealPoints')?.value, 10) || currentClass.monopolyStealPoints || 2;
-        currentClass.awakenBadgeThreshold = Math.max(1, parseInt(document.getElementById('settingAwakenBadgeThreshold')?.value, 10) || currentClass.awakenBadgeThreshold || 8);
+        currentClass.awakenPointsThreshold = Math.max(1, parseInt(document.getElementById('settingAwakenPointsThreshold')?.value, 10) || currentClass.awakenPointsThreshold || 100);
         currentClass.hospitalProjects = (document.getElementById('settingHospitalProjects')?.value || '复活针|8|revive\n急救药|3|cure')
           .split('\n')
           .map(line => line.trim())
