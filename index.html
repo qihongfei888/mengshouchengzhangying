@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=15">
+  <link rel="stylesheet" href="./styles.css?v=16">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -774,6 +774,27 @@
             </div>
             <p id="cloudSyncStatus" class="setting-hint" style="margin-top:8px;color:#888;">云同步状态：等待操作</p>
             <div id="syncDigest" class="setting-hint" style="margin-top:4px;color:#a855f7;"></div>
+
+            <div class="sync-conflict-center" id="syncConflictCenter">
+              <h4>🧭 可视化冲突中心</h4>
+              <p class="setting-hint">对比本机与云端数据，手动选择保留策略，避免误覆盖。</p>
+              <div class="sync-conflict-grid">
+                <div class="sync-conflict-col">
+                  <h5>🖥️ 本机数据</h5>
+                  <ul id="localConflictSummary" class="sync-conflict-list"><li>等待检测…</li></ul>
+                </div>
+                <div class="sync-conflict-col">
+                  <h5>☁️ 云端数据</h5>
+                  <ul id="cloudConflictSummary" class="sync-conflict-list"><li>等待检测…</li></ul>
+                </div>
+              </div>
+              <div id="conflictHint" class="setting-hint" style="margin-top:8px;color:#9a3412;">点击“检测冲突”后显示建议。</div>
+              <div class="sync-conflict-actions">
+                <button type="button" class="btn btn-secondary btn-cute" onclick="app.checkSyncConflict()">🔍 检测冲突</button>
+                <button type="button" class="btn btn-cute" style="background:#d1fae5;color:#065f46;" onclick="app.resolveConflictKeepLocal()">🛡️ 保留本机（推送覆盖云端）</button>
+                <button type="button" class="btn btn-cute" style="background:#dbeafe;color:#1e3a8a;" onclick="app.resolveConflictUseCloud()">☁️ 采用云端（拉取覆盖本机）</button>
+              </div>
+            </div>
             <div class="import-section" style="margin-top: 20px; padding-top: 20px; border-top: 2px dashed var(--border);">
               <h4>📥 从文件导入本地数据</h4>
               <p class="setting-hint">适用于离线备份。支持导入备份文件(.json)或学生名单(.xlsx/.csv)</p>
