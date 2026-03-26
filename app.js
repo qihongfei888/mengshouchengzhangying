@@ -4047,8 +4047,15 @@
       if (log) log.innerHTML = '';
       this._assassinKing = null;
       this._assassinRoleLocked = false;
+      this._assassinViewMode = 'setup';
       const lockBtn = document.getElementById('assassinRoleLockBtn');
       if (lockBtn) lockBtn.textContent = '🔓 角色可编辑';
+      const setupBtn = document.getElementById('assassinViewSetupBtn');
+      const stageBtn = document.getElementById('assassinViewStageBtn');
+      if (setupBtn) setupBtn.classList.add('btn-primary');
+      if (setupBtn) setupBtn.classList.remove('btn-outline');
+      if (stageBtn) stageBtn.classList.add('btn-outline');
+      if (stageBtn) stageBtn.classList.remove('btn-primary');
       modal.style.display = 'flex';
     },
 
@@ -4077,6 +4084,7 @@
         B: { groupId: groupB.id, groupName: groupB.name, answers: 0, roster: teamB },
         log: []
       };
+      this._assassinViewMode = 'stage';
       this._assassinRoleLocked = false;
       const lockBtn = document.getElementById('assassinRoleLockBtn');
       if (lockBtn) lockBtn.textContent = '🔓 角色可编辑';
@@ -4103,6 +4111,21 @@
       this._assassinRoleLocked = !this._assassinRoleLocked;
       const btn = document.getElementById('assassinRoleLockBtn');
       if (btn) btn.textContent = this._assassinRoleLocked ? '🔒 角色已锁定' : '🔓 角色可编辑';
+      this.renderAssassinKingRoles();
+    },
+
+    setAssassinViewMode(mode) {
+      this._assassinViewMode = mode === 'stage' ? 'stage' : 'setup';
+      const setupBtn = document.getElementById('assassinViewSetupBtn');
+      const stageBtn = document.getElementById('assassinViewStageBtn');
+      if (setupBtn) {
+        setupBtn.classList.toggle('btn-primary', this._assassinViewMode === 'setup');
+        setupBtn.classList.toggle('btn-outline', this._assassinViewMode !== 'setup');
+      }
+      if (stageBtn) {
+        stageBtn.classList.toggle('btn-primary', this._assassinViewMode === 'stage');
+        stageBtn.classList.toggle('btn-outline', this._assassinViewMode !== 'stage');
+      }
       this.renderAssassinKingRoles();
     },
 
@@ -4187,22 +4210,27 @@
         const t = this._assassinKing[key];
         const cards = t.roster.members.map(m => {
           const deadClass = m.alive ? '' : 'opacity:0.45;filter:grayscale(1);';
-          const roleSelector = m.alive
+          const isStage = this._assassinViewMode === 'stage';
+          const roleText = isStage ? '❓ 身份保密' : m.roleName;
+          const roleSelector = (!isStage && m.alive)
             ? `<select class="login-input" ${this._assassinRoleLocked ? 'disabled' : ''} style="padding:4px 6px;font-size:12px;margin-top:4px;" onchange="app.setAssassinRole('${key}','${m.studentId}',this.value)">
                 <option value="king" ${m.role === 'king' ? 'selected' : ''}>国王</option>
                 <option value="prince" ${m.role === 'prince' ? 'selected' : ''}>王子</option>
                 <option value="knight" ${m.role === 'knight' ? 'selected' : ''}>骑士</option>
               </select>`
-            : `<div style="font-size:12px;color:#999;margin-top:4px;">已出局</div>`;
+            : (m.alive ? '<div style="font-size:12px;color:#888;margin-top:4px;">🗡️ PK中身份隐藏</div>' : `<div style="font-size:12px;color:#999;margin-top:4px;">已出局</div>`);
           return `<div style="padding:8px;border:1px solid #ffd7ad;border-radius:10px;background:#fff;${deadClass}">
             <div style="font-size:22px;">${this.escape(m.avatar || '👤')}</div>
             <div style="font-weight:700;">${this.escape(m.name)}</div>
-            <div style="font-size:12px;color:#8B1A1A;">${m.roleName}</div>
+            <div style="font-size:12px;color:#8B1A1A;">${roleText}</div>
             ${roleSelector}
           </div>`;
         }).join('');
+        const title = this._assassinViewMode === 'stage'
+          ? `🗡️ ${this.escape(t.groupName)} ｜ 行动值 ${t.answers}/${this._assassinKing.needAnswers}`
+          : `${this.escape(t.groupName)} ｜ 答题进度 ${t.answers}/${this._assassinKing.needAnswers}`;
         return `<div style="flex:1;min-width:260px;background:linear-gradient(135deg,#fffaf0,#f5fbff);padding:10px;border-radius:12px;border:1px solid #ffd3a6;">
-          <div style="font-weight:800;color:#8B1A1A;margin-bottom:6px;">${this.escape(t.groupName)} ｜ 答题进度 ${t.answers}/${this._assassinKing.needAnswers}</div>
+          <div style="font-weight:800;color:#8B1A1A;margin-bottom:6px;">${title}</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:8px;">${cards}</div>
         </div>`;
       };

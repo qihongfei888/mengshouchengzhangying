@@ -1434,6 +1434,10 @@
       <button class="modal-close" onclick="app.closeModal('assassinKingModal')">&times;</button>
       <h3>🗡️ 刺杀国王</h3>
       <p class="hint" style="margin-top:-4px;">先选参战小组，老师可在下方直接给每位学生设定国王/王子/骑士。</p>
+      <div class="form-row" style="margin-top:4px;">
+        <button class="btn btn-primary" id="assassinViewSetupBtn" onclick="app.setAssassinViewMode('setup')">👩‍🏫 教师设置视图</button>
+        <button class="btn btn-outline" id="assassinViewStageBtn" onclick="app.setAssassinViewMode('stage')">🗡️ PK舞台视图（隐藏身份）</button>
+      </div>
       <div class="form-row">
         <div class="form-group" style="flex:1;">
           <label>参战小组A</label>
@@ -1539,5 +1543,5 @@
 <script src="./db.js?v=3"></script>
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
-<script src="./app-loader.js?v=42"></script>
+<script src="./app-loader.js?v=43"></script>
 </body></html>
