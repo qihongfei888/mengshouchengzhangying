@@ -1387,6 +1387,7 @@
         <button class="btn btn-primary" id="quizViewSetupBtn" onclick="app.setQuizViewMode('setup')">👩‍🏫 设置视图</button>
         <button class="btn btn-outline" id="quizViewStageBtn" onclick="app.setQuizViewMode('stage')">⚔️ PK舞台视图</button>
       </div>
+      <div id="quizSetupPanel">
       <div class="form-row">
         <div class="form-group">
           <label>PK模式</label>
@@ -1427,6 +1428,7 @@
       </div>
       <div class="form-group">
         <button class="btn btn-primary" onclick="app.startCustomQuizPK()">开始PK</button>
+      </div>
       </div>
       <div id="quizBattlePanel" style="display:none;">
         <div id="quizBattleStage" style="padding:12px;border-radius:14px;background:radial-gradient(circle at top,#fff7ef,#ffe2c2);border:1px solid #ffd09a;margin-bottom:10px;"></div>
@@ -1479,6 +1481,7 @@
         <button class="btn btn-primary" id="assassinViewSetupBtn" onclick="app.setAssassinViewMode('setup')">👩‍🏫 教师设置视图</button>
         <button class="btn btn-outline" id="assassinViewStageBtn" onclick="app.setAssassinViewMode('stage')">🗡️ PK舞台视图（隐藏身份）</button>
       </div>
+      <div id="assassinSetupPanel">
       <div class="form-row">
         <div class="form-group" style="flex:1;">
           <label>参战小组A</label>
@@ -1505,6 +1508,7 @@
         <button class="btn btn-outline" onclick="app.randomizeAssassinRoles('B')">🎲 B组随机角色</button>
         <button class="btn btn-outline" onclick="app.randomizeAssassinRoles('all')">🎲 全部随机</button>
         <button class="btn btn-secondary" id="assassinRoleLockBtn" onclick="app.toggleAssassinRoleLock()">🔓 角色可编辑</button>
+      </div>
       </div>
       <div id="assassinKingRoleBoard" class="score-history-list" style="max-height:260px;"></div>
       <div class="form-row" style="margin-top:8px;">
@@ -1604,9 +1608,11 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=51"></script>
+<script src="./app-loader.js?v=52"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+@keyframes pkPulse {0%{box-shadow:0 0 0 rgba(255,160,80,0)}50%{box-shadow:0 0 26px rgba(255,160,80,.6)}100%{box-shadow:0 0 0 rgba(255,160,80,0)}}
+.pk-stage-focus{animation:pkPulse 1.4s ease-in-out infinite;}
 </style>
 </body></html>

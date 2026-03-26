@@ -3963,6 +3963,8 @@
       this._quizViewMode = mode === 'stage' ? 'stage' : 'setup';
       const setupBtn = document.getElementById('quizViewSetupBtn');
       const stageBtn = document.getElementById('quizViewStageBtn');
+      const setupPanel = document.getElementById('quizSetupPanel');
+      const battlePanel = document.getElementById('quizBattlePanel');
       const importRow = document.getElementById('quizImportRow');
       const textWrap = document.getElementById('quizTextareaWrap');
       const answerRow = document.getElementById('quizAnswerRow');
@@ -3974,6 +3976,16 @@
       if (stageBtn) {
         stageBtn.classList.toggle('btn-primary', this._quizViewMode === 'stage');
         stageBtn.classList.toggle('btn-outline', this._quizViewMode !== 'stage');
+      }
+      if (setupPanel) setupPanel.style.display = this._quizViewMode === 'setup' ? 'block' : 'none';
+      if (battlePanel) battlePanel.classList.toggle('pk-stage-focus', this._quizViewMode === 'stage');
+      if (battlePanel && this._quizViewMode === 'stage') {
+        battlePanel.style.display = 'block';
+        battlePanel.style.padding = '14px';
+        battlePanel.style.borderRadius = '16px';
+        battlePanel.style.background = 'radial-gradient(circle at 20% 10%, #fff7ef, #ffe3ba 45%, #ffd29a 100%)';
+        battlePanel.style.border = '2px solid #ffb45f';
+        battlePanel.style.boxShadow = '0 10px 30px rgba(255,145,58,.35)';
       }
       if (importRow) importRow.style.display = this._quizViewMode === 'setup' ? 'flex' : 'none';
       if (textWrap) textWrap.style.display = this._quizViewMode === 'setup' ? 'block' : 'none';
@@ -4091,6 +4103,8 @@
       document.getElementById('quizBattlePanel').style.display = 'block';
       document.getElementById('quizBattleLog').innerHTML = '';
       this.setQuizViewMode('stage');
+      if (window.launchFireworks) window.launchFireworks();
+      this.speak('答题PK舞台开启');
       this.renderQuizBattleStage();
       this._renderQuizQuestion();
     },
@@ -4258,6 +4272,9 @@
       this._normalizeAssassinRoles('B');
       this.renderAssassinKingRoles();
       this._pushAssassinKingLog(`对局开始：${groupA.name} VS ${groupB.name}`);
+      this.setAssassinViewMode('stage');
+      if (window.launchFireworks) window.launchFireworks();
+      this.speak('刺杀国王对决开始');
     },
 
     _buildAssassinTeam(group) {
@@ -4284,6 +4301,8 @@
       this._assassinViewMode = mode === 'stage' ? 'stage' : 'setup';
       const setupBtn = document.getElementById('assassinViewSetupBtn');
       const stageBtn = document.getElementById('assassinViewStageBtn');
+      const setupPanel = document.getElementById('assassinSetupPanel');
+      const board = document.getElementById('assassinKingRoleBoard');
       if (setupBtn) {
         setupBtn.classList.toggle('btn-primary', this._assassinViewMode === 'setup');
         setupBtn.classList.toggle('btn-outline', this._assassinViewMode !== 'setup');
@@ -4291,6 +4310,14 @@
       if (stageBtn) {
         stageBtn.classList.toggle('btn-primary', this._assassinViewMode === 'stage');
         stageBtn.classList.toggle('btn-outline', this._assassinViewMode !== 'stage');
+      }
+      if (setupPanel) setupPanel.style.display = this._assassinViewMode === 'setup' ? 'block' : 'none';
+      if (board) board.classList.toggle('pk-stage-focus', this._assassinViewMode === 'stage');
+      if (board && this._assassinViewMode === 'stage') {
+        board.style.background = 'radial-gradient(circle at 20% 10%, #fff4ef, #ffd2c6 45%, #ffc2ae 100%)';
+        board.style.border = '2px solid #ff8f70';
+        board.style.padding = '12px';
+        board.style.borderRadius = '14px';
       }
       if (this._assassinViewMode === 'stage' && !this._assassinKing) {
         alert('请先点击“开始对局”，随后会自动进入PK舞台视图');
