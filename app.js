@@ -4226,6 +4226,7 @@
       if (board) board.innerHTML = '<p class="placeholder-text">先选择参战小组并点击「开始对局」</p>';
       if (log) log.innerHTML = '';
       this._assassinKing = null;
+      this._assassinPendingSide = null;
       this._assassinRolesReady = false;
       this._assassinRoleLocked = false;
       this._assassinViewMode = 'setup';
@@ -4267,6 +4268,7 @@
           B: { groupId: groupB.id, groupName: groupB.name, answers: 0, roster: teamB },
           log: []
         };
+        this._assassinPendingSide = null;
         this._assassinRolesReady = false;
         this._assassinViewMode = 'setup';
         this._assassinRoleLocked = false;
@@ -4449,8 +4451,25 @@
         </div>`;
       };
       board.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;">${renderTeam('A')}${renderTeam('B')}</div>`;
+      this.renderAssassinTargetButtons();
       const logEl = document.getElementById('assassinKingLog');
       if (logEl) logEl.innerHTML = this._assassinKing.log.map(x => `<div class="withdraw-item"><span>${this.escape(x)}</span></div>`).join('');
+    },
+
+    renderAssassinTargetButtons() {
+      const wrap = document.getElementById('assassinTargetButtons');
+      if (!wrap) return;
+      if (!this._assassinKing || !this._assassinPendingSide) {
+        wrap.innerHTML = '<div class="placeholder-text">点击“发起刺杀”后，这里会出现可点击的刺杀对象按钮</div>';
+        return;
+      }
+      const side = this._assassinPendingSide;
+      const def = side === 'A' ? this._assassinKing.B : this._assassinKing.A;
+      const aliveTargets = def.roster.members.filter(m => m.alive);
+      wrap.innerHTML = `<div style="padding:8px;border:1px dashed #ff9f80;border-radius:10px;background:#fff7f3;">
+        <div style="font-weight:700;color:#8B1A1A;margin-bottom:6px;">请选择 ${this.escape(def.groupName)} 的刺杀对象：</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">${aliveTargets.map(m => `<button class="btn btn-small btn-danger" onclick="app.assassinKingSelectTarget('${side}','${m.studentId}')">${this.escape(m.name)}</button>`).join('')}</div>
+      </div>`;
     },
 
     _pushAssassinKingLog(text) {
@@ -4476,24 +4495,28 @@
     assassinKingAction(side) {
       if (!this._assassinKing) return;
       const atk = this._assassinKing[side];
-      const def = side === 'A' ? this._assassinKing.B : this._assassinKing.A;
       if (atk.answers < this._assassinKing.needAnswers) {
         alert(`还未达到刺杀次数，需先答对 ${this._assassinKing.needAnswers} 题`);
         return;
       }
-      const aliveTargets = def.roster.members.filter(m => m.alive);
-      if (!aliveTargets.length) {
-        this._pushAssassinKingLog(`${atk.groupName} 发起刺杀，但对方无人存活`);
+      this._assassinPendingSide = side;
+      this._pushAssassinKingLog(`${atk.groupName} 发起刺杀，请点击目标头像按钮`);
+      this.renderAssassinTargetButtons();
+    },
+
+    assassinKingSelectTarget(side, targetStudentId) {
+      if (!this._assassinKing) return;
+      const atk = this._assassinKing[side];
+      const def = side === 'A' ? this._assassinKing.B : this._assassinKing.A;
+      if (!atk || !def) return;
+      if (atk.answers < this._assassinKing.needAnswers) {
+        alert(`还未达到刺杀次数，需先答对 ${this._assassinKing.needAnswers} 题`);
         return;
       }
-      const menu = aliveTargets.map((m, idx) => `${idx + 1}. ${m.name}`).join('\n');
-      const pick = parseInt(prompt(`请选择刺杀对象（输入序号）\n${menu}`), 10);
-      if (!Number.isFinite(pick) || pick < 1 || pick > aliveTargets.length) {
-        alert('未选择有效刺杀对象');
-        return;
-      }
-      const target = aliveTargets[pick - 1];
+      const target = def.roster.members.find(m => m.alive && m.studentId === targetStudentId);
+      if (!target) { alert('目标不可用'); return; }
       atk.answers = 0;
+      this._assassinPendingSide = null;
 
       if (target.role === 'knight') {
         const atkAlive = atk.roster.members.filter(m => m.alive);
