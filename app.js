@@ -4506,22 +4506,51 @@
     openPassingFlowerGame() {
       const modal = document.getElementById('passingFlowerModal');
       if (!modal) return;
-      this._passingFlower = { running: false, timer: null };
+      this._passingFlower = { running: false, timer: null, beep: null, currentId: null };
       const state = document.getElementById('passingFlowerState');
       const current = document.getElementById('passingFlowerCurrent');
       const btn = document.getElementById('passingFlowerToggleBtn');
       const log = document.getElementById('passingFlowerLog');
+      const drumBtn = document.getElementById('passingFlowerDrumBtn');
       if (state) state.textContent = '等待开始';
-      if (current) current.innerHTML = '<div>点击「开始击鼓」，花会在学生间快速传递。</div>';
+      if (current) current.innerHTML = '<div>点击大鼓开始鼓声，再次点击停鼓后随机互动任务。</div>';
       if (btn) btn.textContent = '开始击鼓';
+      if (drumBtn) drumBtn.style.transform = 'scale(1)';
       if (log) log.innerHTML = '';
       modal.style.display = 'flex';
     },
 
     closePassingFlowerGame() {
       if (this._passingFlower && this._passingFlower.timer) clearInterval(this._passingFlower.timer);
-      this._passingFlower = { running: false, timer: null };
+      if (this._passingFlower && this._passingFlower.beep) clearInterval(this._passingFlower.beep);
+      this._passingFlower = { running: false, timer: null, beep: null };
       this.closeModal('passingFlowerModal');
+    },
+
+    _playDrumHit() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = 120;
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      } catch (e) {
+        console.warn('播放鼓声失败:', e);
+      }
+    },
+
+    _getPassingFlowerTasks() {
+      const txt = document.getElementById('passingFlowerTasks')?.value || '';
+      const arr = txt.split('\n').map(x => x.trim()).filter(Boolean);
+      if (arr.length) return arr;
+      return ['表演一个动作', '背一首古诗', '说一个成语并造句', '讲一个小笑话'];
     },
 
     togglePassingFlower() {
@@ -4529,29 +4558,48 @@
         alert('暂无学生');
         return;
       }
-      if (!this._passingFlower) this._passingFlower = { running: false, timer: null };
+      if (!this._passingFlower) this._passingFlower = { running: false, timer: null, beep: null };
       const state = document.getElementById('passingFlowerState');
       const current = document.getElementById('passingFlowerCurrent');
       const btn = document.getElementById('passingFlowerToggleBtn');
       const log = document.getElementById('passingFlowerLog');
+      const drumBtn = document.getElementById('passingFlowerDrumBtn');
       if (!this._passingFlower.running) {
         this._passingFlower.running = true;
-        if (btn) btn.textContent = '随机停鼓';
-        if (state) state.textContent = '鼓声进行中…';
+        if (btn) btn.textContent = '停鼓抽任务';
+        if (state) state.textContent = '咚咚咚…鼓声进行中';
+        if (drumBtn) drumBtn.style.transform = 'scale(1.06)';
+
+        this._playDrumHit();
+        if (this._passingFlower.beep) clearInterval(this._passingFlower.beep);
+        this._passingFlower.beep = setInterval(() => this._playDrumHit(), 650);
+
         this._passingFlower.timer = setInterval(() => {
           const s = this.students[Math.floor(Math.random() * this.students.length)];
-          if (current && s) current.innerHTML = `<strong style="font-size:18px;">🌸 ${this.escape(s.name)}</strong><div style="font-size:12px;color:#777;">${this.escape(s.id)}</div>`;
+          if (current && s) current.innerHTML = `<strong style="font-size:18px;">🌸 ${this.escape(s.name)}</strong><div style="font-size:12px;color:#777;">花正在传递...</div>`;
           this._passingFlower.currentId = s ? s.id : null;
         }, 120);
       } else {
         this._passingFlower.running = false;
         if (this._passingFlower.timer) clearInterval(this._passingFlower.timer);
+        if (this._passingFlower.beep) clearInterval(this._passingFlower.beep);
         this._passingFlower.timer = null;
+        this._passingFlower.beep = null;
         if (btn) btn.textContent = '再次击鼓';
-        if (state) state.textContent = '鼓声已停';
+        if (state) state.textContent = '鼓声已停，执行任务';
+        if (drumBtn) drumBtn.style.transform = 'scale(1)';
+
         const s = this.students.find(x => x.id === this._passingFlower.currentId);
-        if (log && s) {
-          const msg = `${new Date().toLocaleTimeString()} 鼓停在：${s.name}`;
+        const tasks = this._getPassingFlowerTasks();
+        const task = tasks[Math.floor(Math.random() * tasks.length)] || '来一个即兴表演';
+
+        if (current) {
+          current.innerHTML = s
+            ? `<div style="font-size:18px;font-weight:800;">🎯 ${this.escape(s.name)} 接到花！</div><div style="margin-top:6px;color:#8B1A1A;font-weight:700;">📝 任务：${this.escape(task)}</div>`
+            : `<div style="color:#8B1A1A;font-weight:700;">📝 任务：${this.escape(task)}</div>`;
+        }
+        if (log) {
+          const msg = `${new Date().toLocaleTimeString()} ${s ? s.name : '同学'} 抽中任务：${task}`;
           log.innerHTML = `<div class="withdraw-item"><span>${this.escape(msg)}</span></div>` + log.innerHTML;
         }
       }

@@ -1527,11 +1527,22 @@
     <div class="modal-content modal-content-large">
       <button class="modal-close" onclick="app.closePassingFlowerGame()">&times;</button>
       <h3>🥁 击鼓传花</h3>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <p class="hint" style="margin-top:-4px;">点击大鼓开始鼓声，再次点击停鼓抽取互动任务。</p>
+      <div class="form-group">
+        <label>互动任务（每行一个，教师可自由设置）</label>
+        <textarea id="passingFlowerTasks" class="login-input" rows="4" placeholder="表演一个动作&#10;背一首古诗&#10;说一个成语并造句&#10;讲一个小笑话">表演一个动作
+背一首古诗
+说一个成语并造句
+讲一个小笑话</textarea>
+      </div>
+      <div style="display:flex;justify-content:center;align-items:center;margin:10px 0;">
+        <button id="passingFlowerDrumBtn" onclick="app.togglePassingFlower()" style="width:180px;height:180px;border-radius:50%;border:8px solid #b94a2d;background:radial-gradient(circle at 35% 30%,#ffd9ae 0%,#ffb36a 45%,#e17a2c 100%);box-shadow:0 10px 20px rgba(0,0,0,.2), inset 0 4px 10px rgba(255,255,255,.45);font-size:64px;cursor:pointer;transition:transform .15s ease;">🥁</button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;">
         <button class="btn btn-primary" id="passingFlowerToggleBtn" onclick="app.togglePassingFlower()">开始击鼓</button>
         <span id="passingFlowerState" style="font-weight:700;color:#8B1A1A;">等待开始</span>
       </div>
-      <div id="passingFlowerCurrent" style="margin-top:12px;padding:12px;border-radius:12px;background:#fff8e9;border:1px solid #ffd48a;min-height:76px;"></div>
+      <div id="passingFlowerCurrent" style="margin-top:12px;padding:12px;border-radius:12px;background:#fff8e9;border:1px solid #ffd48a;min-height:96px;"></div>
       <div id="passingFlowerLog" class="score-history-list" style="margin-top:10px;"></div>
     </div>
   </div>
@@ -1565,5 +1576,5 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=46"></script>
+<script src="./app-loader.js?v=47"></script>
 </body></html>
