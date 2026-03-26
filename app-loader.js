@@ -8,9 +8,9 @@
   document.body.appendChild(loadingDiv);
 
   var scripts = [
-    './app.js?v=46',
-    './features.js?v=3',
-    './features_monopoly.js?v=1',
+    './app.js?v=47',
+    './features.js?v=4',
+    './features_monopoly.js?v=2',
     './features_monopoly2.js?v=1',
     './features_stage.js?v=2',
     './features_init.js?v=4',

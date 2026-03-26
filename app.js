@@ -1364,11 +1364,25 @@
           const stagesEl = document.getElementById('settingStages');
           const stagePointsByStageEl = document.getElementById('settingStagePointsByStage');
           const broadcastEl = document.getElementById('broadcastContent');
+          const sickDaysEl = document.getElementById('settingSickDays');
+          const hospitalProjectsEl = document.getElementById('settingHospitalProjects');
+          const monopolyRollCostEl = document.getElementById('settingMonopolyRollCost');
           
           if (stagePointsEl) stagePointsEl.value = currentClass.stagePoints || 20;
           if (stagesEl) stagesEl.value = currentClass.totalStages || 10;
           if (stagePointsByStageEl) stagePointsByStageEl.value = (currentClass.stagePointsByStage || []).join(',');
           if (broadcastEl) broadcastEl.value = (currentClass.broadcastMessages || ['欢迎来到萌兽成长营！🎉']).join('\n');
+          if (sickDaysEl) sickDaysEl.value = parseInt(currentClass.sickDays, 10) || 3;
+          if (hospitalProjectsEl) {
+            const list = Array.isArray(currentClass.hospitalProjects) && currentClass.hospitalProjects.length
+              ? currentClass.hospitalProjects
+              : [
+                  { name: '复活针', cost: 8, type: 'revive' },
+                  { name: '急救药', cost: 3, type: 'cure' }
+                ];
+            hospitalProjectsEl.value = list.map(p => `${p.name}|${p.cost}|${p.type}`).join('\n');
+          }
+          if (monopolyRollCostEl) monopolyRollCostEl.value = parseInt(currentClass.monopolyRollCost, 10) || 1;
         } else {
           // 没有选择班级时的默认值
           this.students = [];
@@ -1380,11 +1394,17 @@
           const stagesEl = document.getElementById('settingStages');
           const stagePointsByStageEl = document.getElementById('settingStagePointsByStage');
           const broadcastEl = document.getElementById('broadcastContent');
+          const sickDaysEl = document.getElementById('settingSickDays');
+          const hospitalProjectsEl = document.getElementById('settingHospitalProjects');
+          const monopolyRollCostEl = document.getElementById('settingMonopolyRollCost');
           
           if (stagePointsEl) stagePointsEl.value = 20;
           if (stagesEl) stagesEl.value = 10;
           if (stagePointsByStageEl) stagePointsByStageEl.value = '';
           if (broadcastEl) broadcastEl.value = '欢迎来到萌兽成长营！🎉';
+          if (sickDaysEl) sickDaysEl.value = 3;
+          if (hospitalProjectsEl) hospitalProjectsEl.value = '复活针|8|revive\n急救药|3|cure';
+          if (monopolyRollCostEl) monopolyRollCostEl.value = 1;
         }
         
         console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
@@ -2521,7 +2541,14 @@
             prizes: [],
             lotteryPrizes: [],
             broadcastMessages: ['欢迎来到萌兽成长营！🎉'],
-            petCategoryPhotos: {}
+            petCategoryPhotos: {},
+            sickDays: 3,
+            hospitalProjects: [
+              { name: '复活针', cost: 8, type: 'revive' },
+              { name: '急救药', cost: 3, type: 'cure' }
+            ],
+            monopolyRollCost: 1,
+            customQuizQuestions: []
           };
           data.classes.push(newClass);
           this.currentClassId = newClass.id;
@@ -2543,6 +2570,9 @@
           const stagesEl = document.getElementById('settingStages');
           const stagePointsByStageEl = document.getElementById('settingStagePointsByStage');
           const broadcastEl = document.getElementById('broadcastContent');
+          const sickDaysEl = document.getElementById('settingSickDays');
+          const hospitalProjectsEl = document.getElementById('settingHospitalProjects');
+          const monopolyRollCostEl = document.getElementById('settingMonopolyRollCost');
           
           currentClass.stagePoints = stagePointsEl ? parseInt(stagePointsEl.value) || 20 : 20;
           currentClass.totalStages = stagesEl ? parseInt(stagesEl.value) || 10 : 10;
@@ -2555,6 +2585,21 @@
           currentClass.lotteryPrizes = this.getLotteryPrizes();
           currentClass.broadcastMessages = broadcastEl ? broadcastEl.value.split('\n') : ['欢迎来到萌兽成长营！🎉'];
           currentClass.petCategoryPhotos = this.getPetCategoryPhotos();
+          currentClass.sickDays = sickDaysEl ? (parseInt(sickDaysEl.value, 10) || 3) : (parseInt(currentClass.sickDays, 10) || 3);
+          currentClass.monopolyRollCost = monopolyRollCostEl ? (parseInt(monopolyRollCostEl.value, 10) || 1) : (parseInt(currentClass.monopolyRollCost, 10) || 1);
+          currentClass.hospitalProjects = hospitalProjectsEl
+            ? hospitalProjectsEl.value.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+                const parts = line.split('|');
+                return {
+                  name: (parts[0] || '').trim(),
+                  cost: Math.max(1, parseInt(parts[1], 10) || 1),
+                  type: ((parts[2] || 'cure').trim() === 'revive' ? 'revive' : 'cure')
+                };
+              }).filter(x => x.name)
+            : (Array.isArray(currentClass.hospitalProjects) ? currentClass.hospitalProjects : [
+                { name: '复活针', cost: 8, type: 'revive' },
+                { name: '急救药', cost: 3, type: 'cure' }
+              ]);
           this.currentClassName = currentClass.name;
         }
         
@@ -3459,6 +3504,12 @@
       try { this.renderLotteryPrizes(); } catch (e) { console.error('renderLotteryPrizes失败:', e); }
       try { this.loadBroadcastSettings(); } catch (e) { console.error('loadBroadcastSettings失败:', e); }
       try { this.loadBroadcastMessages(); } catch (e) { console.error('loadBroadcastMessages失败:', e); }
+      try {
+        const cls = this.getCurrentClassData();
+        const rollCost = parseInt((cls && cls.monopolyRollCost) || 1, 10) || 1;
+        const rollInput = document.getElementById('monopolyRollCost');
+        if (rollInput) rollInput.value = String(rollCost);
+      } catch (e) { console.error('初始化PK掷骰消耗失败:', e); }
 
       // 首屏渲染
       try { this.showPage('dashboard'); } catch (e) { console.error('showPage失败:', e); }
@@ -3652,7 +3703,19 @@
         prizes: [],
         lotteryPrizes: [],
         broadcastMessages: ['欢迎来到萌兽成长营！🎉'],
-        petCategoryPhotos: {}
+        petCategoryPhotos: {},
+        sickDays: parseInt(document.getElementById('settingSickDays')?.value, 10) || 3,
+        hospitalProjects: (document.getElementById('settingHospitalProjects')?.value || '复活针|8|revive\n急救药|3|cure')
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean)
+          .map(line => {
+            const parts = line.split('|');
+            return { name: (parts[0] || '').trim(), cost: Math.max(1, parseInt(parts[1], 10) || 1), type: ((parts[2] || 'cure').trim() === 'revive' ? 'revive' : 'cure') };
+          })
+          .filter(x => x.name),
+        monopolyRollCost: parseInt(document.getElementById('settingMonopolyRollCost')?.value, 10) || 1,
+        customQuizQuestions: []
       };
       
       if (!data.classes) {
@@ -3727,6 +3790,215 @@
       if (!s || !s.pet || !s.pet.typeId) return '🍖';
       const type = window.PET_TYPES.find(t => t.id === s.pet.typeId);
       return type && type.food ? type.food : '🍖';
+    },
+
+    getCurrentClassData() {
+      const data = getUserData();
+      return data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+    },
+
+    getHospitalProjects() {
+      const cls = this.getCurrentClassData();
+      const list = cls && Array.isArray(cls.hospitalProjects) ? cls.hospitalProjects : [];
+      if (list.length) return list;
+      return [
+        { name: '复活针', cost: 8, type: 'revive' },
+        { name: '急救药', cost: 3, type: 'cure' }
+      ];
+    },
+
+    ensurePetHealthStatus(student, forcePersist = false) {
+      if (!student || !student.pet) return;
+      const p = student.pet;
+      if (p.isDead || p.isBrokenEgg) return;
+      const cls = this.getCurrentClassData();
+      const sickDays = Math.max(1, parseInt((cls && cls.sickDays) || 3, 10) || 3);
+      const lastFedAt = p.lastFedAt || Date.now();
+      const elapsedDays = (Date.now() - lastFedAt) / (24 * 60 * 60 * 1000);
+      if (elapsedDays >= sickDays) {
+        if (!p.isSick) {
+          p.isSick = true;
+          if (forcePersist) this.saveStudents();
+        }
+      }
+    },
+
+    openPetHospitalTool() {
+      const modal = document.getElementById('petHospitalModal');
+      const listEl = document.getElementById('petHospitalList');
+      if (!modal || !listEl) return;
+      const projects = this.getHospitalProjects();
+      const rows = this.students.filter(s => s.pet).map(s => {
+        this.ensurePetHealthStatus(s);
+        const p = s.pet;
+        const status = p.isBrokenEgg || p.isDead ? '🥚💥 宠物蛋碎裂' : (p.isSick ? '🤒 生病' : '✅ 健康');
+        const actions = projects.map((proj, idx) => {
+          const canUse = (proj.type === 'revive' && (p.isBrokenEgg || p.isDead)) || (proj.type === 'cure' && p.isSick);
+          const disabled = canUse ? '' : 'disabled';
+          return `<button class="btn btn-small ${canUse ? 'btn-primary' : 'btn-secondary'}" ${disabled} onclick="app.treatPetInHospital('${s.id}',${idx})">${this.escape(proj.name)}（${proj.cost}分）</button>`;
+        }).join(' ');
+        return `<div class="withdraw-item" style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+          <div><strong>${this.escape(s.name)}</strong>：${status}（当前积分 ${s.points || 0}）</div>
+          <div>${actions}</div>
+        </div>`;
+      }).join('');
+      listEl.innerHTML = rows || '<p class="placeholder-text">暂无需要治疗的宠物</p>';
+      modal.style.display = 'flex';
+    },
+
+    treatPetInHospital(studentId, projectIndex) {
+      const s = this.students.find(x => x.id === studentId);
+      if (!s || !s.pet) return;
+      const projects = this.getHospitalProjects();
+      const proj = projects[projectIndex];
+      if (!proj) return;
+      const cost = Math.max(1, parseInt(proj.cost, 10) || 1);
+      if ((s.points || 0) < cost) {
+        alert('积分不足，无法治疗');
+        return;
+      }
+      const p = s.pet;
+      if (proj.type === 'revive') {
+        if (!(p.isBrokenEgg || p.isDead)) { alert('当前无需复活'); return; }
+        s.points -= cost;
+        p.isDead = false;
+        p.isBrokenEgg = false;
+        p.isSick = false;
+        p.hatching = false;
+        p.stage = 2;
+        p.stageProgress = 0;
+        p.lastFedAt = Date.now();
+      } else {
+        if (!p.isSick) { alert('当前无需治疗'); return; }
+        s.points -= cost;
+        p.isSick = false;
+        p.lastFedAt = Date.now();
+      }
+      if (!s.scoreHistory) s.scoreHistory = [];
+      s.scoreHistory.unshift({ time: Date.now(), delta: -cost, reason: `神兽医院-${proj.name}` });
+      this.saveStudents();
+      this.renderStudents();
+      this.renderDashboard();
+      this.openPetHospitalTool();
+    },
+
+    openCustomQuizPKTool() {
+      const modal = document.getElementById('customQuizModal');
+      if (!modal) return;
+      const cls = this.getCurrentClassData();
+      const saved = (cls && Array.isArray(cls.customQuizQuestions)) ? cls.customQuizQuestions : [];
+      const textEl = document.getElementById('quizQuestionsText');
+      if (textEl && saved.length) {
+        textEl.value = saved.map(q => `${q.q}|${q.a}`).join('\n');
+      }
+      document.getElementById('quizBattlePanel').style.display = 'none';
+      this.renderQuizTargets();
+      modal.style.display = 'flex';
+    },
+
+    renderQuizTargets() {
+      const mode = (document.getElementById('quizMode')?.value || 'group');
+      const selA = document.getElementById('quizTargetA');
+      const selB = document.getElementById('quizTargetB');
+      if (!selA || !selB) return;
+      const list = mode === 'group'
+        ? this.groups.map(g => ({ id: g.id, name: g.name }))
+        : this.students.map(s => ({ id: s.id, name: s.name }));
+      const options = '<option value="">请选择</option>' + list.map(x => `<option value="${x.id}">${this.escape(x.name)}</option>`).join('');
+      selA.innerHTML = options;
+      selB.innerHTML = options;
+    },
+
+    startCustomQuizPK() {
+      const mode = (document.getElementById('quizMode')?.value || 'group');
+      const targetA = document.getElementById('quizTargetA')?.value || '';
+      const targetB = document.getElementById('quizTargetB')?.value || '';
+      const winPoints = Math.max(1, parseInt(document.getElementById('quizWinPoints')?.value, 10) || 2);
+      const losePoints = Math.max(0, parseInt(document.getElementById('quizLosePoints')?.value, 10) || 1);
+      const lines = (document.getElementById('quizQuestionsText')?.value || '').split('\n').map(x => x.trim()).filter(Boolean);
+      const questions = lines.map(line => {
+        const parts = line.split('|');
+        return { q: (parts[0] || '').trim(), a: (parts[1] || '').trim() };
+      }).filter(x => x.q && x.a);
+      if (!targetA || !targetB || targetA === targetB) { alert('请选择不同的对战双方'); return; }
+      if (!questions.length) { alert('请先设置题目和答案'); return; }
+      this._quizBattle = { mode, targetA, targetB, winPoints, losePoints, questions, idx: 0, log: [] };
+      const cls = this.getCurrentClassData();
+      if (cls) {
+        cls.customQuizQuestions = questions;
+        this.saveData();
+      }
+      document.getElementById('quizBattlePanel').style.display = 'block';
+      document.getElementById('quizBattleLog').innerHTML = '';
+      this._renderQuizQuestion();
+    },
+
+    _renderQuizQuestion() {
+      if (!this._quizBattle) return;
+      const b = this._quizBattle;
+      const q = b.questions[b.idx];
+      if (!q) {
+        document.getElementById('quizCurrentQuestion').textContent = 'PK结束';
+        return;
+      }
+      document.getElementById('quizCurrentQuestion').textContent = `第 ${b.idx + 1} 题：${q.q}`;
+      document.getElementById('quizAnswerA').value = '';
+      document.getElementById('quizAnswerB').value = '';
+    },
+
+    _normalizeAnswer(v) {
+      return String(v || '').trim().toLowerCase().replace(/\s+/g, '');
+    },
+
+    judgeCustomQuizRound() {
+      const b = this._quizBattle;
+      if (!b) return;
+      const q = b.questions[b.idx];
+      if (!q) return;
+      const ans = this._normalizeAnswer(q.a);
+      const a1 = this._normalizeAnswer(document.getElementById('quizAnswerA')?.value || '');
+      const a2 = this._normalizeAnswer(document.getElementById('quizAnswerB')?.value || '');
+      const aOk = a1 && a1 === ans;
+      const bOk = a2 && a2 === ans;
+      const reason = `答题PK-第${b.idx + 1}题`;
+      if (aOk && !bOk) {
+        this.applyQuizDelta(b.mode, b.targetA, b.winPoints, reason + '胜');
+        if (b.losePoints > 0) this.applyQuizDelta(b.mode, b.targetB, -b.losePoints, reason + '负');
+      } else if (!aOk && bOk) {
+        this.applyQuizDelta(b.mode, b.targetB, b.winPoints, reason + '胜');
+        if (b.losePoints > 0) this.applyQuizDelta(b.mode, b.targetA, -b.losePoints, reason + '负');
+      }
+      b.log.unshift(`${reason}｜正确答案:${q.a}｜A:${aOk ? '✅' : '❌'} B:${bOk ? '✅' : '❌'}`);
+      document.getElementById('quizBattleLog').innerHTML = b.log.slice(0, 20).map(x => `<div class="withdraw-item"><span>${this.escape(x)}</span></div>`).join('');
+      b.idx += 1;
+      if (b.idx >= b.questions.length) {
+        document.getElementById('quizCurrentQuestion').textContent = 'PK结束，可关闭弹窗';
+        this.saveStudents();
+        this.renderGroups();
+        this.renderStudents();
+        this.renderDashboard();
+        return;
+      }
+      this._renderQuizQuestion();
+    },
+
+    applyQuizDelta(mode, targetId, delta, reason) {
+      if (!delta) return;
+      if (mode === 'group') {
+        const g = this.groups.find(x => x.id === targetId);
+        if (!g) return;
+        g.points = (g.points || 0) + delta;
+        this.groupPointHistory.push({ id: 'point_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), groupId: g.id, groupName: g.name, delta, reason, time: new Date().toISOString() });
+        setStorage(STORAGE_KEYS.groups, this.groups);
+        setStorage(STORAGE_KEYS.groupPointHistory, this.groupPointHistory);
+      } else {
+        const s = this.students.find(x => x.id === targetId);
+        if (!s) return;
+        s.points = (s.points || 0) + delta;
+        if (!s.scoreHistory) s.scoreHistory = [];
+        s.scoreHistory.unshift({ time: Date.now(), delta, reason });
+        if (delta < 0) this.applyPetDegenerationOnScoreChange(s, delta);
+      }
     },
 
     bindNav() {
@@ -3868,6 +4140,7 @@
       }
       const html = list.map(s => {
         try {
+          this.ensurePetHealthStatus(s);
           return this.studentCardHtml(s);
         } catch (e) {
           console.error('渲染学生卡片失败 id=' + (s && s.id) + ' name=' + (s && s.name) + ':', e.message);
@@ -3912,6 +4185,8 @@
       if (s.pet) {
         if (!s.pet.typeId) {
           petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
+        } else if (s.pet.isBrokenEgg) {
+          petHtml = `<div class="student-pet-preview pet-empty"><span class="pet-img">🥚💥</span><small>宠物蛋碎裂</small></div>`;
         } else {
           const photoPath = this.getStagePhotoPath(s.pet.typeId, s.pet.stage || 1);
           petHtml = `<div class="student-pet-preview"><img src="${photoPath}" class="pet-img-stage" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\"pet-img\">🐾</span>';"></div>`;
@@ -3925,7 +4200,15 @@
       let progressText = '';
       let needPointsText = '';
       if (s.pet) {
-        if (currentStage === 1) {
+        if (s.pet.isBrokenEgg) {
+          progressPercent = 0;
+          progressText = '宠物蛋已碎裂';
+          needPointsText = '请前往神兽医院复活';
+        } else if (s.pet.isSick) {
+          progressPercent = 0;
+          progressText = '神兽生病中';
+          needPointsText = '请前往神兽医院治疗';
+        } else if (currentStage === 1) {
           progressPercent = Math.min(100, ((s.pet.stageProgress || 0) / stageNeed) * 100);
           progressText = '🥚 宠物蛋';
           const need = Math.max(0, stageNeed - (s.pet.stageProgress || 0));
@@ -3959,7 +4242,7 @@
       const extraInfoHtml = infoParts.length ? `<div class="student-extra-info" title="${infoParts.join('｜')}">${infoParts.slice(0,2).join(' ｜ ')}${infoParts.length>2?'…':''}</div>` : '';
       
       // 判断是否可以喂食
-      const canFeed = s.pet && (s.points || 0) >= 1 && (s.pet.stage || 0) < totalStages;
+      const canFeed = s.pet && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead && (s.points || 0) >= 1 && (s.pet.stage || 0) < totalStages;
       const feedAction = canFeed ? `onclick="event.stopPropagation(); app.quickFeed('${s.id}')"` : '';
       const feedClass = canFeed ? 'can-feed' : 'cannot-feed';
       const isMaxLevel = s.pet && (s.pet.stage || 0) >= totalStages && s.pet.completed;
@@ -4188,32 +4471,23 @@
         const loss = Math.abs(delta);
         progress -= loss;
 
-        let downgraded = false;
         while (progress < 0 && stage > 1) {
           const prevNeed = this.getStagePointsByStage(stage - 1);
           stage -= 1;
           progress += prevNeed;
-          downgraded = true;
-          // 每退化一级提醒一次
-          this.speak('我好饿，好久没有喂我了');
         }
 
-        // 已经退回到第1级并且进度也耗尽，认为宠物“饿死”
+        // 退回到宠物蛋并耗尽进度 -> 标记碎裂（不再语音播报“饿死了”）
         if (stage === 1 && progress <= 0) {
           progress = 0;
-          if (!pet.isDead) {
-            pet.isDead = true;
-            this.speak(`${s.name} 的宠物太久没被照顾，已经饿死了…`);
-          }
+          pet.isDead = true;
+          pet.isBrokenEgg = true;
+          pet.brokenAt = Date.now();
         }
 
         pet.stage = stage;
         pet.stageProgress = Math.max(0, progress);
-
-        const baseNeed = this.getStagePointsByStage(stage || 1);
-        if (downgraded && !pet.isDead) {
-          console.log(`学生 ${s.name} 的宠物退化到阶段 ${stage}，当前进度 ${pet.stageProgress}/${baseNeed}`);
-        }
+        pet.lastFedAt = pet.lastFedAt || Date.now();
       } catch (e) {
         console.warn('宠物退化逻辑出错:', e);
       }
@@ -4643,6 +4917,8 @@
     feedPet(studentId, amount) {
       const s = this.students.find(x => x.id === studentId);
       if (!s || !s.pet) return;
+      this.ensurePetHealthStatus(s);
+      if (s.pet.isDead || s.pet.isBrokenEgg || s.pet.isSick) return;
       const pts = Math.min(amount, s.points || 0);
       if (pts <= 0) return;
       s.points = (s.points || 0) - pts;
@@ -4662,6 +4938,7 @@
       
       s.pet.stage = stage;
       s.pet.stageProgress = progress;
+      s.pet.lastFedAt = Date.now();
       
       // 完成全部升级后获得1枚勋章
       if (stage >= totalStages && !s.pet.completed) {
@@ -4863,9 +5140,30 @@
       const hasStructuredPet = !!(s.pet && (s.pet.isCustom || (s.pet.typeId && s.pet.breedId)));
 
       if (hasStructuredPet) {
+        this.ensurePetHealthStatus(s);
+        if (s.pet.isBrokenEgg || s.pet.isDead) {
+          document.getElementById('currentStudentPetInfo').innerHTML = `
+            <div class="egg-stage">
+              <div style="font-size:3rem;margin-bottom:10px;">🥚💥</div>
+              <p><strong>${this.escape(s.name)}</strong> 的宠物蛋已碎裂，需要去神兽医院复活。</p>
+              <button class="btn btn-primary" onclick="app.openPetHospitalTool()">去神兽医院</button>
+            </div>`;
+          document.getElementById('petChooseSection').innerHTML = '';
+          return;
+        }
+        if (s.pet.isSick) {
+          document.getElementById('currentStudentPetInfo').innerHTML = `
+            <div class="egg-stage">
+              <div style="font-size:3rem;margin-bottom:10px;">🤒</div>
+              <p><strong>${this.escape(s.name)}</strong> 的神兽生病了，暂时无法喂养。</p>
+              <button class="btn btn-primary" onclick="app.openPetHospitalTool()">去神兽医院治疗</button>
+            </div>`;
+          document.getElementById('petChooseSection').innerHTML = '';
+          return;
+        }
         if (s.pet.hatching) {
           const hatchNeed = this.getStagePointsByStage(1);
-          const canFeed = (s.points || 0) >= 1;
+          const canFeed = (s.points || 0) >= 1 && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead;
           let petDisplay, foodStr;
           if (s.pet.isCustom && s.pet.customImage) {
             petDisplay = `<img src="${s.pet.customImage}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; filter: grayscale(50%); margin-bottom: 16px;">`;
@@ -4960,7 +5258,7 @@
             const borderStyle = STAGE_BORDERS[Math.min(stage, STAGE_BORDERS.length - 1)];
             
             // 显示喂食按钮（如果还未完成）
-            const canFeed = (s.points || 0) >= 1 && !isComplete;
+            const canFeed = (s.points || 0) >= 1 && !isComplete && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead;
             const feedButton = canFeed ? `<button class="btn feed-pet-btn btn-primary" onclick="app.feedPet('${s.id}',1); app.showEatEffect(); app.renderPetAdopt();">${foodStr} 喂食（消耗1积分）</button>` : '<p class="text-muted">积分不足无法喂食</p>';
             
             document.getElementById('currentStudentPetInfo').innerHTML = `
@@ -5538,7 +5836,7 @@
       const mode = modeEl.value === 'badges' ? 'badges' : 'points';
       const cost = Math.max(1, parseInt(costInput.value || '1', 10));
       
-      const prizes = getStorage(STORAGE_KEYS.lotteryPrizes, []);
+      const prizes = this.getLotteryPrizes();
       if (!prizes.length) {
         alert('暂无奖品，请在「系统设置 → 转盘奖品」中先添加奖品');
         return;
@@ -6059,7 +6357,7 @@
     },
 
     renderLotteryPrizes() {
-      const prizes = getStorage(STORAGE_KEYS.lotteryPrizes, []);
+      const prizes = this.getLotteryPrizes();
       const html = prizes.map((p, i) => `
         <div class="prize-item-row">
           <input type="text" value="${this.escape(p.name)}" placeholder="奖品名" data-i="${i}" data-f="name">
@@ -6069,10 +6367,14 @@
       document.getElementById('lotteryPrizeList').innerHTML = html;
       document.querySelectorAll('#lotteryPrizeList input').forEach(inp => {
         inp.addEventListener('change', () => {
-          const arr = getStorage(STORAGE_KEYS.lotteryPrizes, []);
+          const data = getUserData();
+          const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+          if (!currentClass) return;
+          const arr = currentClass.lotteryPrizes || [];
           const i = parseInt(inp.dataset.i, 10);
           if (arr[i]) arr[i].name = inp.value;
-          setStorage(STORAGE_KEYS.lotteryPrizes, arr);
+          currentClass.lotteryPrizes = arr;
+          setUserData(data);
           this.saveData();
         });
       });
@@ -6080,17 +6382,25 @@
     addLotteryPrizeModal() {
       const name = prompt('转盘奖品名称：');
       if (!name) return;
-      const arr = getStorage(STORAGE_KEYS.lotteryPrizes, []);
+      const data = getUserData();
+      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!currentClass) return;
+      const arr = currentClass.lotteryPrizes || [];
       arr.push({ name });
-      setStorage(STORAGE_KEYS.lotteryPrizes, arr);
+      currentClass.lotteryPrizes = arr;
+      setUserData(data);
       this.saveData();
       this.renderLotteryPrizes();
       this.renderLotteryWheel();
     },
     removeLotteryPrize(i) {
-      const arr = getStorage(STORAGE_KEYS.lotteryPrizes, []);
+      const data = getUserData();
+      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!currentClass) return;
+      const arr = currentClass.lotteryPrizes || [];
       arr.splice(i, 1);
-      setStorage(STORAGE_KEYS.lotteryPrizes, arr);
+      currentClass.lotteryPrizes = arr;
+      setUserData(data);
       this.saveData();
       this.renderLotteryPrizes();
       this.renderLotteryWheel();
@@ -8237,8 +8547,30 @@
       const name = document.getElementById('settingSystemName').value.trim();
       const className = document.getElementById('settingClassName').value.trim();
       const theme = document.getElementById('settingTheme').value;
-      const stagePoints = parseInt(document.getElementById('settingStagePoints').value, 10) || 20;
-      const stages = parseInt(document.getElementById('settingStages').value, 10) || 10;
+
+      const data = getUserData();
+      const currentClass = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (currentClass) {
+        currentClass.sickDays = parseInt(document.getElementById('settingSickDays')?.value, 10) || currentClass.sickDays || 3;
+        currentClass.monopolyRollCost = parseInt(document.getElementById('settingMonopolyRollCost')?.value, 10) || currentClass.monopolyRollCost || 1;
+        currentClass.hospitalProjects = (document.getElementById('settingHospitalProjects')?.value || '复活针|8|revive\n急救药|3|cure')
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean)
+          .map(line => {
+            const parts = line.split('|');
+            return {
+              name: (parts[0] || '').trim(),
+              cost: Math.max(1, parseInt(parts[1], 10) || 1),
+              type: ((parts[2] || 'cure').trim() === 'revive' ? 'revive' : 'cure')
+            };
+          })
+          .filter(x => x.name);
+        setUserData(data);
+      }
+
+      const monoInput = document.getElementById('monopolyRollCost');
+      if (monoInput) monoInput.value = String((currentClass && currentClass.monopolyRollCost) || 1);
       
       // 直接调用saveUserData保存所有设置
       this.saveUserData();

@@ -70,6 +70,14 @@ window.LuckyDraw = {
   selectedStudentId: '',
   open: function() {
     if(!document.getElementById('luckyDrawModal')) this._buildModal();
+    if(window.app && typeof window.app.getLotteryPrizes==='function'){
+      var clsPrizes=window.app.getLotteryPrizes()||[];
+      if(clsPrizes.length){
+        this.prizes=clsPrizes.map(function(p,i){
+          return {name:p.name||('奖品'+(i+1)),emoji:['🎁','⭐','🌟','🎉','🏆','🍀','💎','🎊'][i%8],color:['#FF6B35','#FFD23F','#06D6A0','#1B98F5','#9B59F7','#EF476F','#FF9F1C','#2ECC71'][i%8],pts:parseInt(p.pts,10)||0};
+        });
+      }
+    }
     this._refreshPrizes();
     this._refreshStudents();
     document.getElementById('luckyDrawModal').classList.add('show');
@@ -84,6 +92,8 @@ window.LuckyDraw = {
       '<div class="lucky-left">'+
       '<div class="lucky-row"><label>抽奖学生：</label><select id="luckyStudentSelect" class="login-input" onchange="LuckyDraw.onStudentChange(this.value)"></select></div>'+
       '<div id="luckyStudentInfo" class="lucky-student-info">请先选择学生</div>'+
+      '<div class="lucky-row"><label>消耗方式：</label><select id="luckyCostMode" class="login-input"><option value="points">积分</option><option value="badges">勋章</option></select></div>'+
+      '<div class="lucky-row"><label>单次消耗：</label><input id="luckyCostValue" class="login-input" type="number" min="1" value="1" style="width:90px"></div>'+
       '<div class="lucky-row"><label>抽奖次数：</label>'+
       '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(1)">单抽</button> '+
       '<button class="btn btn-small btn-outline" onclick="LuckyDraw.setCount(3)">三连</button> '+
@@ -113,7 +123,7 @@ window.LuckyDraw = {
     var info=document.getElementById('luckyStudentInfo');
     if(!info)return;
     var s=((window.app&&window.app.students)||[]).find(function(x){return x.id===studentId;});
-    info.textContent = s ? ('当前学生：'+s.name+' ｜ 积分：'+(s.points||0)) : '请先选择学生';
+    info.textContent = s ? ('当前学生：'+s.name+' ｜ 积分：'+(s.points||0)+' ｜ 可用勋章：'+((window.app&&window.app.getAvailableBadges)?window.app.getAvailableBadges(s):0)) : '请先选择学生';
   },
   setCount: function(n) { this.drawCount=n; },
   _refreshPrizes: function() {
@@ -154,6 +164,26 @@ window.LuckyDraw = {
   spin: function() {
     if(this.spinning)return;
     if(!this.selectedStudentId){ alert('请先选择学生再抽奖'); return; }
+    var student=((window.app&&window.app.students)||[]).find(function(x){return x.id===window.LuckyDraw.selectedStudentId;});
+    if(!student){ alert('未找到学生'); return; }
+    var modeEl=document.getElementById('luckyCostMode');
+    var costEl=document.getElementById('luckyCostValue');
+    var mode=(modeEl&&modeEl.value==='badges')?'badges':'points';
+    var cost=Math.max(1,parseInt(costEl&&costEl.value,10)||1);
+    var totalCost=cost*Math.max(1,this.drawCount||1);
+    if(mode==='points'){
+      if((student.points||0)<totalCost){ alert('积分不足，无法抽奖'); return; }
+      student.points=(student.points||0)-totalCost;
+    }else{
+      var available=(window.app&&window.app.getAvailableBadges)?window.app.getAvailableBadges(student):0;
+      if(available<totalCost){ alert('勋章不足，无法抽奖'); return; }
+      student.badgesSpent=(student.badgesSpent||0)+totalCost;
+    }
+    if(!student.scoreHistory) student.scoreHistory=[];
+    student.scoreHistory.unshift({time:Date.now(),delta:-totalCost,reason:'幸运大抽奖消耗('+(mode==='points'?'积分':'勋章')+')'});
+    if(window.app&&typeof window.app.saveStudents==='function') window.app.saveStudents();
+    this.onStudentChange(this.selectedStudentId);
+
     var self=this,results=[];
     var doSpin=function(remaining,cb){
       if(remaining<=0){cb(results);return;}

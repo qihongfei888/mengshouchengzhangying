@@ -203,15 +203,26 @@
               <div class="tool-card-icon">🥚</div>
               <div class="tool-card-main">班级扭蛋机</div>
               <div class="tool-card-sub">积分 / 勋章扭蛋抽奖</div>
+            </button>
             <button class="tool-card tool-card-pk" onclick="app.showPage('monopoly')">
               <div class="tool-card-icon">🎯</div>
               <div class="tool-card-main">大 PK</div>
               <div class="tool-card-sub">小组神兽大富翁</div>
             </button>
+            <button class="tool-card" onclick="app.openCustomQuizPKTool()">
+              <div class="tool-card-icon">🧠</div>
+              <div class="tool-card-main">自定义答题PK</div>
+              <div class="tool-card-sub">支持小组PK / 个人PK</div>
+            </button>
+            <button class="tool-card" onclick="app.openPetHospitalTool()">
+              <div class="tool-card-icon">🏥</div>
+              <div class="tool-card-main">神兽医院</div>
+              <div class="tool-card-sub">治疗生病 / 复活神兽</div>
+            </button>
             <button class="tool-card" onclick="window.LuckyDraw&&LuckyDraw.open()">
               <div class="tool-card-icon">🎰</div>
               <div class="tool-card-main">幸运大抽奖</div>
-              <div class="tool-card-sub">单次/3次/5次 奖品卡弹出</div>
+              <div class="tool-card-sub">可设积分/勋章消耗</div>
             </button>
           </div>
         </div>
@@ -376,6 +387,10 @@
               <h3>⚔️ 当前回合</h3>
               <div id="monopolyTurnInfo" class="monopoly-turn-info"><p style="color:#888">点击「开始游戏」</p></div>
               <div class="monopoly-dice-area">
+                <div class="form-group" style="width:100%;margin-bottom:6px;">
+                  <label style="font-size:12px;color:#8B1A1A;">每次掷骰消耗小组积分</label>
+                  <input id="monopolyRollCost" type="number" min="0" value="1" class="login-input" style="width:100%;">
+                </div>
                 <div id="monopolyDice" class="monopoly-dice">🎲</div>
                 <button class="btn btn-primary monopoly-roll-btn" id="monopolyRollBtn" onclick="Monopoly.rollDice()" disabled>掷骰子</button>
               </div>
@@ -565,6 +580,22 @@
             <h3>🎡 转盘奖品（抽奖用）</h3>
             <div id="lotteryPrizeList" class="prize-list"></div>
             <button class="btn btn-secondary btn-cute" onclick="app.addLotteryPrizeModal()">🎡 添加转盘奖品</button>
+          </div>
+          <div class="settings-card settings-card-cute full-width">
+            <h3>🏥 神兽医院设置</h3>
+            <div class="setting-item">
+              <label>几天不喂会生病</label>
+              <input type="number" id="settingSickDays" min="1" value="3">
+            </div>
+            <div class="setting-item">
+              <label>医院项目（每行：项目名|消耗积分|类型revive/cure）</label>
+              <textarea id="settingHospitalProjects" rows="5" placeholder="复活针|8|revive&#10;急救药|3|cure"></textarea>
+            </div>
+            <div class="setting-item">
+              <label>大PK掷骰消耗积分</label>
+              <input type="number" id="settingMonopolyRollCost" min="0" value="1">
+            </div>
+            <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存医院与PK设置</button>
           </div>
           <div class="settings-card settings-card-cute full-width">
             <h3>👦 学生管理</h3>
@@ -1292,6 +1323,68 @@
     </div>
   </div>
 
+  <!-- 自定义答题PK弹窗 -->
+  <div id="customQuizModal" class="modal">
+    <div class="modal-content modal-content-large">
+      <button class="modal-close" onclick="app.closeModal('customQuizModal')">&times;</button>
+      <h3>🧠 自定义答题PK</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>PK模式</label>
+          <select id="quizMode" class="login-input" onchange="app.renderQuizTargets()">
+            <option value="group">小组PK</option>
+            <option value="student">个人PK</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>答对加分</label>
+          <input type="number" id="quizWinPoints" class="login-input" value="2" min="1">
+        </div>
+        <div class="form-group">
+          <label>答错扣分</label>
+          <input type="number" id="quizLosePoints" class="login-input" value="1" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>题目（每行：题干|答案）</label>
+        <textarea id="quizQuestionsText" class="login-input" rows="6" placeholder="中国首都是哪？|北京&#10;3+5=？|8"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label>参赛方A</label>
+          <select id="quizTargetA" class="login-input"></select>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>参赛方B</label>
+          <select id="quizTargetB" class="login-input"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <button class="btn btn-primary" onclick="app.startCustomQuizPK()">开始PK</button>
+      </div>
+      <div id="quizBattlePanel" style="display:none;">
+        <div id="quizCurrentQuestion" style="font-weight:bold;margin:8px 0;"></div>
+        <div class="form-row">
+          <input id="quizAnswerA" class="login-input" placeholder="A方答案" style="flex:1;">
+          <input id="quizAnswerB" class="login-input" placeholder="B方答案" style="flex:1;">
+        </div>
+        <div class="form-group" style="margin-top:8px;">
+          <button class="btn btn-secondary" onclick="app.judgeCustomQuizRound()">判题并下一题</button>
+        </div>
+        <div id="quizBattleLog" class="score-history-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 神兽医院弹窗 -->
+  <div id="petHospitalModal" class="modal">
+    <div class="modal-content modal-content-large">
+      <button class="modal-close" onclick="app.closeModal('petHospitalModal')">&times;</button>
+      <h3>🏥 神兽医院</h3>
+      <div id="petHospitalList" class="score-history-list"></div>
+    </div>
+  </div>
+
   <!-- 特效容器 -->
   <div id="effectContainer" class="effect-container"></div>
 
@@ -1320,5 +1413,5 @@
 <script src="./db.js?v=3"></script>
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
-<script src="./app-loader.js?v=38"></script>
+<script src="./app-loader.js?v=39"></script>
 </body></html>
