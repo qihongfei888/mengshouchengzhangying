@@ -1455,6 +1455,12 @@
         </div>
         <button class="btn btn-secondary" onclick="app.initAssassinKingBattle()">开始对局</button>
       </div>
+      <div class="form-row" style="margin-top:4px;">
+        <button class="btn btn-outline" onclick="app.randomizeAssassinRoles('A')">🎲 A组随机角色</button>
+        <button class="btn btn-outline" onclick="app.randomizeAssassinRoles('B')">🎲 B组随机角色</button>
+        <button class="btn btn-outline" onclick="app.randomizeAssassinRoles('all')">🎲 全部随机</button>
+        <button class="btn btn-secondary" id="assassinRoleLockBtn" onclick="app.toggleAssassinRoleLock()">🔓 角色可编辑</button>
+      </div>
       <div id="assassinKingRoleBoard" class="score-history-list" style="max-height:260px;"></div>
       <div class="form-row" style="margin-top:8px;">
         <button class="btn btn-primary" onclick="app.addAssassinKingAnswer('A')">A组答对+1</button>
@@ -1533,5 +1539,5 @@
 <script src="./db.js?v=3"></script>
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
-<script src="./app-loader.js?v=41"></script>
+<script src="./app-loader.js?v=42"></script>
 </body></html>

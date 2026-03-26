@@ -4046,6 +4046,9 @@
       if (board) board.innerHTML = '<p class="placeholder-text">先选择参战小组并点击「开始对局」</p>';
       if (log) log.innerHTML = '';
       this._assassinKing = null;
+      this._assassinRoleLocked = false;
+      const lockBtn = document.getElementById('assassinRoleLockBtn');
+      if (lockBtn) lockBtn.textContent = '🔓 角色可编辑';
       modal.style.display = 'flex';
     },
 
@@ -4074,6 +4077,9 @@
         B: { groupId: groupB.id, groupName: groupB.name, answers: 0, roster: teamB },
         log: []
       };
+      this._assassinRoleLocked = false;
+      const lockBtn = document.getElementById('assassinRoleLockBtn');
+      if (lockBtn) lockBtn.textContent = '🔓 角色可编辑';
       this._normalizeAssassinRoles('A');
       this._normalizeAssassinRoles('B');
       this.renderAssassinKingRoles();
@@ -4093,7 +4099,46 @@
       return { members: roster, kingId: king?.studentId || '', princeId: prince?.studentId || '', knightId: '' };
     },
 
+    toggleAssassinRoleLock() {
+      this._assassinRoleLocked = !this._assassinRoleLocked;
+      const btn = document.getElementById('assassinRoleLockBtn');
+      if (btn) btn.textContent = this._assassinRoleLocked ? '🔒 角色已锁定' : '🔓 角色可编辑';
+      this.renderAssassinKingRoles();
+    },
+
+    randomizeAssassinRoles(side) {
+      if (!this._assassinKing) {
+        alert('请先开始对局');
+        return;
+      }
+      const randomTeam = (key) => {
+        const t = this._assassinKing[key];
+        if (!t || !t.roster || !Array.isArray(t.roster.members)) return;
+        const members = t.roster.members.filter(m => m.alive);
+        if (members.length < 3) {
+          this._pushAssassinKingLog(`${t.groupName} 存活人数不足，无法随机角色`);
+          return;
+        }
+        members.forEach(m => { m.role = 'knight'; });
+        const shuffled = [...members].sort(() => Math.random() - 0.5);
+        shuffled[0].role = 'king';
+        shuffled[1].role = 'prince';
+        this._normalizeAssassinRoles(key);
+      };
+      if (side === 'all') {
+        randomTeam('A');
+        randomTeam('B');
+        this._pushAssassinKingLog('已为双方随机分配角色');
+      } else {
+        randomTeam(side);
+        const t = this._assassinKing[side];
+        if (t) this._pushAssassinKingLog(`${t.groupName} 已随机分配角色`);
+      }
+      this.renderAssassinKingRoles();
+    },
+
     setAssassinRole(side, studentId, role) {
+      if (this._assassinRoleLocked) return;
       if (!this._assassinKing || !this._assassinKing[side]) return;
       const team = this._assassinKing[side].roster;
       const member = team.members.find(x => x.studentId === studentId);
@@ -4143,7 +4188,7 @@
         const cards = t.roster.members.map(m => {
           const deadClass = m.alive ? '' : 'opacity:0.45;filter:grayscale(1);';
           const roleSelector = m.alive
-            ? `<select class="login-input" style="padding:4px 6px;font-size:12px;margin-top:4px;" onchange="app.setAssassinRole('${key}','${m.studentId}',this.value)">
+            ? `<select class="login-input" ${this._assassinRoleLocked ? 'disabled' : ''} style="padding:4px 6px;font-size:12px;margin-top:4px;" onchange="app.setAssassinRole('${key}','${m.studentId}',this.value)">
                 <option value="king" ${m.role === 'king' ? 'selected' : ''}>国王</option>
                 <option value="prince" ${m.role === 'prince' ? 'selected' : ''}>王子</option>
                 <option value="knight" ${m.role === 'knight' ? 'selected' : ''}>骑士</option>
