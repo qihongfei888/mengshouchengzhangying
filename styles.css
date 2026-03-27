@@ -549,8 +549,11 @@ body::before {
 .student-card-v2-pet .student-pet-preview {
   width: 100%;
   height: 100%;
-  background: transparent;
-  box-shadow: none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: radial-gradient(circle at 28% 20%, rgba(255,255,255,.66), rgba(255,255,255,.12) 42%, rgba(148,163,184,.12) 100%);
+  box-shadow: 0 16px 28px rgba(15,23,42,.20), inset 0 1px 0 rgba(255,255,255,.82);
   position: relative;
   overflow: hidden;
   border-radius: 0 !important;
@@ -562,21 +565,25 @@ body::before {
 }
 .student-card-v2-pet .pet-img { font-size: 5rem; }
 .student-card-v2-pet .pet-img-stage {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
   border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
-  filter: contrast(1.16) saturate(1.08) brightness(1.02);
+  filter: contrast(1.14) saturate(1.1) brightness(1.04) drop-shadow(0 10px 14px rgba(15,23,42,.26));
   transform: none !important;
 }
 .student-card-v2:hover .pet-img-stage{
   transform: none !important;
   box-shadow: none !important;
 }
-.student-card-v2 .pet-accessories{
+.student-card-v2 .pet-accessories,
+.student-card-v2 .accessory{
   display:none !important;
+  animation:none !important;
 }
 #currentStudentPetInfo img,
 .pet-breed-option img{

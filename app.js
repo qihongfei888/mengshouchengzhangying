@@ -5319,7 +5319,6 @@
           </div>
           <div class="student-card-v2-pet">
             ${petHtml}
-            ${accessoriesHtml}
           </div>
           <div class="student-card-v2-info">
             <div class="student-name-row">
