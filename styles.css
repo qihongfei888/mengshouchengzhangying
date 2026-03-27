@@ -425,12 +425,39 @@ body::before {
   position: relative;
 }
 .student-card-v2.rarity-epic::before,
-.student-card-v2.rarity-legendary::before,
+.student-card-v2.rarity-legendary::before{
+  content:'';
+  position:absolute;
+  inset:-2px;
+  border-radius:22px;
+  z-index:0;
+  pointer-events:none;
+  animation: rarityGlow 2.2s ease-in-out infinite;
+}
+.student-card-v2.rarity-epic::before{
+  background: linear-gradient(120deg, rgba(196,181,253,.55), rgba(96,165,250,.45), rgba(196,181,253,.55));
+  opacity:.56;
+}
+.student-card-v2.rarity-legendary::before{
+  background: linear-gradient(120deg, rgba(253,230,138,.65), rgba(245,158,11,.55), rgba(252,165,165,.52));
+  opacity:.74;
+}
+
 .student-card-v2.rarity-epic:hover::after,
 .student-card-v2.rarity-legendary:hover::after,
 .student-card-v2.awakened-card:hover::after{
-  content:none !important;
-  animation:none !important;
+  content:'';
+  position:absolute;
+  inset:6px;
+  border-radius:16px;
+  background:
+    radial-gradient(circle at 20% 25%, rgba(255,255,255,.9) 0 2px, transparent 3px),
+    radial-gradient(circle at 80% 18%, rgba(255,255,255,.8) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 78%, rgba(255,247,173,.85) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 72%, rgba(196,181,253,.8) 0 2px, transparent 3px);
+  mix-blend-mode: screen;
+  pointer-events:none;
+  animation: sparkleFlash .9s ease-in-out infinite;
 }
 
 .student-card-v2.awakened-card{
@@ -444,6 +471,10 @@ body::before {
 .student-card-v2.rarity-epic > *,
 .student-card-v2.rarity-legendary > *,
 .student-card-v2.awakened-card > * { position: relative; z-index: 1; }
+@keyframes rarityGlow{
+  0%,100%{ opacity:.45; filter:saturate(1); }
+  50%{ opacity:.85; filter:saturate(1.12); }
+}
 @keyframes raritySpin{ to { transform: rotate(360deg); } }
 @keyframes sparkleFlash{
   0%,100%{ opacity:.25; transform: scale(1); }
