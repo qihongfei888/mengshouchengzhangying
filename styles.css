@@ -2088,19 +2088,10 @@ body::before {
 .score-item-row input, .prize-item-row input { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); }
 
 /* 装扮相关样式 */
-.pet-accessories {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-
+.pet-accessories,
 .accessory {
-  position: absolute;
-  font-size: 1.2rem;
-  animation: none;
+  display: none !important;
+  animation: none !important;
 }
 
 .accessory:nth-child(1) {

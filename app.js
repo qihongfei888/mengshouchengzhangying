@@ -3647,9 +3647,9 @@
       }
       imgEl.style.display = 'none';
       if (imgEl.nextElementSibling) {
-        imgEl.nextElementSibling.style.display = 'inline';
+        imgEl.nextElementSibling.style.display = 'none';
       } else if (imgEl.parentElement) {
-        imgEl.parentElement.innerHTML = '<span class="pet-img">🐾</span>';
+        imgEl.parentElement.innerHTML = '';
       }
     },
     preloadPetStageImages(typeId, stage) {
@@ -5236,12 +5236,12 @@
       
       if (s.pet) {
         if (!s.pet.typeId) {
-          petHtml = `<div class="student-pet-preview"><span class="pet-img">🐾</span></div>`;
+          petHtml = `<div class="student-pet-preview"></div>`;
         } else if (s.pet.isBrokenEgg) {
           petHtml = `<div class="student-pet-preview pet-empty"><span class="pet-img">🥚💥</span><small>宠物蛋碎裂</small></div>`;
         } else {
           const photoPath = this.getStagePhotoPath(s.pet.typeId, s.pet.stage || 1);
-          petHtml = `<div class="student-pet-preview" style="background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.68), rgba(255,255,255,.1) 45%, rgba(148,163,184,.14) 100%);border:none;box-shadow:none;border-radius:0;overflow:hidden;"><img src="${photoPath}" class="pet-img-stage" style="width:100%;height:100%;object-fit:contain;border:none;border-radius:0;box-shadow:none;transform:none;filter:contrast(1.12) saturate(1.1) brightness(1.03) drop-shadow(0 10px 12px rgba(15,23,42,.28));" loading="eager" decoding="async" fetchpriority="high" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(s.pet.stage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)"><span class="pet-img" style="display:none">🐾</span></div>`;
+          petHtml = `<div class="student-pet-preview" style="background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.68), rgba(255,255,255,.1) 45%, rgba(148,163,184,.14) 100%);border:none;box-shadow:none;border-radius:0;overflow:hidden;"><img src="${photoPath}" class="pet-img-stage" style="width:100%;height:100%;object-fit:contain;border:none;border-radius:0;box-shadow:none;transform:none;filter:contrast(1.12) saturate(1.1) brightness(1.03) drop-shadow(0 10px 12px rgba(15,23,42,.28));" loading="eager" decoding="async" fetchpriority="high" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(s.pet.stage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)"></div>`;
         }
       } else {
         petHtml = '<div class="student-pet-preview pet-empty"><span class="pet-img">🐣</span><small>未领养</small></div>';
