@@ -399,19 +399,7 @@ body::before {
   align-items: center;
 }
 .student-card-v2::after{
-  content:'🌟';
-  position:absolute;
-  top:8px;
-  right:8px;
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background: rgba(255,255,255,.8);
-  box-shadow: 0 4px 10px rgba(255,176,61,.3);
-  font-size:.9rem;
+  content:none;
 }
 .student-card-v2:hover { 
   transform: translateY(-4px); 
@@ -437,41 +425,12 @@ body::before {
   position: relative;
 }
 .student-card-v2.rarity-epic::before,
-.student-card-v2.rarity-legendary::before{
-  content:'';
-  position:absolute;
-  inset:-2px;
-  border-radius:22px;
-  z-index:0;
-  pointer-events:none;
-}
-.student-card-v2.rarity-epic::before{
-  background: conic-gradient(from 120deg, #c4b5fd, #a78bfa, #60a5fa, #c4b5fd);
-  animation: raritySpin 4.5s linear infinite;
-  opacity:.65;
-}
-.student-card-v2.rarity-legendary::before{
-  background: conic-gradient(from 0deg, #fde68a, #f59e0b, #fca5a5, #fde68a);
-  animation: raritySpin 2.8s linear infinite;
-  opacity:.9;
-  filter: saturate(1.1);
-}
-
+.student-card-v2.rarity-legendary::before,
 .student-card-v2.rarity-epic:hover::after,
 .student-card-v2.rarity-legendary:hover::after,
 .student-card-v2.awakened-card:hover::after{
-  content:'';
-  position:absolute;
-  inset:6px;
-  border-radius:16px;
-  background:
-    radial-gradient(circle at 20% 25%, rgba(255,255,255,.9) 0 2px, transparent 3px),
-    radial-gradient(circle at 80% 18%, rgba(255,255,255,.8) 0 2px, transparent 3px),
-    radial-gradient(circle at 70% 78%, rgba(255,247,173,.85) 0 2px, transparent 3px),
-    radial-gradient(circle at 30% 72%, rgba(196,181,253,.8) 0 2px, transparent 3px);
-  mix-blend-mode: screen;
-  pointer-events:none;
-  animation: sparkleFlash .9s ease-in-out infinite;
+  content:none !important;
+  animation:none !important;
 }
 
 .student-card-v2.awakened-card{
