@@ -5313,7 +5313,6 @@
         <div class="student-card-v2 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" style="background: ${theme.bg}; border-color: ${theme.border};" onclick="app.openStudentModal('${safeId}')">
           <div class="student-card-v2-header">
             <span class="student-level" style="color: ${theme.primary}; background: ${theme.bg};">Lv.${s.pet ? (s.pet.stage || 0) : 0}</span>
-            <span class="rarity-badge rarity-${rarity.key}">${rarity.label}${isAwakened ? ' · 觉醒' : ''}</span>
             ${badgeCount > 0 ? `<span class="student-badge-count">🏆${badgeCount}</span>` : ''}
             ${isMaxLevel ? `<span class="student-crown">👑</span>` : ''}
           </div>
