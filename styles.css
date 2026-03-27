@@ -552,30 +552,49 @@ body::before {
   display:flex;
   align-items:center;
   justify-content:center;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.72), rgba(255,255,255,.14) 46%, rgba(148,163,184,.15) 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.84);
+  background: radial-gradient(circle at 22% 16%, rgba(255,255,255,.78), rgba(255,255,255,.18) 42%, rgba(148,163,184,.16) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.86), inset 0 -18px 30px rgba(15,23,42,.08);
   position: relative;
   overflow: hidden;
   border-radius: 0 !important;
   border: none !important;
 }
-.student-card-v2-pet .student-pet-preview::before,
+.student-card-v2-pet .student-pet-preview::before{
+  content:'' !important;
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:34%;
+  background: linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,0));
+  pointer-events:none;
+  z-index:2;
+}
 .student-card-v2-pet .student-pet-preview::after{
-  content:none !important;
+  content:'' !important;
+  position:absolute;
+  right:0;
+  bottom:0;
+  width:36%;
+  height:28%;
+  background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(246,242,232,.92) 40%, rgba(246,242,232,.98) 100%);
+  pointer-events:none;
+  z-index:3;
 }
 .student-card-v2-pet .pet-img { font-size: 5rem; }
 .student-card-v2-pet .pet-img-stage {
   width: 100% !important;
   height: 100% !important;
-  object-fit: contain !important;
+  object-fit: cover !important;
   border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
-  filter: contrast(1.15) saturate(1.1) brightness(1.04) drop-shadow(0 10px 12px rgba(15,23,42,.24));
-  transform: none !important;
+  filter: contrast(1.16) saturate(1.12) brightness(1.05) drop-shadow(0 12px 16px rgba(15,23,42,.28));
+  transform: scale(1.08) !important;
+  transform-origin: center;
 }
 .student-card-v2:hover .pet-img-stage{
-  transform: none !important;
+  transform: scale(1.1) !important;
   box-shadow: none !important;
 }
 .student-card-v2,
