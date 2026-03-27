@@ -407,7 +407,7 @@ body::before {
   border-color: #0ea5e9; 
 }
 .rarity-badge{
-  margin-left:auto;
+  margin-left:0;
   font-size:.72rem;
   font-weight:800;
   padding:3px 8px;
@@ -490,8 +490,18 @@ body::before {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   width: 100%;
   margin-bottom: 8px;
+}
+.student-card-v2-header-right{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:wrap;
+  max-width:65%;
 }
 .student-level {
   font-size: 0.9rem;
