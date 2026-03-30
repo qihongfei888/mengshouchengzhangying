@@ -575,9 +575,13 @@ body::before {
   position:absolute;
   right:0;
   bottom:0;
-  width:55%;
-  height:38%;
-  background: linear-gradient(140deg, rgba(255,255,255,0) 0%, rgba(245,240,228,.94) 38%, rgba(245,240,228,.99) 100%);
+  width:80%;
+  height:52%;
+  background: linear-gradient(145deg,
+    rgba(255,255,255,0) 0%,
+    rgba(244,238,224,.88) 28%,
+    rgba(244,238,224,.97) 55%,
+    rgba(244,238,224,1) 100%);
   pointer-events:none;
   z-index:3;
 }
@@ -589,12 +593,12 @@ body::before {
   border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
-  filter: contrast(1.22) saturate(1.18) brightness(1.06) drop-shadow(0 16px 22px rgba(15,23,42,.36));
-  transform: scale(1.18) !important;
-  transform-origin: center 45%;
+  filter: contrast(1.26) saturate(1.22) brightness(1.06) drop-shadow(0 20px 28px rgba(15,23,42,.42));
+  transform: scale(1.32) !important;
+  transform-origin: center 38%;
 }
 .student-card-v2:hover .pet-img-stage{
-  transform: scale(1.22) !important;
+  transform: scale(1.36) !important;
   box-shadow: none !important;
 }
 .student-card-v2,
