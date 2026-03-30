@@ -576,6 +576,31 @@ body::before {
 .student-card-v3.max-level-card {
   box-shadow: 0 14px 40px rgba(245,158,11,.34), 0 0 24px rgba(253,230,138,.28);
 }
+
+/* 高等级/满级：金色呼吸外发光 */
+.student-card-v3.high-level-card::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:22px;
+  pointer-events:none;
+  z-index:1;
+  box-shadow: 0 0 0 1px rgba(251,191,36,.45), 0 0 14px rgba(245,158,11,.35), 0 0 26px rgba(251,191,36,.22);
+  animation: goldBreathGlow 2.6s ease-in-out infinite;
+}
+.student-card-v3.max-level-card::before {
+  box-shadow: 0 0 0 1px rgba(253,224,71,.72), 0 0 20px rgba(245,158,11,.55), 0 0 34px rgba(253,224,71,.35);
+  animation: goldBreathGlowStrong 1.8s ease-in-out infinite;
+}
+@keyframes goldBreathGlow {
+  0%,100%{ box-shadow: 0 0 0 1px rgba(251,191,36,.35), 0 0 10px rgba(245,158,11,.28), 0 0 20px rgba(251,191,36,.16); }
+  50%{ box-shadow: 0 0 0 1px rgba(253,224,71,.75), 0 0 24px rgba(245,158,11,.58), 0 0 44px rgba(253,224,71,.34); }
+}
+@keyframes goldBreathGlowStrong {
+  0%,100%{ box-shadow: 0 0 0 1px rgba(253,224,71,.58), 0 0 16px rgba(245,158,11,.45), 0 0 30px rgba(253,224,71,.24); }
+  50%{ box-shadow: 0 0 0 1px rgba(254,240,138,.95), 0 0 30px rgba(245,158,11,.75), 0 0 56px rgba(254,240,138,.46); }
+}
+
 .student-card-v3.max-level-card .sc3-pet-img,
 .sc3-pet-img.max-level-img {
   transform: scale(1.16);
@@ -595,7 +620,32 @@ body::before {
   z-index:2;
 }
 
-/* 顶部悬浮信息栏 */
+/* 高等级神兽图特效（70%阶段及以上） */
+.sc3-pet-img.high-level-img {
+  filter: contrast(1.24) saturate(1.24) brightness(1.1) drop-shadow(0 16px 22px rgba(56,189,248,.28));
+}
+.student-card-v3:hover .sc3-pet-img.high-level-img {
+  transform: scale(1.1);
+  filter: contrast(1.28) saturate(1.28) brightness(1.14) drop-shadow(0 20px 30px rgba(56,189,248,.36));
+}
+.student-card-v3.high-level-card .sc3-photo::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255,255,255,.18), transparent 32%),
+    radial-gradient(circle at 78% 22%, rgba(125,211,252,.16), transparent 30%),
+    radial-gradient(circle at 55% 82%, rgba(196,181,253,.14), transparent 36%);
+  mix-blend-mode: screen;
+  pointer-events:none;
+  z-index:2;
+  animation: highLevelAura 2.8s ease-in-out infinite;
+}
+@keyframes highLevelAura {
+  0%,100%{ opacity:.45; }
+  50%{ opacity:.92; }
+}
+
 .sc3-top-bar {
   position: absolute;
   top: 0; left: 0; right: 0;
