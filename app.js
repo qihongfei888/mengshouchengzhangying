@@ -4277,11 +4277,57 @@
       const b = this._quizBattle;
       const leftName = (b.mode === 'group' ? this.groups.find(g => g.id === b.targetA)?.name : this.students.find(s => s.id === b.targetA)?.name) || 'A方';
       const rightName = (b.mode === 'group' ? this.groups.find(g => g.id === b.targetB)?.name : this.students.find(s => s.id === b.targetB)?.name) || 'B方';
-      stage.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-        <div style="flex:1;text-align:center;padding:8px;border-radius:10px;background:#fff;border:1px solid #ffcf9f;"><div style="font-size:22px;">⚔️</div><strong>${this.escape(leftName)}</strong></div>
-        <div style="font-size:18px;font-weight:900;color:#8B1A1A;">🗡️ VS 🛡️</div>
-        <div style="flex:1;text-align:center;padding:8px;border-radius:10px;background:#fff;border:1px solid #ffcf9f;"><div style="font-size:22px;">⚔️</div><strong>${this.escape(rightName)}</strong></div>
+      // 获取神兽图片和信息
+      const getPetInfo = (targetId, mode) => {
+        if (mode === 'group') {
+          // 小组模式：取小组成员中积分最高学生的神兽
+          const g = this.groups.find(x => x.id === targetId);
+          if (!g) return null;
+          const members = (g.memberIds || []).map(id => this.students.find(s => s.id === id)).filter(Boolean);
+          const top = members.sort((a, b) => (b.points || 0) - (a.points || 0))[0];
+          return top ? this._buildPetCardInfo(top) : null;
+        } else {
+          const s = this.students.find(x => x.id === targetId);
+          return s ? this._buildPetCardInfo(s) : null;
+        }
+      };
+      const leftPet = getPetInfo(b.targetA, b.mode);
+      const rightPet = getPetInfo(b.targetB, b.mode);
+      const renderPetCard = (name, pet, side) => {
+        const sideColor = side === 'A' ? '#ffd09a' : '#a5d8ff';
+        const sideBg = side === 'A' ? 'linear-gradient(135deg,#fff7ef,#ffe8cc)' : 'linear-gradient(135deg,#eff8ff,#d0ebff)';
+        const sideIcon = side === 'A' ? '⚔️' : '🛡️';
+        if (!pet) return `<div style="flex:1;text-align:center;padding:12px;border-radius:14px;background:${sideBg};border:2px solid ${sideColor};"><div style="font-size:26px;">${sideIcon}</div><strong style="display:block;margin-top:4px;font-size:1rem;">${this.escape(name)}</strong><div style="font-size:11px;color:#888;margin-top:4px;">暂无神兽</div></div>`;
+        return `<div style="flex:1;text-align:center;padding:10px;border-radius:14px;background:${sideBg};border:2px solid ${sideColor};position:relative;overflow:hidden;">
+          ${pet.photoPath ? `<img src="${pet.photoPath}" style="width:72px;height:72px;object-fit:cover;border-radius:12px;border:2px solid ${sideColor};display:block;margin:0 auto 6px;filter:contrast(1.14) saturate(1.12) brightness(1.06) drop-shadow(0 4px 8px rgba(0,0,0,.25));" loading="eager" decoding="async" onerror="this.style.display='none'">` : `<div style="font-size:42px;line-height:1;margin-bottom:4px;">${pet.icon}</div>`}
+          <strong style="display:block;font-size:1rem;color:#1e293b;">${this.escape(name)}</strong>
+          <div style="font-size:12px;color:#8B1A1A;font-weight:700;margin:2px 0;">${this.escape(pet.typeName)} · Lv.${pet.stage}</div>
+          <div style="font-size:11px;color:#64748b;line-height:1.5;margin-top:3px;">${this.escape(pet.intro)}</div>
+          <div style="display:flex;justify-content:center;gap:8px;margin-top:6px;">
+            <span style="font-size:11px;background:rgba(245,158,11,.15);border-radius:999px;padding:2px 8px;color:#b45309;">🍖 ${pet.points}分</span>
+            <span style="font-size:11px;background:rgba(139,92,246,.12);border-radius:999px;padding:2px 8px;color:#6d28d9;">💞 ${pet.affinity}</span>
+          </div>
+        </div>`;
+      };
+      stage.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        ${renderPetCard(leftName, leftPet, 'A')}
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;"><span style="font-size:22px;font-weight:900;color:#8B1A1A;">🗡️</span><span style="font-size:14px;font-weight:900;color:#8B1A1A;">VS</span><span style="font-size:22px;">🛡️</span></div>
+        ${renderPetCard(rightName, rightPet, 'B')}
       </div>`;
+    },
+
+    _buildPetCardInfo(s) {
+      if (!s || !s.pet || !s.pet.typeId) return null;
+      const totalStages = this.getTotalStages();
+      const stage = s.pet.stage || 0;
+      const renderStage = stage >= totalStages ? 5 : Math.max(1, stage);
+      const photoPath = this.getStagePhotoPath(s.pet.typeId, renderStage);
+      const typeMap = {qinglong:'青龙',baihu:'白虎',zhuque:'朱雀',xuanwu:'玄武',fenghuang:'凤凰',qinlin:'麒麟',qilin:'麒麟',pixiu:'貔貅',yinglong:'应龙',zhulong:'烛龙',taotie:'饕餮',hundun:'混沌',jiuweihu:'九尾狐',jingwei:'精卫',jinwu:'金乌',yutu:'玉兔',xiezhi:'獬豸',baize:'白泽',tiangou:'天狗',bifang:'毕方',shanxiao:'山魈'};
+      const typeObj = (window.PET_TYPES || []).find(t => t.id === s.pet.typeId);
+      const typeName = (typeObj && typeObj.name) || typeMap[s.pet.typeId] || '神兽';
+      const intro = (typeObj && typeObj.desc) || (window.BEAST_DESC && window.BEAST_DESC[s.pet.typeId]) || `${typeName}，与主人共同成长的神兽伙伴。`;
+      const icon = (typeObj && typeObj.icon) || '🐾';
+      return { photoPath, icon, typeName, stage, intro: intro.slice(0, 38), points: s.points || 0, affinity: s.pet.affinity || 0 };
     },
 
     renderQuizTargets() {
@@ -5242,6 +5288,7 @@
       const currentStage = s.pet ? (s.pet.stage || 0) : 0;
       const stageNeed = this.getStagePointsByStage(currentStage || 1);
       const theme = this.getCardThemeByLevel(currentStage);
+      const isHighLevelStage = !!(s.pet && currentStage >= Math.max(3, Math.ceil(totalStages * 0.7)));
       
       if (s.pet) {
         if (!s.pet.typeId) {
@@ -5251,7 +5298,7 @@
         } else {
           const renderStage = (s.pet.stage || 0) >= totalStages ? 5 : (s.pet.stage || 1);
           const photoPath = this.getStagePhotoPath(s.pet.typeId, renderStage);
-          petHtml = `<img src="${photoPath}" class="sc3-pet-img${(s.pet.stage || 0) >= totalStages ? ' max-level-img' : ''}" loading="${idx < 6 ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${idx < 2 ? 'high' : 'auto'}" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(renderStage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)">`;
+          petHtml = `<img src="${photoPath}" class="sc3-pet-img${isHighLevelStage ? ' high-level-img' : ''}${(s.pet.stage || 0) >= totalStages ? ' max-level-img' : ''}" loading="${idx < 6 ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${idx < 2 ? 'high' : 'auto'}" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(renderStage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)">`;
         }
       } else {
         petHtml = `<div class="sc3-empty"><span>🐣</span><small>未领养</small></div>`;
@@ -5322,7 +5369,7 @@
       const safeId = String(s.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
       const petTypeName = s.pet ? (s.pet.isCustom ? (s.pet.customName || '自定义') : (((window.PET_TYPES || []).find(t => t.id === s.pet.typeId) || {}).name || ({qinglong:'青龙',baihu:'白虎',zhuque:'朱雀',xuanwu:'玄武',fenghuang:'凤凰',qinlin:'麒麟',qilin:'麒麟',pixiu:'貔貅',yinglong:'应龙',zhulong:'烛龙',taotie:'饕餮',hundun:'混沌',jiuweihu:'九尾狐',jingwei:'精卫',jinwu:'金乌',yutu:'玉兔',xiezhi:'獬豸',baize:'白泽',tiangou:'天狗',bifang:'毕方',shanxiao:'山魈'})[s.pet.typeId] || '神兽')) : '未领养';
       return `
-        <div class="student-card-v3 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''} ${isMaxLevel ? 'max-level-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" onclick="app.openStudentModal('${safeId}')">
+        <div class="student-card-v3 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''} ${isHighLevelStage ? 'high-level-card' : ''} ${isMaxLevel ? 'max-level-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" onclick="app.openStudentModal('${safeId}')">
           <div class="sc3-photo">
             ${petHtml}
             <div class="sc3-top-bar">
