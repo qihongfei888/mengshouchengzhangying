@@ -5236,15 +5236,15 @@
       
       if (s.pet) {
         if (!s.pet.typeId) {
-          petHtml = `<div class="student-pet-preview"></div>`;
+          petHtml = `<div class="sc3-empty"><span>🐾</span><small>待领养</small></div>`;
         } else if (s.pet.isBrokenEgg) {
-          petHtml = `<div class="student-pet-preview pet-empty"><span class="pet-img">🥚💥</span><small>宠物蛋碎裂</small></div>`;
+          petHtml = `<div class="sc3-empty"><span>🥚💥</span><small>宠物蛋碎裂</small></div>`;
         } else {
           const photoPath = this.getStagePhotoPath(s.pet.typeId, s.pet.stage || 1);
-          petHtml = `<div class="student-pet-preview" style="background:transparent;border:none;box-shadow:none;border-radius:0;overflow:hidden;position:relative;"><img src="${photoPath}" class="pet-img-stage" style="width:100%;height:100%;border:none;border-radius:0;box-shadow:none;transform:none;" loading="eager" decoding="async" fetchpriority="high" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(s.pet.stage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)"></div>`;
+          petHtml = `<img src="${photoPath}" class="sc3-pet-img" loading="eager" decoding="async" fetchpriority="high" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(s.pet.stage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)">`;
         }
       } else {
-        petHtml = '<div class="student-pet-preview pet-empty"><span class="pet-img">🐣</span><small>未领养</small></div>';
+        petHtml = `<div class="sc3-empty"><span>🐣</span><small>未领养</small></div>`;
       }
       
       // 计算进度百分比和还需积分
@@ -5307,43 +5307,33 @@
       const isAwakened = (s.points || 0) >= awakenThreshold;
       if (s.pet && s.pet.typeId) this.preloadPetStageImages(s.pet.typeId, s.pet.stage || 1);
       
-      // 按照设计图重新设计学生卡片
+      // 重新设计：神兽图片全屏占主角，底部信息浮层
       const safeId = String(s.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const petTypeName = s.pet ? (s.pet.isCustom ? (s.pet.customName || '自定义') : (((window.PET_TYPES || []).find(t => t.id === s.pet.typeId) || {}).name || ({qinglong:'青龙',baihu:'白虎',zhuque:'朱雀',xuanwu:'玄武',fenghuang:'凤凰',qinlin:'麒麟',qilin:'麒麟',pixiu:'貔貅',yinglong:'应龙',zhulong:'烛龙',taotie:'饕餮',hundun:'混沌',jiuweihu:'九尾狐',jingwei:'精卫',jinwu:'金乌',yutu:'玉兔',xiezhi:'獬豸',baize:'白泽',tiangou:'天狗',bifang:'毕方',shanxiao:'山魈'})[s.pet.typeId] || '神兽')) : '未领养';
       return `
-        <div class="student-card-v2 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" style="background: ${theme.bg}; border-color: ${theme.border};" onclick="app.openStudentModal('${safeId}')">
-          <div class="student-card-v2-header">
-            <span class="student-level" style="color: ${theme.primary}; background: ${theme.bg};">Lv.${s.pet ? (s.pet.stage || 0) : 0}</span>
-            <div class="student-card-v2-header-right">
-              <span class="rarity-badge rarity-${rarity.key}">${rarity.label}${isAwakened ? ' · 觉醒' : ''}</span>
-              ${badgeCount > 0 ? `<span class="student-badge-count">🏆${badgeCount}</span>` : ''}
-              ${isMaxLevel ? `<span class="student-crown">👑</span>` : ''}
-            </div>
-          </div>
-          <div class="student-card-v2-pet">
+        <div class="student-card-v3 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" onclick="app.openStudentModal('${safeId}')">
+          <div class="sc3-photo">
             ${petHtml}
-          </div>
-          <div class="student-card-v2-info">
-            <div class="student-name-row">
-              <span class="student-name-v2" style="color: ${theme.primary};">${this.escape(s.name)}</span>
-              ${s.pet ? `<span class="student-pet-type">${this.escape(s.pet.isCustom ? (s.pet.customName || '自定义') : (((window.PET_TYPES || []).find(t => t.id === s.pet.typeId) || {}).name || ({qinglong:'青龙',baihu:'白虎',zhuque:'朱雀',xuanwu:'玄武',fenghuang:'凤凰',qinlin:'麒麟',qilin:'麒麟',pixiu:'貔貅',yinglong:'应龙',zhulong:'烛龙',taotie:'饕餮',hundun:'混沌',jiuweihu:'九尾狐',jingwei:'精卫',jinwu:'金乌',yutu:'玉兔',xiezhi:'獬豸',baize:'白泽',tiangou:'天狗',bifang:'毕方',shanxiao:'山魈'})[s.pet.typeId] || '神兽'))}</span>` : '<span class="student-pet-type">未领养</span>'}
+            <div class="sc3-top-bar">
+              <span class="sc3-level" style="color:${theme.primary};">Lv.${s.pet ? (s.pet.stage || 0) : 0}</span>
+              <div class="sc3-badges">
+                <span class="rarity-badge rarity-${rarity.key}">${rarity.label}${isAwakened ? '⚡' : ''}</span>
+                ${badgeCount > 0 ? `<span class="sc3-trophy">🏆${badgeCount}</span>` : ''}
+                ${isMaxLevel ? `<span class="sc3-crown">👑</span>` : ''}
+              </div>
             </div>
-            ${extraInfoHtml}
-            <div class="student-progress-row">
-              <span class="progress-label">${needPointsText}</span>
-              <span class="progress-status">${progressText}</span>
+            <div class="sc3-bottom-info">
+              <div class="sc3-name-row">
+                <span class="sc3-name">${this.escape(s.name)}</span>
+                <span class="sc3-pet-name">${this.escape(petTypeName)}</span>
+              </div>
+              <div class="sc3-progress-bar"><div class="sc3-progress-fill" style="width:${progressPercent}%;background:${theme.primary};"></div></div>
+              <div class="sc3-footer">
+                <span class="sc3-points ${feedClass}" ${feedAction}>🍖 ${s.points ?? 0}</span>
+                <span class="sc3-stage">${progressText}</span>
+                ${s.pet ? `<button class="sc3-btn" onclick="event.stopPropagation();app.interactWithPet('${safeId}')">✨</button>` : ''}
+              </div>
             </div>
-            ${s.pet ? `<div class="pet-affinity-row"><span>💞 亲密度 ${affinity}</span><span>${affinityFace} ${affinityTitle}</span></div>` : ''}
-            <div class="student-progress-bar">
-              <div class="progress-fill" style="width: ${progressPercent}%; background: ${theme.primary};"></div>
-            </div>
-            <div class="student-points-row ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '积分不足或已满级'}">
-              <span class="points-icon">🍖</span>
-              <span class="points-value">${s.points ?? 0}</span>
-            </div>
-          </div>
-          <div class="student-card-v2-actions">
-            ${s.pet ? `<button class="btn btn-small" onclick="event.stopPropagation(); app.interactWithPet('${safeId}')">✨ 互动</button>` : ''}
-            ${s.pet ? `<button class="btn btn-small" onclick="event.stopPropagation(); app.dressUpPet('${safeId}')">🎀 装扮</button>` : ''}
           </div>
         </div>`;
     },
