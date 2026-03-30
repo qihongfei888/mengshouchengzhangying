@@ -327,7 +327,7 @@
   
   const APP_NAMESPACE = 'mengshou';
   const nsKey = (suffix) => `${APP_NAMESPACE}_${suffix}`;
-
+  
   const STORAGE_KEYS = {
     students: nsKey('students'),
     systemName: nsKey('system_name'),
@@ -2786,7 +2786,7 @@
         if (statusEl) statusEl.textContent = '云同步状态：⚠️ 本次未发生数据变更';
       }
     },
-
+    
     // 从云存储同步授权码（无需用户ID），使用 Supabase
     async syncLicensesFromCloud() {
       if (!navigator.onLine) {
@@ -3607,14 +3607,14 @@
         }, 60 * 60 * 1000);
         this.startPhotoQueueProcessor();
       }
-
-      console.log('应用初始化完成');
+        
+        console.log('应用初始化完成');
     },
 
     getStagePointsByStage(stage) {
       // 缓存班级数据，避免每张卡片都读一次localStorage
       if (!this._stageCache || this._stageCacheClassId !== this.currentClassId) {
-        const data = getUserData();
+      const data = getUserData();
         const currentClass = data.classes && this.currentClassId
           ? data.classes.find(c => c.id === this.currentClassId)
           : null;
@@ -4988,7 +4988,7 @@
         btn.dataset.boundNav = '1';
         btn.addEventListener('click', () => this.showPage(btn.dataset.page));
       });
-
+      
       // 学生卡片点击事件委托（只绑定一次，避免inline onclick失效）
       const studentList = document.getElementById('studentList');
       if (studentList && !studentList.dataset.boundCard) {
@@ -5240,8 +5240,9 @@
         } else if (s.pet.isBrokenEgg) {
           petHtml = `<div class="sc3-empty"><span>🥚💥</span><small>宠物蛋碎裂</small></div>`;
         } else {
-          const photoPath = this.getStagePhotoPath(s.pet.typeId, s.pet.stage || 1);
-          petHtml = `<img src="${photoPath}" class="sc3-pet-img" loading="eager" decoding="async" fetchpriority="high" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(s.pet.stage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)">`;
+          const renderStage = (s.pet.stage || 0) >= totalStages ? 5 : (s.pet.stage || 1);
+          const photoPath = this.getStagePhotoPath(s.pet.typeId, renderStage);
+          petHtml = `<img src="${photoPath}" class="sc3-pet-img${(s.pet.stage || 0) >= totalStages ? ' max-level-img' : ''}" loading="eager" decoding="async" fetchpriority="high" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(renderStage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)">`;
         }
       } else {
         petHtml = `<div class="sc3-empty"><span>🐣</span><small>未领养</small></div>`;
@@ -5312,28 +5313,29 @@
       const safeId = String(s.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
       const petTypeName = s.pet ? (s.pet.isCustom ? (s.pet.customName || '自定义') : (((window.PET_TYPES || []).find(t => t.id === s.pet.typeId) || {}).name || ({qinglong:'青龙',baihu:'白虎',zhuque:'朱雀',xuanwu:'玄武',fenghuang:'凤凰',qinlin:'麒麟',qilin:'麒麟',pixiu:'貔貅',yinglong:'应龙',zhulong:'烛龙',taotie:'饕餮',hundun:'混沌',jiuweihu:'九尾狐',jingwei:'精卫',jinwu:'金乌',yutu:'玉兔',xiezhi:'獬豸',baize:'白泽',tiangou:'天狗',bifang:'毕方',shanxiao:'山魈'})[s.pet.typeId] || '神兽')) : '未领养';
       return `
-        <div class="student-card-v3 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" onclick="app.openStudentModal('${safeId}')">
+        <div class="student-card-v3 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''} ${isMaxLevel ? 'max-level-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" onclick="app.openStudentModal('${safeId}')">
           <div class="sc3-photo">
             ${petHtml}
             <div class="sc3-top-bar">
               <span class="sc3-level" style="color:${theme.primary};">Lv.${s.pet ? (s.pet.stage || 0) : 0}</span>
               <div class="sc3-badges">
                 <span class="rarity-badge rarity-${rarity.key}">${rarity.label}${isAwakened ? '⚡' : ''}</span>
+                ${isMaxLevel ? `<span class="sc3-max">MAX</span>` : ''}
                 ${badgeCount > 0 ? `<span class="sc3-trophy">🏆${badgeCount}</span>` : ''}
                 ${isMaxLevel ? `<span class="sc3-crown">👑</span>` : ''}
-              </div>
+          </div>
             </div>
             <div class="sc3-bottom-info">
               <div class="sc3-name-row">
                 <span class="sc3-name">${this.escape(s.name)}</span>
                 <span class="sc3-pet-name">${this.escape(petTypeName)}</span>
-              </div>
+            </div>
               <div class="sc3-progress-bar"><div class="sc3-progress-fill" style="width:${progressPercent}%;background:${theme.primary};"></div></div>
               <div class="sc3-footer">
                 <span class="sc3-points ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '积分不足或已满级'}">🍖 ${s.points ?? 0}</span>
                 <span class="sc3-stage">${progressText}</span>
                 ${s.pet ? `<button class="sc3-btn" onclick="event.stopPropagation();app.interactWithPet('${s.id.replace(/'/g, "\\'")}')">✨</button>` : ''}
-              </div>
+            </div>
             </div>
           </div>
         </div>`;
@@ -5366,7 +5368,7 @@
                 <p><strong>宠物进度</strong>：第 ${stage}/${totalStages} 阶段，本阶段 ${progress}/${need} 分</p>
                 <p><strong>亲密度</strong>：${s.pet.affinity || 0}（${this.getPetAffinityTitle(s.pet.affinity || 0)}）</p>
                 ${intro ? `<p class="text-muted" style="margin-top:4px;">📜 ${this.escape(intro)}</p>` : ''}
-              </div>
+            </div>
             </div>
             ${canFeed ? `<button class="btn feed-btn" onclick="app.feedStudentInModal('${s.id}')">${foodLabel} 喂食（消耗1积分）</button>` : '<p class="text-muted">积分不足或已满级</p>'}
             <button class="btn btn-outline" style="margin-top:8px;" onclick="app.interactWithPet('${s.id}')">💬 抚摸互动</button>
@@ -5942,34 +5944,6 @@
       setTimeout(() => flash.remove(), 800);
     },
 
-    // 显示加分减分特效
-    showScoreEffect(studentId, delta) {
-      const card = document.querySelector('.student-card-v3[data-student-id="' + studentId + '"], .student-card-v2[data-student-id="' + studentId + '"]');
-      if (!card) return;
-      
-      const pointsRow = card.querySelector('.sc3-points, .student-points-row');
-      const rect = (pointsRow || card).getBoundingClientRect();
-      const effect = document.createElement('div');
-      effect.className = 'score-effect';
-      effect.textContent = delta > 0 ? `+${delta}` : `${delta}`;
-      effect.style.left = rect.left + rect.width / 2 - 20 + 'px';
-      effect.style.top = rect.top + 'px';
-      effect.style.fontSize = '1.5rem';
-      effect.style.fontWeight = 'bold';
-      effect.style.color = delta > 0 ? '#4ECDC4' : '#FF6B6B';
-      effect.style.textShadow = delta > 0 ? '0 0 10px #4ECDC4' : '0 0 10px #FF6B6B';
-      document.body.appendChild(effect);
-      effect.style.animation = delta > 0 ? 'scoreUp 1.2s ease-out forwards' : 'scoreDown 1.2s ease-out forwards';
-      
-      // 加分时卡片闪光
-      if (delta > 0) {
-        card.classList.add('sc3-feed-flash');
-        setTimeout(() => card.classList.remove('sc3-feed-flash'), 500);
-      }
-      
-      setTimeout(() => effect.remove(), 1200);
-    },
-
     interactWithPet(studentId) {
       const s = this.students.find(x => x.id === studentId);
       if (!s || !s.pet) return;
@@ -5997,13 +5971,13 @@
       const container = document.getElementById('effectContainer');
       if (container) {
         for (let i = 0; i < 4; i++) {
-          const el = document.createElement('div');
-          el.className = 'interact-effect';
-          el.textContent = ['💕', '✨', '🌟', '😊'][Math.floor(Math.random() * 4)];
+        const el = document.createElement('div');
+        el.className = 'interact-effect';
+        el.textContent = ['💕', '✨', '🌟', '😊'][Math.floor(Math.random() * 4)];
           el.style.left = (32 + Math.random() * 36) + '%';
           el.style.top = (22 + Math.random() * 30) + '%';
           el.style.animationDelay = (i * 0.08) + 's';
-          container.appendChild(el);
+        container.appendChild(el);
           setTimeout(function () { el.remove(); }, 1100);
         }
       }
@@ -6035,7 +6009,7 @@
       
       let stage = s.pet.stage || 1;
       let progress = (s.pet.stageProgress || 0) + pts;
-      
+
       // 按阶段积分逐级升级
       while (stage < totalStages) {
         const need = this.getStagePointsByStage(stage);
@@ -6070,7 +6044,7 @@
       badge.innerHTML = `<div class="upgrade-main">🐉 Lv.${stage}</div><div class="upgrade-sub">${this.escape(studentName || '神兽')} 进化成功！</div>`;
       container.appendChild(badge);
 
-      for (let i = 0; i < 18; i++) {
+        for (let i = 0; i < 18; i++) {
         const s = document.createElement('div');
         s.className = 'upgrade-spark';
         s.textContent = ['✨','🌟','💖','🎉'][Math.floor(Math.random() * 4)];
@@ -6197,9 +6171,9 @@
     // 语音播报
     speak(text) {
       if (!('speechSynthesis' in window)) return;
-      const speech = new SpeechSynthesisUtterance(text);
-      speech.lang = 'zh-CN';
-      speech.volume = 1;
+        const speech = new SpeechSynthesisUtterance(text);
+        speech.lang = 'zh-CN';
+        speech.volume = 1;
       speech.rate = 0.95;
       speech.pitch = 1.08;
       const pickVoice = () => {
@@ -6369,7 +6343,7 @@
           document.getElementById('petChooseSection').innerHTML = '';
         } else {
           const stage = s.pet.stage || 0;
-          const isComplete = stage >= totalStages;
+        const isComplete = stage >= totalStages;
           if (isComplete) {
             let petDisplay, petName;
             if (s.pet.isCustom && s.pet.customImage) {
@@ -6434,7 +6408,7 @@
               petName = PHOTO_TYPE_NAME_MAP[type.id] || (breed && breed.name) || (type && type.name) || '宠物';
               foodStr = type && type.food ? type.food : '🍖';
             }
-            const progress = s.pet.stageProgress || 0;
+        const progress = s.pet.stageProgress || 0;
             const need = this.getStagePointsByStage(stage || 1);
             const pct = need ? Math.min(100, (progress / need) * 100) : 0;
             const borderStyle = STAGE_BORDERS[Math.min(stage, STAGE_BORDERS.length - 1)];
@@ -6442,24 +6416,24 @@
             // 显示喂食按钮（如果还未完成）
             const canFeed = (s.points || 0) >= 1 && !isComplete && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead;
             const feedButton = canFeed ? `<button class="btn feed-pet-btn btn-primary" onclick="app.feedPet('${s.id}',1); app.showEatEffect(); app.renderPetAdopt();">${foodStr} 喂食（消耗1积分）</button>` : '<p class="text-muted">积分不足无法喂食</p>';
-            
-            document.getElementById('currentStudentPetInfo').innerHTML = `
-              <div class="pet-growth-area">
+
+        document.getElementById('currentStudentPetInfo').innerHTML = `
+          <div class="pet-growth-area">
                 <p><strong>${this.escape(s.name)}</strong> 的神兽（已领养，不可更换）</p>
                 <div class="pet-display-box" style="border: ${borderStyle}">
                   ${petDisplayContent || petDisplay}
                   <span>${petName}</span>
                   <p>第 ${stage}/${totalStages} 阶段</p>
-                  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
                   <p>${progress}/${need} 积分</p>
                   ${!isComplete ? feedButton : '<p class="text-success">已完成全部升级！</p>'}
-                </div>
-              </div>`;
-            document.getElementById('petChooseSection').innerHTML = '';
-          }
+            </div>
+          </div>`;
+        document.getElementById('petChooseSection').innerHTML = '';
+      }
         }
       } else {
-        const completedList = (s.completedPets || []).map(cp => {
+      const completedList = (s.completedPets || []).map(cp => {
           if (cp.isCustom) {
             return { icon: '🐾', name: cp.customName || '自定义宠物' };
           }
@@ -6469,7 +6443,7 @@
         });
         const completedTip = completedList.length ? `<p class="completed-pets-tip">已养成宠物：${completedList.map(c => c.icon + ' ' + this.escape(c.name)).join('、')}</p>` : '';
         document.getElementById('currentStudentPetInfo').innerHTML = `<p><strong>${this.escape(s.name)}</strong> 选择要领养的新宠物</p>${completedTip}`;
-        let optionsHtml = '<div class="pet-adopt-options">';
+      let optionsHtml = '<div class="pet-adopt-options">';
         if (window.PET_TYPES && window.PET_TYPES.length > 0) {
           const petTypeMap = new Map(window.PET_TYPES.map(t => [t.id, t]));
           PHOTO_TYPE_IDS.forEach(typeId => {
@@ -6479,29 +6453,29 @@
             const breedIcon = defaultBreed ? defaultBreed.icon : (type.icon || '🐾');
             const breedName = PHOTO_TYPE_NAME_MAP[type.id] || (defaultBreed ? defaultBreed.name : type.name);
             const photoPath = `photos/${type.id}/stage3.jpg`;
-            optionsHtml += `
+          optionsHtml += `
               <div class="pet-breed-option" data-type="${type.id}" data-breed="${breedId}" data-food="${this.escape(type.food)}">
                 <img src="${photoPath}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 8px;" loading="eager" decoding="async" data-type-id="${type && type.id ? type.id : ''}" data-stage="3" onerror="app.handleStagePhotoError(this)">
                 <span class="breed-icon" style="display:none">${breedIcon}</span>
                 <span class="breed-name">${this.escape(breedName || type.name)}</span>
-              </div>`;
-          });
-        } else {
+            </div>`;
+        });
+      } else {
           optionsHtml += '<p class="placeholder-text">宠物类型数据未加载</p>';
-        }
-        optionsHtml += '</div>';
-        document.getElementById('petChooseSection').innerHTML = optionsHtml;
-        document.getElementById('petChooseSection').querySelectorAll('.pet-breed-option').forEach(node => {
-          node.addEventListener('click', () => {
+      }
+      optionsHtml += '</div>';
+      document.getElementById('petChooseSection').innerHTML = optionsHtml;
+      document.getElementById('petChooseSection').querySelectorAll('.pet-breed-option').forEach(node => {
+        node.addEventListener('click', () => {
             const typeId = node.dataset.type;
             const breedId = node.dataset.breed;
             if (!s) return;
             s.pet = { typeId, breedId, stage: 1, stageProgress: 0, hatching: false, isCustom: false };
-            this.saveStudents();
-            this.renderPetAdopt();
-            this.renderStudents();
-          });
+          this.saveStudents();
+          this.renderPetAdopt();
+          this.renderStudents();
         });
+      });
       }
     },
 
@@ -7710,26 +7684,26 @@
         namesBox.innerHTML = '';
         for (let i = 0; i < 26; i++) {
           const s = all[Math.floor(Math.random() * all.length)];
-          const el = document.createElement('div');
-          el.className = 'rollcall-name';
+        const el = document.createElement('div');
+        el.className = 'rollcall-name';
           const angle = i * 0.7 + tick * 0.08;
           const radius = 18 + i * 5.2;
-          const x = Math.cos(angle) * radius;
-          const y = Math.sin(angle) * radius;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
           el.style.transform = `translate(${x}px, ${y}px)`;
           el.style.color = i % 2 ? '#ffd08a' : '#fff';
           el.textContent = s ? s.name : '';
-          namesBox.appendChild(el);
+        namesBox.appendChild(el);
         }
       }, 90);
 
       setTimeout(() => {
         clearInterval(interval);
-        const result = document.createElement('div');
-        result.className = 'rollcall-display rollcall-display-final';
+          const result = document.createElement('div');
+          result.className = 'rollcall-display rollcall-display-final';
         result.style.cssText = 'font-size:2rem;color:#ffd08a;text-shadow:0 0 14px #ff9f40;';
         result.innerHTML = `${chosen.avatar || '🌟'} ${this.escape(chosen.name)}`;
-        overlay.querySelector('.rollcall-spiral').appendChild(result);
+          overlay.querySelector('.rollcall-spiral').appendChild(result);
         this.speak(`请${chosen.name}开始挑战`);
       }, 2600);
 
@@ -10055,12 +10029,12 @@
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
-
+        
         if (!rows || rows.length === 0) {
           alert('Excel文件中没有数据');
           return;
         }
-
+        
         // 确保当前班级已定位（避免导入写入到“无班级上下文”导致列表不显示）
         const u0 = getUserData();
         if (!this.currentClassId) {
@@ -10135,7 +10109,7 @@
           });
           successCount++;
         }
-
+        
         if (students.length > 0) {
           this.students = (Array.isArray(this.students) ? this.students : []).concat(students);
 
@@ -10158,7 +10132,7 @@
           this.renderHonor();
           this.renderStudentManage();
           this.loadBadgeAwardStudents();
-
+          
           let msg = `成功导入 ${successCount} 名学生`;
           if (skipCount > 0) msg += `，跳过 ${skipCount} 条重复记录`;
           
@@ -11672,7 +11646,7 @@
               console.log('自动登录时从云端同步数据（登录场景保护：本地有数据则不覆盖）...');
               // 登录阶段不做阻塞式云拉取，避免卡在转圈
               await Promise.resolve(false);
- // 若 syncFromCloud 内触发“其他设备已登录”并 forceLogout，则不再进入应用
+              // 若 syncFromCloud 内触发“其他设备已登录”并 forceLogout，则不再进入应用
               if (!app.currentUserId) return;
             } catch (e) {
               console.error('云端同步失败，使用本地数据:', e);
