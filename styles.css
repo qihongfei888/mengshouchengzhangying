@@ -425,6 +425,139 @@ body::before {
 }
 .student-card-v3.rarity-epic { box-shadow: 0 8px 28px rgba(139,92,246,.35), 0 2px 6px rgba(139,92,246,.18); }
 .student-card-v3.rarity-legendary { box-shadow: 0 8px 28px rgba(245,158,11,.38), 0 2px 6px rgba(245,158,11,.22); }
+
+/* ===== V3 卡片级别动态效果 ===== */
+
+/* 普通级别：轻微浮动 */
+.student-card-v3.rarity-common {
+  animation: sc3Float 4s ease-in-out infinite;
+}
+@keyframes sc3Float {
+  0%,100%{ transform: translateY(0); }
+  50%{ transform: translateY(-4px); }
+}
+
+/* 稀有：蓝色边框呼吸光 */
+.student-card-v3.rarity-rare::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:22px;
+  box-shadow: inset 0 0 0 2px rgba(96,165,250,.7);
+  animation: sc3RareGlow 2.4s ease-in-out infinite;
+  pointer-events:none;
+  z-index:5;
+}
+@keyframes sc3RareGlow {
+  0%,100%{ box-shadow: inset 0 0 0 2px rgba(96,165,250,.4), 0 0 12px rgba(96,165,250,.2); }
+  50%{ box-shadow: inset 0 0 0 2.5px rgba(96,165,250,.9), 0 0 22px rgba(96,165,250,.45); }
+}
+
+/* 史诗：紫色流光边框 */
+.student-card-v3.rarity-epic::after {
+  content:'';
+  position:absolute;
+  inset:-1px;
+  border-radius:23px;
+  background: conic-gradient(from 0deg, rgba(167,139,250,0), rgba(167,139,250,.9) 20%, rgba(96,165,250,.7) 40%, rgba(167,139,250,.9) 60%, rgba(167,139,250,0) 80%);
+  animation: sc3EpicSpin 3s linear infinite;
+  pointer-events:none;
+  z-index:5;
+  opacity:.7;
+}
+.student-card-v3.rarity-epic > .sc3-photo {
+  border-radius:22px;
+  overflow:hidden;
+}
+@keyframes sc3EpicSpin {
+  to{ transform: rotate(360deg); }
+}
+
+/* 传说：金色流光 + 粒子闪烁 */
+.student-card-v3.rarity-legendary::after {
+  content:'';
+  position:absolute;
+  inset:-1px;
+  border-radius:23px;
+  background: conic-gradient(from 0deg, rgba(253,230,138,0), rgba(253,230,138,.95) 15%, rgba(252,165,165,.8) 35%, rgba(253,230,138,.95) 55%, rgba(253,230,138,0) 75%);
+  animation: sc3LegendarySpin 2s linear infinite;
+  pointer-events:none;
+  z-index:5;
+  opacity:.85;
+}
+.student-card-v3.rarity-legendary > .sc3-photo {
+  border-radius:22px;
+  overflow:hidden;
+}
+@keyframes sc3LegendarySpin {
+  to{ transform: rotate(360deg); }
+}
+/* 传说卡的闪星叠层 */
+.student-card-v3.rarity-legendary .sc3-photo::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 15% 18%, rgba(255,255,255,.9) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 82% 12%, rgba(255,255,255,.85) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 68% 82%, rgba(255,247,173,.9) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 28% 76%, rgba(255,247,173,.8) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 92% 55%, rgba(255,255,255,.7) 0 1px, transparent 2px);
+  animation: sc3StarTwinkle 1.6s ease-in-out infinite;
+  pointer-events:none;
+  z-index:6;
+}
+@keyframes sc3StarTwinkle {
+  0%,100%{ opacity:.3; }
+  50%{ opacity:1; }
+}
+
+/* 觉醒：彩虹流光 + 震动 */
+.student-card-v3.awakened-card::after {
+  content:'';
+  position:absolute;
+  inset:-1px;
+  border-radius:23px;
+  background: conic-gradient(from 0deg,
+    rgba(239,68,68,.9), rgba(245,158,11,.9), rgba(234,179,8,.9),
+    rgba(34,197,94,.9), rgba(96,165,250,.9), rgba(139,92,246,.9),
+    rgba(239,68,68,.9));
+  animation: sc3AwakenSpin 1.8s linear infinite;
+  pointer-events:none;
+  z-index:5;
+}
+.student-card-v3.awakened-card > .sc3-photo {
+  border-radius:22px;
+  overflow:hidden;
+}
+@keyframes sc3AwakenSpin {
+  to{ transform: rotate(360deg); }
+}
+.student-card-v3.awakened-card {
+  animation: sc3AwakenShake 3.2s ease-in-out infinite;
+}
+@keyframes sc3AwakenShake {
+  0%,90%,100%{ transform: translateY(0) rotate(0deg); }
+  92%{ transform: translateY(-2px) rotate(-0.5deg); }
+  94%{ transform: translateY(-3px) rotate(0.5deg); }
+  96%{ transform: translateY(-2px) rotate(-0.3deg); }
+  98%{ transform: translateY(-1px) rotate(0.2deg); }
+}
+/* 觉醒卡的内光晕 */
+.student-card-v3.awakened-card .sc3-photo::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: radial-gradient(circle at 50% 50%, rgba(255,200,100,.18) 0%, transparent 60%);
+  animation: sc3AwakenPulse 1.2s ease-in-out infinite;
+  pointer-events:none;
+  z-index:6;
+}
+@keyframes sc3AwakenPulse {
+  0%,100%{ opacity:.4; }
+  50%{ opacity:1; }
+}
+
 .student-card-v3.awakened-card { box-shadow: 0 8px 28px rgba(239,68,68,.32), 0 2px 6px rgba(239,68,68,.18); }
 .student-card-v3.rarity-epic:hover { box-shadow: 0 20px 48px rgba(139,92,246,.48); }
 .student-card-v3.rarity-legendary:hover { box-shadow: 0 20px 48px rgba(245,158,11,.52); }
