@@ -5155,10 +5155,10 @@
       if (keyword) {
         list = list.filter(s => (String(s.name || '')).toLowerCase().includes(keyword) || (String(s.id || '')).toLowerCase().includes(keyword));
       }
-      const html = list.map(s => {
+      const html = list.map((s, idx) => {
         try {
           this.ensurePetHealthStatus(s);
-          return this.studentCardHtml(s);
+          return this.studentCardHtml(s, idx);
         } catch (e) {
           console.error('渲染学生卡片失败 id=' + (s && s.id) + ' name=' + (s && s.name) + ':', e.message);
           return '';
@@ -5233,7 +5233,7 @@
       return ['你好呀，我想和你做朋友！', '轻轻点我会开心哦～', '我们先从每天互动开始吧！'];
     },
 
-    studentCardHtml(s) {
+    studentCardHtml(s, idx = 0) {
       const totalStages = this.getTotalStages();
       let petHtml = '';
       let badgeCount = this.getTotalBadgesEarned(s);
@@ -5251,7 +5251,7 @@
         } else {
           const renderStage = (s.pet.stage || 0) >= totalStages ? 5 : (s.pet.stage || 1);
           const photoPath = this.getStagePhotoPath(s.pet.typeId, renderStage);
-          petHtml = `<img src="${photoPath}" class="sc3-pet-img${(s.pet.stage || 0) >= totalStages ? ' max-level-img' : ''}" loading="eager" decoding="async" fetchpriority="high" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(renderStage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)">`;
+          petHtml = `<img src="${photoPath}" class="sc3-pet-img${(s.pet.stage || 0) >= totalStages ? ' max-level-img' : ''}" loading="${idx < 6 ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${idx < 2 ? 'high' : 'auto'}" data-type-id="${s.pet.typeId}" data-stage="${Math.max(1, Math.min(5, parseInt(renderStage || 1, 10) || 1))}" onerror="app.handleStagePhotoError(this)">`;
         }
       } else {
         petHtml = `<div class="sc3-empty"><span>🐣</span><small>未领养</small></div>`;
@@ -5316,7 +5316,7 @@
       const rarity = this.getCardRarity(currentStage, totalStages);
       const awakenThreshold = this.getAwakenPointsThreshold();
       const isAwakened = (s.points || 0) >= awakenThreshold;
-      if (s.pet && s.pet.typeId) this.preloadPetStageImages(s.pet.typeId, s.pet.stage || 1);
+      if (s.pet && s.pet.typeId && idx < 8) this.preloadPetStageImages(s.pet.typeId, s.pet.stage || 1);
       
       // 重新设计：神兽图片全屏占主角，底部信息浮层
       const safeId = String(s.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
