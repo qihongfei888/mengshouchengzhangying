@@ -5881,13 +5881,11 @@
     },
     // 显示喂食特效
     showFeedEffect(studentId) {
-      const card = document.querySelector('.student-card-v2[data-student-id="' + studentId + '"]');
+      const card = document.querySelector('.student-card-v3[data-student-id="' + studentId + '"], .student-card-v2[data-student-id="' + studentId + '"]');
       if (!card) return;
       
-      const pointsRow = card.querySelector('.student-points-row');
-      if (!pointsRow) return;
-      
-      const rect = pointsRow.getBoundingClientRect();
+      const pointsRow = card.querySelector('.sc3-points, .student-points-row');
+      const rect = (pointsRow || card).getBoundingClientRect();
       const effect = document.createElement('div');
       effect.className = 'feed-effect';
       effect.textContent = '🍖 +1';
@@ -5898,34 +5896,42 @@
       effect.style.color = '#f59e0b';
       document.body.appendChild(effect);
       
+      // 喂食时卡片闪光
+      card.classList.add('sc3-feed-flash');
+      setTimeout(() => card.classList.remove('sc3-feed-flash'), 600);
+      
       setTimeout(() => effect.remove(), 1200);
     },
 
     // 显示升级特效
     showLevelUpEffect(studentId, newStage) {
-      const card = document.querySelector('.student-card-v2[data-student-id="' + studentId + '"]');
+      const card = document.querySelector('.student-card-v3[data-student-id="' + studentId + '"], .student-card-v2[data-student-id="' + studentId + '"]');
       if (!card) return;
       
-      const petContainer = card.querySelector('.student-card-v2-pet');
+      const petContainer = card.querySelector('.sc3-photo, .student-card-v2-pet');
       if (!petContainer) return;
       
       const rect = petContainer.getBoundingClientRect();
       const effect = document.createElement('div');
       effect.className = 'level-up-effect';
       effect.innerHTML = `
-        <div class="level-up-text">Lv.${newStage}</div>
+        <div class="level-up-text">Lv.${newStage} ↑</div>
         <div class="level-up-stars"></div>
       `;
       effect.style.left = rect.left + rect.width / 2 + 'px';
       effect.style.top = rect.top + rect.height / 2 + 'px';
       document.body.appendChild(effect);
       
+      // 升级时卡片大闪光
+      card.classList.add('sc3-levelup-flash');
+      setTimeout(() => card.classList.remove('sc3-levelup-flash'), 1000);
+      
       setTimeout(() => effect.remove(), 1500);
     },
 
     // 显示卡片闪光特效
     showCardFlashEffect(studentId) {
-      const card = document.querySelector('.student-card-v2[data-student-id="' + studentId + '"]');
+      const card = document.querySelector('.student-card-v3[data-student-id="' + studentId + '"], .student-card-v2[data-student-id="' + studentId + '"]');
       if (!card) return;
       
       const flash = document.createElement('div');
@@ -5937,13 +5943,11 @@
 
     // 显示加分减分特效
     showScoreEffect(studentId, delta) {
-      const card = document.querySelector('.student-card-v2[data-student-id="' + studentId + '"]');
+      const card = document.querySelector('.student-card-v3[data-student-id="' + studentId + '"], .student-card-v2[data-student-id="' + studentId + '"]');
       if (!card) return;
       
-      const pointsRow = card.querySelector('.student-points-row');
-      if (!pointsRow) return;
-      
-      const rect = pointsRow.getBoundingClientRect();
+      const pointsRow = card.querySelector('.sc3-points, .student-points-row');
+      const rect = (pointsRow || card).getBoundingClientRect();
       const effect = document.createElement('div');
       effect.className = 'score-effect';
       effect.textContent = delta > 0 ? `+${delta}` : `${delta}`;
@@ -5954,9 +5958,13 @@
       effect.style.color = delta > 0 ? '#4ECDC4' : '#FF6B6B';
       effect.style.textShadow = delta > 0 ? '0 0 10px #4ECDC4' : '0 0 10px #FF6B6B';
       document.body.appendChild(effect);
-      
-      // 动画效果
       effect.style.animation = delta > 0 ? 'scoreUp 1.2s ease-out forwards' : 'scoreDown 1.2s ease-out forwards';
+      
+      // 加分时卡片闪光
+      if (delta > 0) {
+        card.classList.add('sc3-feed-flash');
+        setTimeout(() => card.classList.remove('sc3-feed-flash'), 500);
+      }
       
       setTimeout(() => effect.remove(), 1200);
     },
@@ -5971,9 +5979,9 @@
       const prevTier = this.getPetAffinityTier(before);
       const nextTier = this.getPetAffinityTier(after);
 
-      const card = document.querySelector('.student-card-v2[data-student-id="' + studentId + '"]');
+      const card = document.querySelector('.student-card-v3[data-student-id="' + studentId + '"], .student-card-v2[data-student-id="' + studentId + '"]');
       if (!card) return;
-      const preview = card.querySelector('.student-card-v2-pet');
+      const preview = card.querySelector('.sc3-photo, .student-card-v2-pet');
       if (preview) {
         preview.classList.add('pet-interact-animate');
         setTimeout(function () { preview.classList.remove('pet-interact-animate'); }, 700);
