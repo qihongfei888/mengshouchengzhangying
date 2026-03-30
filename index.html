@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=42">
+  <link rel="stylesheet" href="./styles.css?v=43">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -243,6 +243,11 @@
               <div class="tool-card-icon">🎰</div>
               <div class="tool-card-main">幸运大抽奖</div>
               <div class="tool-card-sub">可设积分/勋章消耗</div>
+            </button>
+            <button class="tool-card" onclick="app.openPraiseWall()">
+              <div class="tool-card-icon">📣</div>
+              <div class="tool-card-main">夸夸墙</div>
+              <div class="tool-card-sub">全班留言 · 滚动展示</div>
             </button>
           </div>
         </div>
@@ -1699,6 +1704,31 @@
     </div>
   </div>
 
+  <!-- 夸夸墙弹窗 -->
+  <div id="praiseWallModal" class="modal">
+    <div class="modal-content" style="max-width:680px;padding:0;overflow:hidden;border-radius:20px;">
+      <button class="modal-close" onclick="app.closePraiseWall()">&times;</button>
+      <div class="pw-header">
+        <span style="font-size:1.6rem;">📣</span>
+        <span class="pw-title">夸夸墙</span>
+        <span style="font-size:.85rem;color:rgba(255,255,255,.7);">写下你想说的话，全班一起看～</span>
+      </div>
+      <div class="pw-marquee-wrap">
+        <div class="pw-marquee" id="pwMarquee"></div>
+      </div>
+      <div class="pw-input-area">
+        <select id="pwStudentSelect" class="login-input pw-select"><option value="">请选择学生</option></select>
+        <input type="text" id="pwMessageInput" class="login-input pw-input" placeholder="写一句夸夸的话…" maxlength="40">
+        <button class="btn btn-primary pw-send-btn" onclick="app.submitPraiseMessage()">发送 ✨</button>
+      </div>
+      <div class="pw-all-wrap">
+        <div style="font-size:.82rem;color:#64748b;margin-bottom:6px;">📝 所有留言</div>
+        <div id="pwAllMessages" class="pw-all-list"></div>
+        <button class="btn btn-outline" style="margin-top:8px;font-size:.78rem;" onclick="app.clearPraiseWall()">🗑️ 清空本班留言</button>
+      </div>
+    </div>
+  </div>
+
   <div id="effectContainer" class="effect-container"></div>
 
   <!-- 每日之星颁奖弹窗 -->
@@ -1727,7 +1757,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=88"></script>
+<script src="./app-loader.js?v=89"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}

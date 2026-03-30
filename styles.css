@@ -801,6 +801,110 @@ body::before {
 }
 .sc3-empty small { font-size: .8rem; color: rgba(255,255,255,.3); }
 
+/* ===== 夸夸墙 ===== */
+.pw-header {
+  background: linear-gradient(135deg, #f43f5e, #ec4899, #f97316);
+  padding: 18px 20px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+.pw-title {
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: .5px;
+}
+.pw-marquee-wrap {
+  background: linear-gradient(135deg, #fff0f3, #fce7f3);
+  padding: 10px 0;
+  overflow: hidden;
+  border-bottom: 1px solid #fecdd3;
+  white-space: nowrap;
+}
+.pw-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: pwScroll 30s linear infinite;
+  padding-left: 100%;
+}
+@keyframes pwScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.pw-marquee-item {
+  display: inline-block;
+  font-size: .95rem;
+  color: #be185d;
+  padding: 0 10px;
+  line-height: 2;
+}
+.pw-marquee-sep {
+  display: inline-block;
+  padding: 0 8px;
+  color: #f9a8d4;
+}
+.pw-input-area {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  align-items: center;
+}
+.pw-select {
+  flex: 0 0 110px;
+  font-size: .88rem;
+  padding: 7px 8px;
+}
+.pw-input {
+  flex: 1;
+  font-size: .92rem;
+  padding: 8px 12px;
+}
+.pw-send-btn {
+  flex: 0 0 auto;
+  padding: 8px 18px;
+  font-size: .88rem;
+  white-space: nowrap;
+}
+.pw-all-wrap {
+  padding: 12px 16px 16px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.pw-all-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pw-msg-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  background: #fff7f7;
+  border: 1px solid #fce7f3;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: .88rem;
+}
+.pw-msg-name {
+  font-weight: 800;
+  color: #e11d48;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pw-msg-text {
+  flex: 1;
+  color: #374151;
+}
+.pw-msg-time {
+  font-size: .74rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+
 /* sc3 卡片交互动效 */
 @keyframes sc3FeedFlash {
   0%{ box-shadow: 0 0 0 0 rgba(251,191,36,0); }

@@ -4887,6 +4887,89 @@
       if (success) this.generateTongueSentence();
     },
 
+    // ===== 夸夸墙 =====
+    openPraiseWall() {
+      const modal = document.getElementById('praiseWallModal');
+      if (!modal) return;
+      const sel = document.getElementById('pwStudentSelect');
+      if (sel) {
+        sel.innerHTML = '<option value="">请选择学生</option>' +
+          this.students.map(s => `<option value="${this.escape(s.id)}">${this.escape(s.name)}</option>`).join('');
+      }
+      this._renderPraiseMarquee();
+      this._renderPraiseAllList();
+      modal.classList.add('show');
+    },
+
+    closePraiseWall() {
+      const modal = document.getElementById('praiseWallModal');
+      if (modal) modal.classList.remove('show');
+      if (this._praiseMarqueeTimer) clearInterval(this._praiseMarqueeTimer);
+    },
+
+    _getPraiseMessages() {
+      const key = 'praiseWall_' + (this.currentClassId || 'default');
+      try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+    },
+
+    _savePraiseMessages(msgs) {
+      const key = 'praiseWall_' + (this.currentClassId || 'default');
+      localStorage.setItem(key, JSON.stringify(msgs.slice(-200)));
+    },
+
+    submitPraiseMessage() {
+      const sel = document.getElementById('pwStudentSelect');
+      const input = document.getElementById('pwMessageInput');
+      const name = sel ? (sel.options[sel.selectedIndex]?.text || '') : '';
+      const msg = (input ? input.value : '').trim();
+      if (!sel || !sel.value) { alert('请先选择学生'); return; }
+      if (!msg) { alert('请写一句话'); return; }
+      const msgs = this._getPraiseMessages();
+      msgs.push({ name, msg, time: Date.now() });
+      this._savePraiseMessages(msgs);
+      if (input) input.value = '';
+      this._renderPraiseMarquee();
+      this._renderPraiseAllList();
+    },
+
+    clearPraiseWall() {
+      if (!confirm('确定清空本班所有夸夸墙留言？')) return;
+      this._savePraiseMessages([]);
+      this._renderPraiseMarquee();
+      this._renderPraiseAllList();
+    },
+
+    _renderPraiseMarquee() {
+      const wrap = document.getElementById('pwMarquee');
+      if (!wrap) return;
+      const msgs = this._getPraiseMessages();
+      if (!msgs.length) {
+        wrap.innerHTML = '<span class="pw-marquee-item">还没有留言，快来第一个写吧！🌟</span>';
+        return;
+      }
+      const icons = ['🌟','💖','🎉','✨','🥳','👏','🌈','💫','🎊','🦄'];
+      const items = [...msgs, ...msgs].map((m, i) =>
+        `<span class="pw-marquee-item">${icons[i % icons.length]} <strong>${this.escape(m.name)}</strong>：${this.escape(m.msg)}</span>`
+      ).join('<span class="pw-marquee-sep">❤️</span>');
+      wrap.innerHTML = items;
+      wrap.style.animation = 'none';
+      wrap.offsetWidth;
+      const totalW = wrap.scrollWidth;
+      const dur = Math.max(12, totalW / 80);
+      wrap.style.animation = `pwScroll ${dur}s linear infinite`;
+    },
+
+    _renderPraiseAllList() {
+      const el = document.getElementById('pwAllMessages');
+      if (!el) return;
+      const msgs = this._getPraiseMessages();
+      if (!msgs.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:.85rem;padding:8px 0;">暂无留言</div>'; return; }
+      el.innerHTML = msgs.slice().reverse().map(m => {
+        const t = new Date(m.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        return `<div class="pw-msg-item"><span class="pw-msg-name">${this.escape(m.name)}</span><span class="pw-msg-text">${this.escape(m.msg)}</span><span class="pw-msg-time">${t}</span></div>`;
+      }).join('');
+    },
+
     openPassingFlowerGame() {
       const modal = document.getElementById('passingFlowerModal');
       if (!modal) return;
