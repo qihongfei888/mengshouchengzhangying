@@ -4644,6 +4644,14 @@
           const deadClass = m.alive ? '' : 'opacity:0.45;filter:grayscale(1);';
           const isStage = this._assassinViewMode === 'stage';
           const roleText = isStage ? '❓ 身份保密' : m.roleName;
+          const roleDescMap = {
+            king: '国王：核心目标，被刺杀成功会触发继位。',
+            prince: '王子：若被刺杀命中会直接暴露身份。',
+            knight: '骑士：被刺杀会触发反杀，保护队伍。'
+          };
+          const roleDesc = m.alive
+            ? (isStage ? '舞台模式下身份隐藏，先靠答题累积行动值。' : (roleDescMap[m.role] || '队员：与队友配合完成PK任务。'))
+            : '已出局：本回合无法继续行动。';
           const roleSelector = (!isStage && m.alive)
             ? `<select class="login-input" ${this._assassinRoleLocked ? 'disabled' : ''} style="padding:4px 6px;font-size:12px;margin-top:4px;" onchange="app.setAssassinRole('${key}','${m.studentId}',this.value)">
                 <option value="king" ${m.role === 'king' ? 'selected' : ''}>国王</option>
@@ -4655,6 +4663,7 @@
             <div style="font-size:22px;">${this.escape(m.avatar || '👤')}</div>
             <div style="font-weight:700;">${this.escape(m.name)}</div>
             <div style="font-size:12px;color:#8B1A1A;">${roleText}</div>
+            <div style="font-size:11px;color:#6b7280;line-height:1.45;margin-top:3px;min-height:30px;">${roleDesc}</div>
             ${roleSelector}
           </div>`;
         }).join('');
