@@ -453,44 +453,36 @@ body::before {
   50%{ box-shadow: inset 0 0 0 2.5px rgba(96,165,250,.9), 0 0 22px rgba(96,165,250,.45); }
 }
 
-/* 史诗：紫色流光边框 */
+/* 史诗：紫色呼吸边框（不旋转） */
 .student-card-v3.rarity-epic::after {
   content:'';
   position:absolute;
-  inset:-1px;
-  border-radius:23px;
-  background: conic-gradient(from 0deg, rgba(167,139,250,0), rgba(167,139,250,.9) 20%, rgba(96,165,250,.7) 40%, rgba(167,139,250,.9) 60%, rgba(167,139,250,0) 80%);
-  animation: sc3EpicSpin 3s linear infinite;
+  inset:0;
+  border-radius:22px;
+  box-shadow: inset 0 0 0 2.5px rgba(167,139,250,.7), 0 0 18px rgba(167,139,250,.35);
+  animation: sc3EpicGlow 2.4s ease-in-out infinite;
   pointer-events:none;
   z-index:5;
-  opacity:.7;
 }
-.student-card-v3.rarity-epic > .sc3-photo {
-  border-radius:22px;
-  overflow:hidden;
-}
-@keyframes sc3EpicSpin {
-  to{ transform: rotate(360deg); }
+@keyframes sc3EpicGlow {
+  0%,100%{ box-shadow: inset 0 0 0 2px rgba(167,139,250,.4), 0 0 12px rgba(167,139,250,.22); }
+  50%{ box-shadow: inset 0 0 0 3px rgba(167,139,250,.95), 0 0 28px rgba(167,139,250,.55); }
 }
 
-/* 传说：金色流光 + 粒子闪烁 */
+/* 传说：金色呼吸边框 + 粒子闪烁 */
 .student-card-v3.rarity-legendary::after {
   content:'';
   position:absolute;
-  inset:-1px;
-  border-radius:23px;
-  background: conic-gradient(from 0deg, rgba(253,230,138,0), rgba(253,230,138,.95) 15%, rgba(252,165,165,.8) 35%, rgba(253,230,138,.95) 55%, rgba(253,230,138,0) 75%);
-  animation: sc3LegendarySpin 2s linear infinite;
+  inset:0;
+  border-radius:22px;
+  box-shadow: inset 0 0 0 2.5px rgba(253,230,138,.8), 0 0 22px rgba(245,158,11,.4);
+  animation: sc3LegendaryGlow 2s ease-in-out infinite;
   pointer-events:none;
   z-index:5;
-  opacity:.85;
 }
-.student-card-v3.rarity-legendary > .sc3-photo {
-  border-radius:22px;
-  overflow:hidden;
-}
-@keyframes sc3LegendarySpin {
-  to{ transform: rotate(360deg); }
+@keyframes sc3LegendaryGlow {
+  0%,100%{ box-shadow: inset 0 0 0 2px rgba(253,230,138,.5), 0 0 14px rgba(245,158,11,.28); }
+  50%{ box-shadow: inset 0 0 0 3px rgba(253,230,138,1), 0 0 32px rgba(245,158,11,.65); }
 }
 /* 传说卡的闪星叠层 */
 .student-card-v3.rarity-legendary .sc3-photo::before {
@@ -512,26 +504,25 @@ body::before {
   50%{ opacity:1; }
 }
 
-/* 觉醒：彩虹流光 + 震动 */
+/* 觉醒：彩虹呼吸边框 + 震动 */
 .student-card-v3.awakened-card::after {
   content:'';
   position:absolute;
-  inset:-1px;
-  border-radius:23px;
-  background: conic-gradient(from 0deg,
-    rgba(239,68,68,.9), rgba(245,158,11,.9), rgba(234,179,8,.9),
-    rgba(34,197,94,.9), rgba(96,165,250,.9), rgba(139,92,246,.9),
-    rgba(239,68,68,.9));
-  animation: sc3AwakenSpin 1.8s linear infinite;
+  inset:0;
+  border-radius:22px;
+  box-shadow:
+    inset 0 0 0 3px rgba(239,68,68,.8),
+    0 0 24px rgba(239,68,68,.45),
+    0 0 8px rgba(139,92,246,.4);
+  animation: sc3AwakenGlow 1.4s ease-in-out infinite;
   pointer-events:none;
   z-index:5;
 }
-.student-card-v3.awakened-card > .sc3-photo {
-  border-radius:22px;
-  overflow:hidden;
-}
-@keyframes sc3AwakenSpin {
-  to{ transform: rotate(360deg); }
+@keyframes sc3AwakenGlow {
+  0%{ box-shadow: inset 0 0 0 2px rgba(239,68,68,.6), 0 0 16px rgba(239,68,68,.35); }
+  33%{ box-shadow: inset 0 0 0 3px rgba(245,158,11,.9), 0 0 28px rgba(245,158,11,.5); }
+  66%{ box-shadow: inset 0 0 0 3px rgba(139,92,246,.9), 0 0 28px rgba(139,92,246,.5); }
+  100%{ box-shadow: inset 0 0 0 2px rgba(239,68,68,.6), 0 0 16px rgba(239,68,68,.35); }
 }
 .student-card-v3.awakened-card {
   animation: sc3AwakenShake 3.2s ease-in-out infinite;

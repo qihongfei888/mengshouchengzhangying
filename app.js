@@ -5295,7 +5295,8 @@
       
       // 判断是否可以喂食
       const canFeed = s.pet && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead && (s.points || 0) >= 1 && (s.pet.stage || 0) < totalStages;
-      const feedAction = canFeed ? `onclick="event.stopPropagation(); app.quickFeed('${s.id}')"` : '';
+      const _feedId = String(s.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const feedAction = canFeed ? `onclick="event.stopPropagation(); app.quickFeed('${_feedId}')"` : '';
       const feedClass = canFeed ? 'can-feed' : 'cannot-feed';
       const isMaxLevel = s.pet && (s.pet.stage || 0) >= totalStages && s.pet.completed;
       const affinity = s.pet ? Number(s.pet.affinity || 0) : 0;
@@ -5329,9 +5330,9 @@
               </div>
               <div class="sc3-progress-bar"><div class="sc3-progress-fill" style="width:${progressPercent}%;background:${theme.primary};"></div></div>
               <div class="sc3-footer">
-                <span class="sc3-points ${feedClass}" ${feedAction}>🍖 ${s.points ?? 0}</span>
+                <span class="sc3-points ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '积分不足或已满级'}">🍖 ${s.points ?? 0}</span>
                 <span class="sc3-stage">${progressText}</span>
-                ${s.pet ? `<button class="sc3-btn" onclick="event.stopPropagation();app.interactWithPet('${safeId}')">✨</button>` : ''}
+                ${s.pet ? `<button class="sc3-btn" onclick="event.stopPropagation();app.interactWithPet('${s.id.replace(/'/g, "\\'")}')">✨</button>` : ''}
               </div>
             </div>
           </div>
