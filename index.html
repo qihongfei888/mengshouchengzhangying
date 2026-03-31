@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=51">
+  <link rel="stylesheet" href="./styles.css?v=52">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -283,6 +283,11 @@
               <div class="tool-card-icon">🏅</div>
               <div class="tool-card-main">学生徽章墙</div>
               <div class="tool-card-sub">展示每位学生的勋章成就</div>
+            </button>
+            <button class="tool-card" onclick="app.openStickerAlbumPanel()">
+              <div class="tool-card-icon">🎁</div>
+              <div class="tool-card-main">贴纸册开箱</div>
+              <div class="tool-card-sub">开箱动画 + 贴纸收藏册</div>
             </button>
             <button class="tool-card" onclick="app.openParentReportPanel()">
               <div class="tool-card-icon">📄</div>
@@ -1911,6 +1916,23 @@
     </div>
   </div>
 
+  <!-- 贴纸册开箱 -->
+  <div id="stickerAlbumModal" class="modal">
+    <div class="modal-content" style="max-width:900px;">
+      <button class="modal-close" onclick="app.closeModal('stickerAlbumModal')">&times;</button>
+      <h3>🎁 贴纸册开箱</h3>
+      <div class="form-group">
+        <label>选择学生</label>
+        <select id="stickerStudentSelect" class="login-input" onchange="app.renderStickerAlbum()"></select>
+      </div>
+      <div class="score-btns" style="margin-bottom:8px;">
+        <button class="btn btn-primary" onclick="app.openStickerPack()">开箱（消耗1积分）</button>
+      </div>
+      <div id="stickerOpenResult" class="sticker-open-result"></div>
+      <div id="stickerAlbumGrid" class="sticker-album-grid"></div>
+    </div>
+  </div>
+
   <!-- 家长简报 -->
   <div id="parentReportModal" class="modal">
     <div class="modal-content" style="max-width:860px;">
@@ -1961,7 +1983,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=96"></script>
+<script src="./app-loader.js?v=97"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}

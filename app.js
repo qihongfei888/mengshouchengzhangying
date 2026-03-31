@@ -5444,6 +5444,71 @@
       </div>`).join('');
     },
 
+    openStickerAlbumPanel() {
+      const modal = document.getElementById('stickerAlbumModal');
+      if (modal) modal.classList.add('show');
+      const sel = document.getElementById('stickerStudentSelect');
+      if (sel) {
+        sel.innerHTML = (this.students || []).map(s => `<option value="${this.escape(s.id)}">${this.escape(s.name)}（积分${s.points || 0}）</option>`).join('');
+      }
+      this.renderStickerAlbum();
+    },
+
+    getStickerPool() {
+      return [
+        { id: 'dragon_fire', name: '龙焰冲刺', icon: '🐉', rare: 'SSR' },
+        { id: 'forest_guard', name: '森林守护', icon: '🌳', rare: 'SR' },
+        { id: 'ocean_wave', name: '海浪勇士', icon: '🌊', rare: 'SR' },
+        { id: 'study_star', name: '学习之星', icon: '⭐', rare: 'R' },
+        { id: 'team_hero', name: '协作英雄', icon: '🤝', rare: 'R' },
+        { id: 'focus_master', name: '专注大师', icon: '🎯', rare: 'R' }
+      ];
+    },
+
+    _pickSticker() {
+      const pool = this.getStickerPool();
+      const r = Math.random();
+      const want = r < 0.08 ? 'SSR' : (r < 0.35 ? 'SR' : 'R');
+      const sub = pool.filter(x => x.rare === want);
+      return sub[Math.floor(Math.random() * sub.length)] || pool[0];
+    },
+
+    openStickerPack() {
+      const sid = document.getElementById('stickerStudentSelect')?.value;
+      if (!sid) return;
+      const s = (this.students || []).find(x => String(x.id) === String(sid));
+      if (!s) return;
+      if ((s.points || 0) < 1) { alert('积分不足，无法开箱'); return; }
+      s.points = (s.points || 0) - 1;
+      const st = this._pickSticker();
+      if (!s.stickers) s.stickers = [];
+      s.stickers.push({ id: st.id, name: st.name, icon: st.icon, rare: st.rare, time: Date.now() });
+      this.saveStudents();
+      const result = document.getElementById('stickerOpenResult');
+      if (result) {
+        result.innerHTML = `<div class="sticker-drop rare-${st.rare}"><span class="sticker-drop-icon">${st.icon}</span><div class="sticker-drop-name">${st.name}</div><div class="sticker-drop-rare">${st.rare}</div></div>`;
+      }
+      this.showScoreRain(st.rare === 'SSR' ? 26 : 12);
+      this.announceClassEvent(`🎁 ${this.escape(s.name)} 开箱获得 ${st.name} (${st.rare})`);
+      this.renderStickerAlbum();
+      this.renderStudents();
+    },
+
+    renderStickerAlbum() {
+      const sid = document.getElementById('stickerStudentSelect')?.value;
+      const grid = document.getElementById('stickerAlbumGrid');
+      if (!grid) return;
+      if (!sid) { grid.innerHTML = '<p class="placeholder-text">请选择学生</p>'; return; }
+      const s = (this.students || []).find(x => String(x.id) === String(sid));
+      if (!s) { grid.innerHTML = '<p class="placeholder-text">学生不存在</p>'; return; }
+      const arr = s.stickers || [];
+      if (!arr.length) {
+        grid.innerHTML = '<p class="placeholder-text">还没有贴纸，快去开箱吧～</p>';
+        return;
+      }
+      grid.innerHTML = arr.slice().reverse().map(x => `<div class="sticker-card rare-${this.escape(x.rare)}"><div class="sticker-icon">${x.icon}</div><div class="sticker-name">${this.escape(x.name)}</div><div class="sticker-rare">${this.escape(x.rare)}</div></div>`).join('');
+    },
+
     openParentReportPanel() {
       const modal = document.getElementById('parentReportModal');
       if (modal) modal.classList.add('show');
@@ -6141,11 +6206,44 @@
               <div class="sc3-footer">
                 <span class="sc3-points ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '积分不足或已满级'}">🍖 ${s.points ?? 0}</span>
                 <span class="sc3-stage">${progressText}</span>
+                <span class="sc3-emotion">${this.getPetEmotionEmoji(s)} ${this.getPetEmotionLabel(s)}</span>
                 ${s.pet ? `<button class="sc3-btn" onclick="event.stopPropagation();app.interactWithPet('${s.id.replace(/'/g, "\\'")}')">✨</button>` : ''}
             </div>
             </div>
           </div>
         </div>`;
+    },
+
+    getPetEmotionValue(s) {
+      if (!s || !s.pet) return 50;
+      if (!Number.isFinite(s.pet.mood)) s.pet.mood = 60;
+      return Math.max(0, Math.min(100, s.pet.mood));
+    },
+
+    getPetEmotionLabel(s) {
+      const v = this.getPetEmotionValue(s);
+      if (v >= 75) return '亢奋';
+      if (v >= 45) return '开心';
+      return '困倦';
+    },
+
+    getPetEmotionEmoji(s) {
+      const v = this.getPetEmotionValue(s);
+      if (v >= 75) return '🔥';
+      if (v >= 45) return '😊';
+      return '😪';
+    },
+
+    updatePetEmotionOnAction(student, delta, source = 'score') {
+      if (!student || !student.pet) return;
+      const now = Date.now();
+      let mood = this.getPetEmotionValue(student);
+      if (source === 'feed') mood += 8;
+      else if (source === 'interact') mood += 6;
+      else mood += delta > 0 ? Math.min(12, 4 + delta) : -Math.min(10, 3 + Math.abs(delta));
+      if (student.pet.lastMoodAt && (now - student.pet.lastMoodAt) > 90 * 60 * 1000) mood -= 6;
+      student.pet.mood = Math.max(0, Math.min(100, mood));
+      student.pet.lastMoodAt = now;
     },
 
     openStudentModal(studentId) {
@@ -6174,6 +6272,7 @@
               <div>
                 <p><strong>宠物进度</strong>：第 ${stage}/${totalStages} 阶段，本阶段 ${progress}/${need} 分</p>
                 <p><strong>亲密度</strong>：${s.pet.affinity || 0}（${this.getPetAffinityTitle(s.pet.affinity || 0)}）</p>
+                <p><strong>情绪状态</strong>：${this.getPetEmotionEmoji(s)} ${this.getPetEmotionLabel(s)}（${this.getPetEmotionValue(s)}）</p>
                 ${intro ? `<p class="text-muted" style="margin-top:4px;">📜 ${this.escape(intro)}</p>` : ''}
             </div>
             </div>
@@ -6322,6 +6421,7 @@
       if (delta < 0) {
         this.applyPetDegenerationOnScoreChange(s, delta);
       }
+      this.updatePetEmotionOnAction(s, delta, 'score');
       this.saveStudents();
       this.renderStudents();
       this.renderHonor();
@@ -6763,6 +6863,7 @@
       const before = Number(s.pet.affinity || 0);
       s.pet.affinity = before + 1;
       s.pet.lastInteractAt = Date.now();
+      this.updatePetEmotionOnAction(s, 1, 'interact');
       const after = s.pet.affinity;
       const prevTier = this.getPetAffinityTier(before);
       const nextTier = this.getPetAffinityTier(after);
@@ -6835,6 +6936,7 @@
       s.pet.stage = stage;
       s.pet.stageProgress = progress;
       s.pet.lastFedAt = Date.now();
+      this.updatePetEmotionOnAction(s, pts, 'feed');
       this.preloadPetStageImages(s.pet.typeId, stage);
       
       // 完成全部升级后获得1枚勋章
