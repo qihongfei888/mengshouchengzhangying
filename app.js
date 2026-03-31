@@ -5215,6 +5215,101 @@
       if (window.launchFireworks) window.launchFireworks();
     },
 
+    getSeasonTitleResult() {
+      const now = Date.now();
+      const since = now - 7 * 24 * 3600 * 1000;
+      const totalPlus = (this.students || []).reduce((sum, s) => {
+        const hs = (s.scoreHistory || []).filter(h => (h.time || 0) >= since && (h.delta || 0) > 0);
+        return sum + hs.reduce((a, h) => a + (h.delta || 0), 0);
+      }, 0);
+      const activeCount = (this.students || []).filter(s => (s.scoreHistory || []).some(h => (h.time || 0) >= since)).length;
+      const avgPlus = this.students.length ? Math.round(totalPlus / this.students.length) : 0;
+      if (totalPlus >= 500 && activeCount >= Math.max(10, Math.floor(this.students.length * 0.75))) return { title: '龙焰冠军班', desc: '高能投入，全员火力全开', color: '#dc2626' };
+      if (totalPlus >= 300 && avgPlus >= 8) return { title: '星耀协作班', desc: '稳定进步，协作优秀', color: '#7c3aed' };
+      if (totalPlus >= 180) return { title: '晨光成长班', desc: '持续成长，表现积极', color: '#2563eb' };
+      return { title: '萌芽奋进班', desc: '厚积薄发，继续加油', color: '#059669' };
+    },
+
+    openSeasonTitlePanel() {
+      const modal = document.getElementById('seasonTitleModal');
+      if (modal) modal.classList.add('show');
+      this.refreshSeasonTitle();
+    },
+
+    refreshSeasonTitle() {
+      const el = document.getElementById('seasonTitleBody');
+      if (!el) return;
+      const result = this.getSeasonTitleResult();
+      el.innerHTML = `<div class="season-title-card" style="border-color:${result.color};">
+        <div class="season-title-main" style="color:${result.color};">${result.title}</div>
+        <div class="season-title-sub">${result.desc}</div>
+      </div>`;
+    },
+
+    openBadgeWallPanel() {
+      const modal = document.getElementById('badgeWallModal');
+      if (modal) modal.classList.add('show');
+      this.renderBadgeWall();
+    },
+
+    renderBadgeWall() {
+      const el = document.getElementById('badgeWallList');
+      if (!el) return;
+      if (!this.students || !this.students.length) {
+        el.innerHTML = '<p class="placeholder-text">暂无学生</p>';
+        return;
+      }
+      const arr = [...this.students].map(s => ({ s, badges: this.getAvailableBadges(s), points: s.points || 0 }))
+        .sort((a, b) => (b.badges - a.badges) || (b.points - a.points));
+      el.innerHTML = arr.map((x, i) => `<div class="badge-wall-item rank-${i < 3 ? (i + 1) : 4}">
+        <div class="bw-head">
+          <span class="bw-name">${this.escape(x.s.name)}</span>
+          <span class="bw-rank">${i + 1}</span>
+        </div>
+        <div class="bw-badges">${'🏅'.repeat(Math.min(8, x.badges || 0)) || '—'}</div>
+        <div class="bw-foot">可用勋章 ${x.badges} · 积分 ${x.points}</div>
+      </div>`).join('');
+    },
+
+    openParentReportPanel() {
+      const modal = document.getElementById('parentReportModal');
+      if (modal) modal.classList.add('show');
+      this.renderParentReport();
+    },
+
+    renderParentReport() {
+      const el = document.getElementById('parentReportContent');
+      if (!el) return;
+      const since = Date.now() - 7 * 24 * 3600 * 1000;
+      const top = [...(this.students || [])]
+        .map(s => {
+          const hs = (s.scoreHistory || []).filter(h => (h.time || 0) >= since);
+          const delta = hs.reduce((sum, h) => sum + (h.delta || 0), 0);
+          return { name: s.name, delta, points: s.points || 0 };
+        })
+        .sort((a, b) => b.delta - a.delta)
+        .slice(0, 10);
+      const title = this.getSeasonTitleResult();
+      el.innerHTML = `<div class="pr-header">
+        <h4>萌兽成长营 · 家长简报</h4>
+        <div>${new Date().toLocaleDateString('zh-CN')} ｜ 班级：${this.escape(this.currentClassName || '')}</div>
+      </div>
+      <div class="pr-box">本周班级称号：<strong style="color:${title.color}">${title.title}</strong>（${title.desc}）</div>
+      <div class="pr-box">本周进步榜：${top.length ? top.map((x, i) => `${i + 1}.${this.escape(x.name)}(${x.delta >= 0 ? '+' : ''}${x.delta})`).join(' ｜ ') : '暂无数据'}</div>
+      <div class="pr-box">班级总人数：${(this.students || []).length}，建议家校协同关注孩子的日常目标达成与同伴合作表现。</div>`;
+    },
+
+    printParentReport() {
+      const content = document.getElementById('parentReportContent');
+      if (!content) return;
+      const win = window.open('', '_blank');
+      if (!win) return;
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>家长简报</title><style>body{font-family:"Microsoft YaHei",sans-serif;padding:20px;color:#111} .pr-box{border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0;} h4{margin:0 0 8px;}</style></head><body>${content.innerHTML}</body></html>`);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 220);
+    },
+
     getDailyGoalItems() {
       return [
         { key: 'speak', name: '积极发言1次', reward: 1 },
@@ -10065,7 +10160,7 @@
       const modal = document.getElementById(modalId);
       if (modal) {
         modal.classList.remove('show');
-        modal.style.display = 'none';
+        modal.style.display = '';
       }
     },
 

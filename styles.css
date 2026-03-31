@@ -1117,6 +1117,66 @@ body::before {
   color:#7c2d12;
 }
 
+/* 赛季称号 / 徽章墙 / 家长简报 */
+.season-title-card {
+  border:2px solid #7c3aed;
+  border-radius:14px;
+  background:linear-gradient(135deg,#faf5ff,#f5f3ff);
+  padding:12px;
+}
+.season-title-main {
+  font-size:1.35rem;
+  font-weight:900;
+}
+.season-title-sub {
+  margin-top:4px;
+  color:#6b21a8;
+}
+.badge-wall-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:10px;
+  max-height:68vh;
+  overflow:auto;
+}
+.badge-wall-item {
+  border:1px solid #fcd34d;
+  background:linear-gradient(135deg,#fffef5,#fffbeb);
+  border-radius:12px;
+  padding:10px;
+}
+.badge-wall-item.rank-1 { box-shadow:0 0 18px rgba(250,204,21,.4); }
+.badge-wall-item.rank-2 { box-shadow:0 0 14px rgba(203,213,225,.45); }
+.badge-wall-item.rank-3 { box-shadow:0 0 14px rgba(251,146,60,.35); }
+.bw-head { display:flex; justify-content:space-between; align-items:center; }
+.bw-name { font-weight:800; }
+.bw-rank {
+  width:24px;height:24px;border-radius:999px;
+  background:#f59e0b;color:#fff;font-weight:800;
+  display:flex;align-items:center;justify-content:center;font-size:.78rem;
+}
+.bw-badges { margin:8px 0; font-size:1.05rem; min-height:24px; }
+.bw-foot { font-size:.82rem; color:#92400e; }
+.parent-report-card {
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  background:#fff;
+  padding:12px;
+}
+.pr-header {
+  border-bottom:1px dashed #cbd5e1;
+  padding-bottom:8px;
+  margin-bottom:8px;
+  color:#334155;
+}
+.pr-box {
+  border:1px solid #e2e8f0;
+  border-radius:10px;
+  padding:10px;
+  margin:8px 0;
+  background:#f8fafc;
+}
+
 
 /* sc3 卡片交互动效 */
 @keyframes sc3FeedFlash {
