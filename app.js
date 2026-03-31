@@ -3583,6 +3583,7 @@
       try { this.loadBroadcastSettings(); } catch (e) { console.error('loadBroadcastSettings失败:', e); }
       try { this.loadScreenLockSettings(); } catch (e) { console.error('loadScreenLockSettings失败:', e); }
       try { this.loadBroadcastMessages(); } catch (e) { console.error('loadBroadcastMessages失败:', e); }
+      try { this.applySeasonThemeAndBgm(); } catch (e) { console.error('赛季主题初始化失败:', e); }
       try {
         const cls = this.getCurrentClassData();
         const rollCost = parseInt((cls && cls.monopolyRollCost) || 1, 10) || 1;
@@ -5004,19 +5005,25 @@
     openSeasonPanel() {
       const data = getUserData();
       const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
-      const cfg = cls && cls.seasonConfig ? cls.seasonConfig : { theme: '青龙冲刺周', desc: '全班累计加分达到300分', target: 300, rewardPoints: 3, groupTarget: 120, groupRewardPoints: 10 };
+      const cfg = cls && cls.seasonConfig ? cls.seasonConfig : { theme: '青龙冲刺周', desc: '全班累计加分达到300分', target: 300, rewardPoints: 3, groupTarget: 120, groupRewardPoints: 10, badgeName: '赛季勇者章', bgTheme: 'dragon', bgm: 'none' };
       const a = document.getElementById('seasonThemeInput');
       const b = document.getElementById('seasonDescInput');
       const c = document.getElementById('seasonTargetInput');
       const rp = document.getElementById('seasonRewardPointsInput');
       const gt = document.getElementById('seasonGroupTargetInput');
       const gr = document.getElementById('seasonGroupRewardInput');
+      const bd = document.getElementById('seasonBadgeInput');
+      const bg = document.getElementById('seasonBgThemeInput');
+      const bm = document.getElementById('seasonBgmInput');
       if (a) a.value = cfg.theme || '';
       if (b) b.value = cfg.desc || '';
       if (c) c.value = cfg.target || 300;
       if (rp) rp.value = cfg.rewardPoints ?? 3;
       if (gt) gt.value = cfg.groupTarget ?? 120;
       if (gr) gr.value = cfg.groupRewardPoints ?? 10;
+      if (bd) bd.value = cfg.badgeName || '赛季勇者章';
+      if (bg) bg.value = cfg.bgTheme || 'dragon';
+      if (bm) bm.value = cfg.bgm || 'none';
       const modal = document.getElementById('seasonModal');
       if (modal) modal.classList.add('show');
       this.renderSeasonPreview();
@@ -5032,11 +5039,16 @@
         target: Math.max(10, parseInt(document.getElementById('seasonTargetInput')?.value, 10) || 300),
         rewardPoints: Math.max(0, parseInt(document.getElementById('seasonRewardPointsInput')?.value, 10) || 3),
         groupTarget: Math.max(10, parseInt(document.getElementById('seasonGroupTargetInput')?.value, 10) || 120),
-        groupRewardPoints: Math.max(0, parseInt(document.getElementById('seasonGroupRewardInput')?.value, 10) || 10)
+        groupRewardPoints: Math.max(0, parseInt(document.getElementById('seasonGroupRewardInput')?.value, 10) || 10),
+        badgeName: (document.getElementById('seasonBadgeInput')?.value || '赛季勇者章').trim(),
+        bgTheme: (document.getElementById('seasonBgThemeInput')?.value || 'dragon'),
+        bgm: (document.getElementById('seasonBgmInput')?.value || 'none')
       };
       setUserData(data);
       this.saveData();
       this.renderSeasonPreview();
+      this.applySeasonThemeAndBgm();
+      this.announceClassEvent(`赛季更新：${cls.seasonConfig.theme || '新赛季'}`);
       this.showWinBanner('🗺️ 赛季已更新', cls.seasonConfig.theme || '新的挑战开始啦');
     },
 
@@ -5064,6 +5076,55 @@
         <div class="season-foot">小组进度 ${groupTotal} / ${cfg.groupTarget}（${gpct}%）｜达标奖励：每组 +${cfg.groupRewardPoints} 分</div>
         <div class="season-group-title-list">${groupTitles.length ? groupTitles.map(x => `<span class="season-group-title">${this.escape(x.name)}：${this.escape(x.title)}</span>`).join('') : '<span class="season-group-title">暂无小组称号</span>'}</div>
       </div>`;
+    },
+
+    applySeasonThemeAndBgm() {
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      const cfg = cls && cls.seasonConfig ? cls.seasonConfig : null;
+      const theme = cfg && cfg.bgTheme ? cfg.bgTheme : 'dragon';
+      document.body.classList.remove('season-theme-dragon', 'season-theme-flame', 'season-theme-ocean', 'season-theme-forest');
+      document.body.classList.add(`season-theme-${theme}`);
+      this._playSeasonBgm(cfg && cfg.bgm ? cfg.bgm : 'none');
+    },
+
+    _playSeasonBgm(kind = 'none') {
+      if (kind === 'none') return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        if (!this._seasonBgmCtx) this._seasonBgmCtx = new AudioCtx();
+        const ctx = this._seasonBgmCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+        if (this._seasonBgmNode) {
+          try { this._seasonBgmNode.stop(); } catch (e) {}
+        }
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const f = kind === 'march' ? 196 : (kind === 'magic' ? 246 : 110);
+        osc.type = kind === 'drum' ? 'square' : 'triangle';
+        osc.frequency.value = f;
+        gain.gain.value = 0.015;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        this._seasonBgmNode = osc;
+        setTimeout(() => {
+          try { if (this._seasonBgmNode === osc) osc.stop(); } catch (e) {}
+        }, 1600);
+      } catch (e) {
+        console.warn('赛季BGM播放失败:', e);
+      }
+    },
+
+    announceClassEvent(text, speakText = '') {
+      const bar = document.getElementById('classEventStrip');
+      if (bar) {
+        bar.textContent = text;
+        bar.classList.add('show');
+        setTimeout(() => bar.classList.remove('show'), 3600);
+      }
+      if (speakText || text) this.speak((speakText || text).replace(/[🎉🏆✨⚡]/g, ''));
     },
 
     openClassModePanel() {
@@ -5236,6 +5297,7 @@
       if (!hit) return;
       const label = hit === 2 ? '双连击' : (hit === 5 ? '五连击' : '十连击');
       this.showWinBanner(`⚡ ${label}`, '课堂状态超燃！');
+      this.announceClassEvent(`⚡ 连击触发：${label}`);
       this.showScoreRain(hit === 10 ? 36 : (hit === 5 ? 24 : 14));
     },
 
@@ -5265,6 +5327,7 @@
           this.saveStudents();
         }
         this.showWinBanner('🏆 赛季奖励解锁', `${cfg.theme || '本赛季'}达标，全班奖励 +${reward} 分`);
+        this.announceClassEvent(`🏆 赛季达标！全班每人奖励 +${reward} 分`);
         this.showScoreRain(40);
         if (window.launchFireworks) window.launchFireworks();
         changed = true;
@@ -5291,6 +5354,7 @@
           this.renderGroups();
         }
         this.showWinBanner('🎯 小组赛季奖励解锁', `全组达标，每组奖励 +${gReward} 分`);
+        this.announceClassEvent(`🎯 小组赛季达标！每组奖励 +${gReward} 分`);
         changed = true;
       }
 
@@ -5552,6 +5616,7 @@
       this.saveStudents();
       this.showScoreEffect(studentId, 1);
       this.showScoreRain(10);
+      this.announceClassEvent(`🎯 ${this.escape(s.name)} 完成今日目标：${goal ? goal.name : key}`);
       this.addBroadcastMessage(s.name, 1, `完成今日目标：${goal ? goal.name : key}`);
       this.renderStudents();
       this.renderDashboard();
@@ -6269,6 +6334,7 @@
       this.applyComboBonus(studentId, delta);
       this.maybeUnlockSeasonReward();
       this.showActionToast(`${this.escape(s.name)} ${delta > 0 ? '加分成功' : '扣分成功'} ${delta > 0 ? '+' : ''}${delta}`);
+      if (delta > 0 && (delta >= 3 || Math.random() < 0.2)) this.announceClassEvent(`📣 ${this.escape(s.name)} 课堂表现出色，获得 +${delta} 分！`);
       // 添加到广播站
       this.addBroadcastMessage(s.name, delta, item.name);
       if (document.getElementById('studentModal').classList.contains('show')) this.openStudentModal(studentId);

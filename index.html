@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=50">
+  <link rel="stylesheet" href="./styles.css?v=51">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -1797,6 +1797,28 @@
         <input id="seasonDescInput" class="login-input" placeholder="例如：本周目标，班级总加分达到300分">
       </div>
       <div class="form-group">
+        <label>赛季限定徽章名</label>
+        <input id="seasonBadgeInput" class="login-input" placeholder="例如：青龙勇者章">
+      </div>
+      <div class="form-group">
+        <label>赛季限定背景</label>
+        <select id="seasonBgThemeInput" class="login-input">
+          <option value="dragon">青龙周</option>
+          <option value="flame">火焰挑战周</option>
+          <option value="ocean">海洋探索周</option>
+          <option value="forest">森林守护周</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>赛季BGM</label>
+        <select id="seasonBgmInput" class="login-input">
+          <option value="none">关闭</option>
+          <option value="march">冲刺进行曲</option>
+          <option value="magic">奇幻冒险曲</option>
+          <option value="drum">热血鼓点</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>赛季目标总分</label>
         <input id="seasonTargetInput" class="login-input" type="number" min="10" value="300">
       </div>
@@ -1910,6 +1932,7 @@
     </div>
   </div>
 
+  <div id="classEventStrip" class="class-event-strip" aria-live="polite"></div>
   <div id="effectContainer" class="effect-container"></div>
 
   <!-- 每日之星颁奖弹窗 -->
@@ -1938,7 +1961,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=95"></script>
+<script src="./app-loader.js?v=96"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
