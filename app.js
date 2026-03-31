@@ -3585,6 +3585,11 @@
       try { this.loadBroadcastMessages(); } catch (e) { console.error('loadBroadcastMessages失败:', e); }
       try { this.applySeasonThemeAndBgm(); } catch (e) { console.error('赛季主题初始化失败:', e); }
       try {
+        const data = getUserData();
+        const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+        if (cls && cls.classMode && cls.classMode.active) this.startRhythmEngine();
+      } catch (e) { console.error('课堂节奏引擎初始化失败:', e); }
+      try {
         const cls = this.getCurrentClassData();
         const rollCost = parseInt((cls && cls.monopolyRollCost) || 1, 10) || 1;
         const rollInput = document.getElementById('monopolyRollCost');
@@ -5162,8 +5167,11 @@
       cls.classMode.active = true;
       cls.classMode.startedAt = Date.now();
       cls.classMode.startSnapshot = (this.students || []).map(s => ({ id: s.id, points: s.points || 0 }));
+      cls.classMode.rhythmEnabled = true;
+      cls.classMode.rhythmStage = 0;
       setUserData(data);
       this.saveData();
+      this.startRhythmEngine();
       this.renderClassModeStatus();
       this.showWinBanner('▶️ 课堂模式已开始', '记录课堂成长中');
       this.announceClassEvent('🧭 课堂流程启动：考勤 → 点名 → 课堂计时');
@@ -5176,12 +5184,49 @@
       const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
       if (!cls || !cls.classMode || !cls.classMode.active) { this.renderClassModeStatus(); return; }
       cls.classMode.active = false;
+      cls.classMode.rhythmEnabled = false;
       cls.classMode.endedAt = Date.now();
       setUserData(data);
       this.saveData();
+      this.stopRhythmEngine();
       this.renderClassModeStatus();
       this.generateWeeklyReport(true);
       this.showWinBanner('⏹️ 课堂模式已结束', '课堂小结已生成');
+    },
+
+    startRhythmEngine() {
+      this.stopRhythmEngine();
+      const checkpoints = [
+        { min: 5, text: '📚 5分钟：完成课堂导入，建议快速点名一次', action: () => this.randomRollCall() },
+        { min: 20, text: '🔥 20分钟：进入互动高潮，建议开启快捷键面板', action: () => this.openShortcutPanel() },
+        { min: 35, text: '🧾 35分钟：准备收尾，可先预览周报', action: () => this.openWeeklyReportPanel() }
+      ];
+      this._rhythmTimer = setInterval(() => {
+        const data = getUserData();
+        const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+        if (!cls || !cls.classMode || !cls.classMode.active || cls.classMode.rhythmEnabled === false) {
+          this.stopRhythmEngine();
+          return;
+        }
+        const mins = Math.floor((Date.now() - (cls.classMode.startedAt || Date.now())) / 60000);
+        const stage = Number(cls.classMode.rhythmStage || 0);
+        const nextIdx = checkpoints.findIndex((c, idx) => idx >= stage && mins >= c.min);
+        if (nextIdx >= 0) {
+          const cp = checkpoints[nextIdx];
+          this.announceClassEvent(cp.text);
+          try { cp.action && cp.action(); } catch (e) {}
+          cls.classMode.rhythmStage = nextIdx + 1;
+          setUserData(data);
+          this.saveData();
+        }
+      }, 30000);
+    },
+
+    stopRhythmEngine() {
+      if (this._rhythmTimer) {
+        clearInterval(this._rhythmTimer);
+        this._rhythmTimer = null;
+      }
     },
 
     renderClassModeStatus() {
