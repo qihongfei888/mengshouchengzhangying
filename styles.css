@@ -2091,6 +2091,18 @@ body.season-theme-forest {
 .sticker-card.rare-SSR { border-color:#fda4af; background:#fff1f2; }
 .sticker-card.rare-SR { border-color:#93c5fd; background:#eff6ff; }
 
+.repair-task-box {
+  margin:10px 0;
+  border:1px solid #fcd34d;
+  background:#fffbeb;
+  border-radius:12px;
+  padding:10px;
+}
+.repair-task-box.done {
+  border-color:#86efac;
+  background:#f0fdf4;
+}
+
 @keyframes stickerDropPop {
   0% { opacity:0; transform:scale(.6) rotate(-8deg); }
   70% { opacity:1; transform:scale(1.05) rotate(2deg); }

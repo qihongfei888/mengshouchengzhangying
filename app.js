@@ -5449,7 +5449,10 @@
       if (modal) modal.classList.add('show');
       const sel = document.getElementById('stickerStudentSelect');
       if (sel) {
-        sel.innerHTML = (this.students || []).map(s => `<option value="${this.escape(s.id)}">${this.escape(s.name)}（积分${s.points || 0}）</option>`).join('');
+        sel.innerHTML = (this.students || []).map(s => {
+          this.ensureStudentCurrencies(s);
+          return `<option value="${this.escape(s.id)}">${this.escape(s.name)}（能量${this.getStudentEnergy(s)}）</option>`;
+        }).join('');
       }
       this.renderStickerAlbum();
     },
@@ -5478,8 +5481,9 @@
       if (!sid) return;
       const s = (this.students || []).find(x => String(x.id) === String(sid));
       if (!s) return;
-      if ((s.points || 0) < 1) { alert('积分不足，无法开箱'); return; }
-      s.points = (s.points || 0) - 1;
+      this.ensureStudentCurrencies(s);
+      if ((this.getStudentEnergy(s) || 0) < 1) { alert('能量不足，无法开箱'); return; }
+      s.energy = Math.max(0, this.getStudentEnergy(s) - 1);
       const st = this._pickSticker();
       if (!s.stickers) s.stickers = [];
       s.stickers.push({ id: st.id, name: st.name, icon: st.icon, rare: st.rare, time: Date.now() });
@@ -5674,14 +5678,30 @@
       this.ensureDailyGoals(s);
       if ((s.dailyGoal.done || []).includes(key)) return;
       s.dailyGoal.done.push(key);
-      s.points = (s.points || 0) + 1;
+      s.points = (this.getStudentGrowth(s) || 0) + 1;
+      s.energy = (this.getStudentEnergy(s) || 0) + 1;
       if (!s.scoreHistory) s.scoreHistory = [];
       const goal = this.getDailyGoalItems().find(g => g.key === key);
       s.scoreHistory.unshift({ time: Date.now(), delta: 1, reason: `今日目标-${goal ? goal.name : key}` });
+      // 小组协作奖励：成员完成目标时，小组+1
+      const team = (this.groups || []).find(g => (g.members || []).some(m => m.studentId === s.id));
+      if (team) {
+        team.points = (team.points || 0) + 1;
+        this.groupPointHistory.push({
+          id: 'point_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          groupId: team.id,
+          groupName: team.name,
+          delta: 1,
+          reason: `成员目标达成-${goal ? goal.name : key}`,
+          time: new Date().toISOString()
+        });
+        setStorage(STORAGE_KEYS.groups, this.groups);
+        setStorage(STORAGE_KEYS.groupPointHistory, this.groupPointHistory);
+      }
       this.saveStudents();
       this.showScoreEffect(studentId, 1);
       this.showScoreRain(10);
-      this.announceClassEvent(`🎯 ${this.escape(s.name)} 完成今日目标：${goal ? goal.name : key}`);
+      this.announceClassEvent(`🎯 ${this.escape(s.name)} 完成今日目标：${goal ? goal.name : key}${team ? `（${this.escape(team.name)} 小组+1）` : ''}`);
       this.addBroadcastMessage(s.name, 1, `完成今日目标：${goal ? goal.name : key}`);
       this.renderStudents();
       this.renderDashboard();
@@ -6095,6 +6115,7 @@
     },
 
     studentCardHtml(s, idx = 0) {
+      this.ensureStudentCurrencies(s);
       const totalStages = this.getTotalStages();
       let petHtml = '';
       let badgeCount = this.getTotalBadgesEarned(s);
@@ -6166,7 +6187,7 @@
       const extraInfoHtml = infoParts.length ? `<div class="student-extra-info" title="${infoParts.join('｜')}">${infoParts.slice(0,2).join(' ｜ ')}${infoParts.length>2?'…':''}</div>` : '';
       
       // 判断是否可以喂食
-      const canFeed = s.pet && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead && (s.points || 0) >= 1 && (s.pet.stage || 0) < totalStages;
+      const canFeed = s.pet && !s.pet.isSick && !s.pet.isBrokenEgg && !s.pet.isDead && (this.getStudentEnergy(s) || 0) >= 1 && (s.pet.stage || 0) < totalStages;
       const _feedId = String(s.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
       const feedAction = canFeed ? `onclick="event.stopPropagation(); app.quickFeed('${_feedId}')"` : '';
       const feedClass = canFeed ? 'can-feed' : 'cannot-feed';
@@ -6204,7 +6225,7 @@
             </div>
               <div class="sc3-progress-bar"><div class="sc3-progress-fill" style="width:${progressPercent}%;background:${theme.primary};"></div></div>
               <div class="sc3-footer">
-                <span class="sc3-points ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '积分不足或已满级'}">🍖 ${s.points ?? 0}</span>
+                <span class="sc3-points ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '能量不足或已满级'}">⚡ ${this.getStudentEnergy(s)}</span>
                 <span class="sc3-stage">${progressText}</span>
                 <span class="sc3-emotion">${this.getPetEmotionEmoji(s)} ${this.getPetEmotionLabel(s)}</span>
                 ${s.pet ? `<button class="sc3-btn" onclick="event.stopPropagation();app.interactWithPet('${s.id.replace(/'/g, "\\'")}')">✨</button>` : ''}
@@ -6225,6 +6246,52 @@
       if (v >= 75) return '亢奋';
       if (v >= 45) return '开心';
       return '困倦';
+    },
+
+    ensureStudentCurrencies(student) {
+      if (!student) return;
+      if (!Number.isFinite(student.points)) student.points = 0; // 成长值
+      if (!Number.isFinite(student.energy)) student.energy = Math.max(0, Math.min(20, Math.floor((student.points || 0) / 2)));
+    },
+
+    getStudentGrowth(student) {
+      this.ensureStudentCurrencies(student);
+      return student.points || 0;
+    },
+
+    getStudentEnergy(student) {
+      this.ensureStudentCurrencies(student);
+      return student.energy || 0;
+    },
+
+    createRepairTask(student, loss, reason = '') {
+      if (!student || !(loss > 0)) return;
+      const tasks = ['整理课桌并保持整洁', '主动帮助1位同学', '积极发言1次', '课堂坐姿保持端正'];
+      const t = tasks[Math.floor(Math.random() * tasks.length)];
+      student.repairTask = {
+        createdAt: Date.now(),
+        needRecover: Math.max(1, Math.floor(loss)),
+        reason: reason || '课堂扣分',
+        text: t,
+        done: false
+      };
+    },
+
+    completeRepairTask(studentId) {
+      const s = (this.students || []).find(x => x.id === studentId);
+      if (!s || !s.repairTask || s.repairTask.done) return;
+      const recover = Math.max(1, parseInt(s.repairTask.needRecover, 10) || 1);
+      s.energy = (this.getStudentEnergy(s) + recover);
+      s.points = (this.getStudentGrowth(s) + Math.max(1, Math.floor(recover / 2)));
+      if (!s.scoreHistory) s.scoreHistory = [];
+      s.scoreHistory.unshift({ time: Date.now(), delta: Math.max(1, Math.floor(recover / 2)), reason: `修复任务完成-${s.repairTask.text}` });
+      s.repairTask.done = true;
+      this.saveStudents();
+      this.renderStudents();
+      this.renderDashboard();
+      this.showActionToast(`${this.escape(s.name)} 修复任务完成，状态恢复`);
+      this.announceClassEvent(`🛠️ ${this.escape(s.name)} 完成修复任务，成功恢复状态`);
+      this.openStudentModal(studentId);
     },
 
     getPetEmotionEmoji(s) {
@@ -6249,6 +6316,7 @@
     openStudentModal(studentId) {
       const s = this.students.find(x => x.id === studentId);
       if (!s) return;
+      this.ensureStudentCurrencies(s);
       const plusItems = this.getPlusItems();
       const minusItems = this.getMinusItems();
       const stagePoints = this.getStagePointsByStage(s.pet ? (s.pet.stage || 1) : 1);
@@ -6263,7 +6331,7 @@
         const progress = s.pet.stageProgress || 0;
         const stage = s.pet.stage || 0;
         const need = this.getStagePointsByStage(stage || 1);
-        const canFeed = !s.pet.hatching && stage < totalStages && (s.points || 0) >= 1;
+        const canFeed = !s.pet.hatching && stage < totalStages && (this.getStudentEnergy(s) || 0) >= 1;
         const foodLabel = this.getPetFood(s);
         petSection = `
           <div class="modal-feed-section">
@@ -6276,7 +6344,7 @@
                 ${intro ? `<p class="text-muted" style="margin-top:4px;">📜 ${this.escape(intro)}</p>` : ''}
             </div>
             </div>
-            ${canFeed ? `<button class="btn feed-btn" onclick="app.feedStudentInModal('${s.id}')">${foodLabel} 喂食（消耗1积分）</button>` : '<p class="text-muted">积分不足或已满级</p>'}
+            ${canFeed ? `<button class="btn feed-btn" onclick="app.feedStudentInModal('${s.id}')">${foodLabel} 喂食（消耗1能量）</button>` : '<p class="text-muted">能量不足或已满级</p>'}
             <button class="btn btn-outline" style="margin-top:8px;" onclick="app.interactWithPet('${s.id}')">💬 抚摸互动</button>
           </div>`;
       } else {
@@ -6318,6 +6386,8 @@
       
       const history = (s.scoreHistory || []).slice(0, 10);
       const withdrawBtn = history.length ? `<button class="btn btn-outline btn-small" onclick="app.openWithdrawModal('${s.id}')">撤回记录</button>` : '';
+      const repair = s.repairTask;
+      const repairTaskHtml = repair ? `<div class="repair-task-box ${repair.done ? 'done' : ''}"><h4>🛠️ 修复任务</h4><div>${this.escape(repair.text || '')}</div><div class="text-muted" style="margin-top:4px;">来源：${this.escape(repair.reason || '扣分')} · 恢复 ${repair.needRecover || 1} 能量</div>${repair.done ? '<div class="text-muted" style="margin-top:6px;">已完成</div>' : `<button class="btn btn-primary btn-small" style="margin-top:6px;" onclick="app.completeRepairTask('${s.id.replace(/'/g, "\\'")}')">完成修复</button>`}</div>` : '';
       const dailyGoalHtml = this.renderDailyGoalHtml(s);
       const toNext = s.pet && (s.pet.hatching || (s.pet.stage || 0) < totalStages) ? Math.max(0, this.getStagePointsByStage((s.pet.stage || 1)) - (s.pet.stageProgress || 0)) : null;
       const toNextTip = toNext !== null ? `<p class="modal-to-next">距下一级还需 <strong>${toNext}</strong> 积分</p>` : '';
@@ -6327,7 +6397,7 @@
           <div class="student-info">
             <div class="student-name">${this.escape(s.name)}</div>
             <div class="student-id">${this.escape(s.id)}</div>
-            <div class="student-stat">积分：<strong>${s.points ?? 0}</strong></div>
+            <div class="student-stat">成长值：<strong>${this.getStudentGrowth(s)}</strong> · 能量值：<strong>${this.getStudentEnergy(s)}</strong></div>
           </div>
         </div>
         ${(plusItems.length || minusItems.length) ? `
@@ -6337,6 +6407,7 @@
         </div>
         ` : ''}
         ${toNextTip}
+        ${repairTaskHtml}
         ${dailyGoalHtml}
         ${petSection}
         ${completedHtml}
@@ -6413,30 +6484,34 @@
       const items = type === 'plus' ? this.getPlusItems() : this.getMinusItems();
       const item = items[itemIndex];
       if (!item) return;
-      const delta = type === 'plus' ? (item.points || 1) : -(Math.abs(item.points) || 1);
-      s.points = (s.points || 0) + delta;
+      this.ensureStudentCurrencies(s);
+      const growthDelta = type === 'plus' ? (item.points || 1) : -(Math.abs(item.points) || 1);
+      const energyDelta = type === 'plus' ? Math.max(1, Math.floor((item.points || 1) * 0.8)) : -Math.max(1, Math.floor(Math.abs(item.points || 1) * 0.8));
+      s.points = this.getStudentGrowth(s) + growthDelta;
+      s.energy = Math.max(0, this.getStudentEnergy(s) + energyDelta);
       if (!s.scoreHistory) s.scoreHistory = [];
-      s.scoreHistory.unshift({ time: Date.now(), delta, reason: item.name });
-      // 负分触发宠物退化逻辑
-      if (delta < 0) {
-        this.applyPetDegenerationOnScoreChange(s, delta);
+      s.scoreHistory.unshift({ time: Date.now(), delta: growthDelta, reason: item.name });
+      // 负向时生成修复任务，避免挫败
+      if (growthDelta < 0) {
+        this.applyPetDegenerationOnScoreChange(s, growthDelta);
+        this.createRepairTask(s, Math.abs(energyDelta), item.name);
       }
-      this.updatePetEmotionOnAction(s, delta, 'score');
+      this.updatePetEmotionOnAction(s, growthDelta, 'score');
       this.saveStudents();
       this.renderStudents();
       this.renderHonor();
       // 显示加分减分特效
-      this.showScoreEffect(studentId, delta);
-      if (delta > 0) {
-        this.showScoreRain(Math.min(26, 8 + delta * 3));
-        if (delta >= 3) this.showWinBanner(`🎉 ${this.escape(s.name)} 获得 ${delta} 分`, '课堂表现超赞！');
+      this.showScoreEffect(studentId, growthDelta);
+      if (growthDelta > 0) {
+        this.showScoreRain(Math.min(26, 8 + growthDelta * 3));
+        if (growthDelta >= 3) this.showWinBanner(`🎉 ${this.escape(s.name)} 获得 ${growthDelta} 分`, '课堂表现超赞！');
       }
-      this.applyComboBonus(studentId, delta);
+      this.applyComboBonus(studentId, growthDelta);
       this.maybeUnlockSeasonReward();
-      this.showActionToast(`${this.escape(s.name)} ${delta > 0 ? '加分成功' : '扣分成功'} ${delta > 0 ? '+' : ''}${delta}`);
-      if (delta > 0 && (delta >= 3 || Math.random() < 0.2)) this.announceClassEvent(`📣 ${this.escape(s.name)} 课堂表现出色，获得 +${delta} 分！`);
+      this.showActionToast(`${this.escape(s.name)} ${growthDelta > 0 ? '加分成功' : '扣分成功'} ${growthDelta > 0 ? '+' : ''}${growthDelta}`);
+      if (growthDelta > 0 && (growthDelta >= 3 || Math.random() < 0.2)) this.announceClassEvent(`📣 ${this.escape(s.name)} 课堂表现出色，获得 +${growthDelta} 分！`);
       // 添加到广播站
-      this.addBroadcastMessage(s.name, delta, item.name);
+      this.addBroadcastMessage(s.name, growthDelta, item.name);
       if (document.getElementById('studentModal').classList.contains('show')) this.openStudentModal(studentId);
     },
 
@@ -6916,9 +6991,10 @@
       if (!s || !s.pet) return;
       this.ensurePetHealthStatus(s);
       if (s.pet.isDead || s.pet.isBrokenEgg || s.pet.isSick) return;
-      const pts = Math.min(amount, s.points || 0);
+      this.ensureStudentCurrencies(s);
+      const pts = Math.min(amount, this.getStudentEnergy(s));
       if (pts <= 0) return;
-      s.points = (s.points || 0) - pts;
+      s.energy = Math.max(0, this.getStudentEnergy(s) - pts);
       const totalStages = this.getTotalStages();
       
       let stage = s.pet.stage || 1;
@@ -10566,7 +10642,7 @@
       const parentPhone = (document.getElementById('addStudentParentPhone') && document.getElementById('addStudentParentPhone').value || '').trim();
       const familyNote = (document.getElementById('addStudentFamilyNote') && document.getElementById('addStudentFamilyNote').value || '').trim();
 
-      const student = { id, name, points: 0, avatar };
+      const student = { id, name, points: 0, energy: 10, avatar };
       if (height) student.height = height;
       if (visionLeft) student.visionLeft = visionLeft;
       if (visionRight) student.visionRight = visionRight;
