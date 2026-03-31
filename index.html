@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=45">
+  <link rel="stylesheet" href="./styles.css?v=46">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -248,6 +248,26 @@
               <div class="tool-card-icon">📣</div>
               <div class="tool-card-main">夸夸墙</div>
               <div class="tool-card-sub">全班留言 · 滚动展示</div>
+            </button>
+            <button class="tool-card" onclick="app.openStudentScreen()">
+              <div class="tool-card-icon">🖥️</div>
+              <div class="tool-card-main">学生大屏</div>
+              <div class="tool-card-sub">全屏展示排行榜与成长状态</div>
+            </button>
+            <button class="tool-card" onclick="app.openSeasonPanel()">
+              <div class="tool-card-icon">🗺️</div>
+              <div class="tool-card-main">赛季地图</div>
+              <div class="tool-card-sub">每周主题赛季 + 目标进度</div>
+            </button>
+            <button class="tool-card" onclick="app.openClassModePanel()">
+              <div class="tool-card-icon">⏱️</div>
+              <div class="tool-card-main">一键课堂模式</div>
+              <div class="tool-card-sub">上课启动 / 下课总结</div>
+            </button>
+            <button class="tool-card" onclick="app.openWeeklyReportPanel()">
+              <div class="tool-card-icon">📊</div>
+              <div class="tool-card-main">自动周报</div>
+              <div class="tool-card-sub">活跃榜 / 进步榜 / 关注名单</div>
             </button>
           </div>
         </div>
@@ -1729,6 +1749,69 @@
     </div>
   </div>
 
+  <!-- 学生大屏 -->
+  <div id="studentScreenModal" class="modal">
+    <div class="modal-content student-screen-modal">
+      <button class="modal-close" onclick="app.closeModal('studentScreenModal')">&times;</button>
+      <h3>🖥️ 学生大屏</h3>
+      <div id="studentScreenBoard" class="student-screen-board"></div>
+      <div class="score-btns" style="margin-top:10px;">
+        <button class="btn btn-primary" onclick="app.refreshStudentScreenBoard()">🔄 刷新</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 赛季地图 -->
+  <div id="seasonModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeModal('seasonModal')">&times;</button>
+      <h3>🗺️ 赛季地图</h3>
+      <div class="form-group">
+        <label>赛季主题</label>
+        <input id="seasonThemeInput" class="login-input" placeholder="例如：青龙冲刺周">
+      </div>
+      <div class="form-group">
+        <label>赛季说明</label>
+        <input id="seasonDescInput" class="login-input" placeholder="例如：本周目标，班级总加分达到300分">
+      </div>
+      <div class="form-group">
+        <label>赛季目标总分</label>
+        <input id="seasonTargetInput" class="login-input" type="number" min="10" value="300">
+      </div>
+      <div class="score-btns">
+        <button class="btn btn-primary" onclick="app.saveSeasonConfig()">保存赛季</button>
+      </div>
+      <div id="seasonPreview" class="season-preview"></div>
+    </div>
+  </div>
+
+  <!-- 一键课堂模式 -->
+  <div id="classModeModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeModal('classModeModal')">&times;</button>
+      <h3>⏱️ 一键课堂模式</h3>
+      <p class="text-muted">点击开始后会记录课堂起始时间，结束时自动生成课堂小结。</p>
+      <div class="score-btns">
+        <button class="btn btn-primary" onclick="app.startClassMode()">▶️ 开始课堂</button>
+        <button class="btn btn-danger" onclick="app.endClassMode()">⏹️ 结束课堂</button>
+      </div>
+      <div id="classModeStatus" class="season-preview"></div>
+    </div>
+  </div>
+
+  <!-- 自动周报 -->
+  <div id="weeklyReportModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="app.closeModal('weeklyReportModal')">&times;</button>
+      <h3>📊 自动周报</h3>
+      <p class="text-muted">按最近7天积分变动自动生成。</p>
+      <div class="score-btns">
+        <button class="btn btn-primary" onclick="app.generateWeeklyReport()">生成周报</button>
+      </div>
+      <div id="weeklyReportBody" class="season-preview"></div>
+    </div>
+  </div>
+
   <div id="effectContainer" class="effect-container"></div>
 
   <!-- 每日之星颁奖弹窗 -->
@@ -1757,7 +1840,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=90"></script>
+<script src="./app-loader.js?v=91"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}

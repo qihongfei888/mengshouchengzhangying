@@ -4970,6 +4970,218 @@
       }).join('');
     },
 
+    openStudentScreen() {
+      this.refreshStudentScreenBoard();
+      const modal = document.getElementById('studentScreenModal');
+      if (modal) modal.classList.add('show');
+    },
+
+    refreshStudentScreenBoard() {
+      const el = document.getElementById('studentScreenBoard');
+      if (!el) return;
+      const top = [...(this.students || [])]
+        .sort((a, b) => (b.points || 0) - (a.points || 0))
+        .slice(0, 20);
+      if (!top.length) {
+        el.innerHTML = '<p class="placeholder-text">暂无学生数据</p>';
+        return;
+      }
+      el.innerHTML = top.map((s, i) => {
+        const petStage = s.pet ? (s.pet.stage || 0) : 0;
+        const medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '⭐'));
+        return `<div class="ss-item rank-${i < 3 ? (i + 1) : 4}">
+          <div class="ss-rank">${medal}</div>
+          <div class="ss-main">
+            <div class="ss-name">${this.escape(s.name)}</div>
+            <div class="ss-sub">积分 ${s.points || 0} · 神兽 Lv.${petStage}</div>
+          </div>
+        </div>`;
+      }).join('');
+    },
+
+    openSeasonPanel() {
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      const cfg = cls && cls.seasonConfig ? cls.seasonConfig : { theme: '青龙冲刺周', desc: '全班累计加分达到300分', target: 300 };
+      const a = document.getElementById('seasonThemeInput');
+      const b = document.getElementById('seasonDescInput');
+      const c = document.getElementById('seasonTargetInput');
+      if (a) a.value = cfg.theme || '';
+      if (b) b.value = cfg.desc || '';
+      if (c) c.value = cfg.target || 300;
+      const modal = document.getElementById('seasonModal');
+      if (modal) modal.classList.add('show');
+      this.renderSeasonPreview();
+    },
+
+    saveSeasonConfig() {
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!cls) return;
+      cls.seasonConfig = {
+        theme: (document.getElementById('seasonThemeInput')?.value || '青龙冲刺周').trim(),
+        desc: (document.getElementById('seasonDescInput')?.value || '').trim(),
+        target: Math.max(10, parseInt(document.getElementById('seasonTargetInput')?.value, 10) || 300)
+      };
+      setUserData(data);
+      this.saveData();
+      this.renderSeasonPreview();
+      this.showWinBanner('🗺️ 赛季已更新', cls.seasonConfig.theme || '新的挑战开始啦');
+    },
+
+    renderSeasonPreview() {
+      const el = document.getElementById('seasonPreview');
+      if (!el) return;
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!cls) return;
+      const cfg = cls.seasonConfig || { theme: '青龙冲刺周', desc: '全班累计加分达到300分', target: 300 };
+      const totalPlus = (this.students || []).reduce((sum, s) => {
+        const hist = Array.isArray(s.scoreHistory) ? s.scoreHistory : [];
+        return sum + hist.reduce((ss, h) => ss + ((h.delta || 0) > 0 ? (h.delta || 0) : 0), 0);
+      }, 0);
+      const pct = Math.max(0, Math.min(100, Math.round((totalPlus / (cfg.target || 300)) * 100)));
+      el.innerHTML = `<div class="season-card">
+        <div class="season-theme">${this.escape(cfg.theme || '赛季主题')}</div>
+        <div class="season-desc">${this.escape(cfg.desc || '')}</div>
+        <div class="season-bar"><div class="season-fill" style="width:${pct}%"></div></div>
+        <div class="season-foot">当前 ${totalPlus} / 目标 ${cfg.target}（${pct}%）</div>
+      </div>`;
+    },
+
+    openClassModePanel() {
+      const modal = document.getElementById('classModeModal');
+      if (modal) modal.classList.add('show');
+      this.renderClassModeStatus();
+    },
+
+    startClassMode() {
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!cls) return;
+      cls.classMode = cls.classMode || {};
+      cls.classMode.active = true;
+      cls.classMode.startedAt = Date.now();
+      cls.classMode.startSnapshot = (this.students || []).map(s => ({ id: s.id, points: s.points || 0 }));
+      setUserData(data);
+      this.saveData();
+      this.renderClassModeStatus();
+      this.showWinBanner('▶️ 课堂模式已开始', '记录课堂成长中');
+    },
+
+    endClassMode() {
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!cls || !cls.classMode || !cls.classMode.active) { this.renderClassModeStatus(); return; }
+      cls.classMode.active = false;
+      cls.classMode.endedAt = Date.now();
+      setUserData(data);
+      this.saveData();
+      this.renderClassModeStatus();
+      this.generateWeeklyReport(true);
+      this.showWinBanner('⏹️ 课堂模式已结束', '课堂小结已生成');
+    },
+
+    renderClassModeStatus() {
+      const el = document.getElementById('classModeStatus');
+      if (!el) return;
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!cls || !cls.classMode || !cls.classMode.startedAt) {
+        el.innerHTML = '<div class="season-card"><div class="season-theme">当前未开始课堂模式</div></div>';
+        return;
+      }
+      const cm = cls.classMode;
+      const now = cm.active ? Date.now() : (cm.endedAt || Date.now());
+      const mins = Math.max(1, Math.round((now - cm.startedAt) / 60000));
+      const startMap = Object.create(null);
+      (cm.startSnapshot || []).forEach(x => { startMap[x.id] = x.points || 0; });
+      const plus = (this.students || []).reduce((sum, s) => sum + Math.max(0, (s.points || 0) - (startMap[s.id] || 0)), 0);
+      el.innerHTML = `<div class="season-card">
+        <div class="season-theme">课堂状态：${cm.active ? '进行中' : '已结束'}</div>
+        <div class="season-desc">时长 ${mins} 分钟 · 本节净增长积分 ${plus}</div>
+      </div>`;
+    },
+
+    openWeeklyReportPanel() {
+      const modal = document.getElementById('weeklyReportModal');
+      if (modal) modal.classList.add('show');
+      this.generateWeeklyReport();
+    },
+
+    generateWeeklyReport(fromClassMode = false) {
+      const el = document.getElementById('weeklyReportBody');
+      if (!el) return;
+      const since = Date.now() - 7 * 24 * 3600 * 1000;
+      const list = (this.students || []).map(s => {
+        const hs = (s.scoreHistory || []).filter(h => (h.time || 0) >= since);
+        const delta = hs.reduce((sum, h) => sum + (h.delta || 0), 0);
+        const plusCount = hs.filter(h => (h.delta || 0) > 0).length;
+        return { s, delta, plusCount };
+      });
+      const active = [...list].sort((a, b) => b.plusCount - a.plusCount).slice(0, 5);
+      const improve = [...list].sort((a, b) => b.delta - a.delta).slice(0, 5);
+      const focus = [...list].sort((a, b) => a.delta - b.delta).slice(0, 5);
+      const renderList = (arr, icon) => arr.length
+        ? arr.map(x => `<div class="report-row">${icon} ${this.escape(x.s.name)} <strong>${x.delta >= 0 ? '+' : ''}${x.delta}</strong></div>`).join('')
+        : '<div class="report-row">暂无数据</div>';
+      el.innerHTML = `<div class="weekly-report-grid">
+        <div><h4>🔥 活跃榜</h4>${renderList(active, '⚡')}</div>
+        <div><h4>🚀 进步榜</h4>${renderList(improve, '🌟')}</div>
+        <div><h4>💡 关注名单</h4>${renderList(focus, '🧭')}</div>
+      </div>`;
+      if (!fromClassMode) this.showScoreRain(14);
+    },
+
+    getDailyGoalItems() {
+      return [
+        { key: 'speak', name: '积极发言1次', reward: 1 },
+        { key: 'help', name: '帮助同学1次', reward: 1 },
+        { key: 'clean', name: '作业整洁完成', reward: 1 }
+      ];
+    },
+
+    ensureDailyGoals(student) {
+      if (!student) return;
+      const today = new Date().toISOString().slice(0, 10);
+      if (!student.dailyGoal || student.dailyGoal.date !== today) {
+        student.dailyGoal = { date: today, done: [] };
+      }
+    },
+
+    completeDailyGoal(studentId, key) {
+      const s = this.students.find(x => x.id === studentId);
+      if (!s) return;
+      this.ensureDailyGoals(s);
+      if ((s.dailyGoal.done || []).includes(key)) return;
+      s.dailyGoal.done.push(key);
+      s.points = (s.points || 0) + 1;
+      if (!s.scoreHistory) s.scoreHistory = [];
+      const goal = this.getDailyGoalItems().find(g => g.key === key);
+      s.scoreHistory.unshift({ time: Date.now(), delta: 1, reason: `今日目标-${goal ? goal.name : key}` });
+      this.saveStudents();
+      this.showScoreEffect(studentId, 1);
+      this.showScoreRain(10);
+      this.addBroadcastMessage(s.name, 1, `完成今日目标：${goal ? goal.name : key}`);
+      this.renderStudents();
+      this.renderDashboard();
+      this.openStudentModal(studentId);
+    },
+
+    renderDailyGoalHtml(s) {
+      if (!s) return '';
+      this.ensureDailyGoals(s);
+      const done = s.dailyGoal && Array.isArray(s.dailyGoal.done) ? s.dailyGoal.done : [];
+      const goals = this.getDailyGoalItems();
+      return `<div class="daily-goal-box"><h4>🎯 今日目标</h4><div class="daily-goal-list">${goals.map(g => {
+        const ok = done.includes(g.key);
+        return `<div class="daily-goal-item ${ok ? 'done' : ''}">
+          <span>${ok ? '✅' : '⭕'} ${this.escape(g.name)}</span>
+          <button class="btn btn-small ${ok ? 'btn-outline' : 'btn-primary'}" ${ok ? 'disabled' : ''} onclick="app.completeDailyGoal('${s.id.replace(/'/g, "\\'")}', '${g.key}')">${ok ? '已完成' : `完成+${g.reward}`}</button>
+        </div>`;
+      }).join('')}</div></div>`;
+    },
+
     openPassingFlowerGame() {
       const modal = document.getElementById('passingFlowerModal');
       if (!modal) return;
@@ -5552,6 +5764,7 @@
       
       const history = (s.scoreHistory || []).slice(0, 10);
       const withdrawBtn = history.length ? `<button class="btn btn-outline btn-small" onclick="app.openWithdrawModal('${s.id}')">撤回记录</button>` : '';
+      const dailyGoalHtml = this.renderDailyGoalHtml(s);
       const toNext = s.pet && (s.pet.hatching || (s.pet.stage || 0) < totalStages) ? Math.max(0, this.getStagePointsByStage((s.pet.stage || 1)) - (s.pet.stageProgress || 0)) : null;
       const toNextTip = toNext !== null ? `<p class="modal-to-next">距下一级还需 <strong>${toNext}</strong> 积分</p>` : '';
       document.getElementById('studentModalBody').innerHTML = `
@@ -5570,6 +5783,7 @@
         </div>
         ` : ''}
         ${toNextTip}
+        ${dailyGoalHtml}
         ${petSection}
         ${completedHtml}
         <p><strong>设置头像</strong></p>
