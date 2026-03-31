@@ -2015,6 +2015,9 @@ body.season-theme-ocean {
 body.season-theme-forest {
   background-image:radial-gradient(circle at 16% 10%, rgba(34,197,94,.18), transparent 46%), radial-gradient(circle at 82% 20%, rgba(16,185,129,.16), transparent 40%);
 }
+body.season-skin-unlocked {
+  background-image:radial-gradient(circle at 20% 8%, rgba(245,158,11,.20), transparent 46%), radial-gradient(circle at 82% 18%, rgba(168,85,247,.16), transparent 40%);
+}
 
 .class-event-strip {
   position:fixed;

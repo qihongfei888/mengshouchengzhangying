@@ -5145,6 +5145,9 @@
       this.saveData();
       this.renderClassModeStatus();
       this.showWinBanner('▶️ 课堂模式已开始', '记录课堂成长中');
+      this.announceClassEvent('🧭 课堂流程启动：考勤 → 点名 → 课堂计时');
+      try { this.openAttendanceTool(); } catch (e) {}
+      setTimeout(() => { try { this.randomRollCall(); } catch (e) {} }, 500);
     },
 
     endClassMode() {
@@ -5179,6 +5182,100 @@
         <div class="season-theme">课堂状态：${cm.active ? '进行中' : '已结束'}</div>
         <div class="season-desc">时长 ${mins} 分钟 · 本节净增长积分 ${plus}</div>
       </div>`;
+    },
+
+    openGroupSeasonTaskPanel() {
+      const modal = document.getElementById('groupSeasonTaskModal');
+      if (modal) modal.classList.add('show');
+      this.renderGroupSeasonTasks();
+    },
+
+    _getGroupSeasonState() {
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!cls) return null;
+      if (!cls.groupSeasonState) cls.groupSeasonState = { weekId: '', byGroup: {}, skinUnlocked: false };
+      return { data, cls, state: cls.groupSeasonState };
+    },
+
+    rollGroupSeasonTasks() {
+      const ctx = this._getGroupSeasonState();
+      if (!ctx) return;
+      const weekId = new Date().toISOString().slice(0, 10);
+      const pool = [
+        { key: 'goal', text: '本周完成成员目标累计 8 次', target: 8 },
+        { key: 'plus', text: '本周小组净加分达到 40 分', target: 40 },
+        { key: 'sticker', text: '本周开箱累计 5 次', target: 5 },
+        { key: 'interact', text: '本周宠物互动累计 20 次', target: 20 }
+      ];
+      ctx.state.weekId = weekId;
+      ctx.state.byGroup = {};
+      (this.groups || []).forEach(g => {
+        const picked = [...pool].sort(() => Math.random() - 0.5).slice(0, 2);
+        ctx.state.byGroup[g.id] = picked.map(t => ({ ...t, progress: 0, done: false }));
+      });
+      setUserData(ctx.data);
+      this.saveData();
+      this.renderGroupSeasonTasks();
+      this.announceClassEvent('🧩 本周小组赛季任务已刷新');
+    },
+
+    _updateGroupSeasonTaskProgress(groupId, key, add = 1) {
+      const ctx = this._getGroupSeasonState();
+      if (!ctx || !groupId || !key) return;
+      const tasks = ctx.state.byGroup && ctx.state.byGroup[groupId] ? ctx.state.byGroup[groupId] : null;
+      if (!tasks || !tasks.length) return;
+      let changed = false;
+      tasks.forEach(t => {
+        if (t.key !== key || t.done) return;
+        t.progress = (t.progress || 0) + add;
+        if ((t.progress || 0) >= (t.target || 1)) {
+          t.done = true;
+          changed = true;
+        }
+      });
+      if (changed) {
+        const g = (this.groups || []).find(x => x.id === groupId);
+        this.announceClassEvent(`🏁 ${this.escape(g ? g.name : '小组')} 完成赛季任务！`);
+      }
+      setUserData(ctx.data);
+      this.saveData();
+      this.checkGroupSeasonSkinUnlock();
+    },
+
+    checkGroupSeasonSkinUnlock() {
+      const ctx = this._getGroupSeasonState();
+      if (!ctx) return;
+      const allDone = Object.values(ctx.state.byGroup || {}).length > 0 && Object.values(ctx.state.byGroup || {}).every(arr => (arr || []).every(t => t.done));
+      if (allDone && !ctx.state.skinUnlocked) {
+        ctx.state.skinUnlocked = true;
+        document.body.classList.add('season-skin-unlocked');
+        this.showWinBanner('🎨 公共皮肤解锁', '全班协作达成，教室主题已升级！');
+        this.announceClassEvent('🎨 全班解锁赛季公共皮肤！');
+        setUserData(ctx.data);
+        this.saveData();
+      }
+      this.renderGroupSeasonTasks();
+    },
+
+    renderGroupSeasonTasks() {
+      const listEl = document.getElementById('groupSeasonTaskList');
+      const skinEl = document.getElementById('groupSeasonSkinUnlock');
+      if (!listEl || !skinEl) return;
+      const ctx = this._getGroupSeasonState();
+      if (!ctx) return;
+      const byGroup = ctx.state.byGroup || {};
+      if (!Object.keys(byGroup).length) {
+        listEl.innerHTML = '<div class="season-card"><div class="season-theme">暂无本周任务</div><div class="season-desc">点击“重新生成本周任务”开始挑战</div></div>';
+      } else {
+        listEl.innerHTML = (this.groups || []).map(g => {
+          const tasks = byGroup[g.id] || [];
+          const done = tasks.filter(t => t.done).length;
+          return `<div class="season-card" style="margin-bottom:8px;"><div class="season-theme">${this.escape(g.name)}（${done}/${tasks.length}）</div>${tasks.map(t => `<div class="season-desc">${t.done ? '✅' : '⬜'} ${this.escape(t.text)}（${t.progress || 0}/${t.target || 1}）</div>`).join('')}</div>`;
+        }).join('') || '<div class="season-card"><div class="season-theme">暂无小组</div></div>';
+      }
+      skinEl.innerHTML = `<div class="season-card"><div class="season-theme">公共皮肤状态：${ctx.state.skinUnlocked ? '已解锁 🎉' : '未解锁'}</div><div class="season-desc">所有小组任务全部完成即可解锁</div></div>`;
+      if (ctx.state.skinUnlocked) document.body.classList.add('season-skin-unlocked');
     },
 
     openWeeklyReportPanel() {
@@ -5493,6 +5590,8 @@
         result.innerHTML = `<div class="sticker-drop rare-${st.rare}"><span class="sticker-drop-icon">${st.icon}</span><div class="sticker-drop-name">${st.name}</div><div class="sticker-drop-rare">${st.rare}</div></div>`;
       }
       this.showScoreRain(st.rare === 'SSR' ? 26 : 12);
+      const team = (this.groups || []).find(g => (g.members || []).some(m => m.studentId === s.id));
+      if (team) this._updateGroupSeasonTaskProgress(team.id, 'sticker', 1);
       this.announceClassEvent(`🎁 ${this.escape(s.name)} 开箱获得 ${st.name} (${st.rare})`);
       this.renderStickerAlbum();
       this.renderStudents();
@@ -5697,6 +5796,7 @@
         });
         setStorage(STORAGE_KEYS.groups, this.groups);
         setStorage(STORAGE_KEYS.groupPointHistory, this.groupPointHistory);
+        this._updateGroupSeasonTaskProgress(team.id, 'goal', 1);
       }
       this.saveStudents();
       this.showScoreEffect(studentId, 1);
@@ -6512,6 +6612,8 @@
       if (growthDelta > 0 && (growthDelta >= 3 || Math.random() < 0.2)) this.announceClassEvent(`📣 ${this.escape(s.name)} 课堂表现出色，获得 +${growthDelta} 分！`);
       // 添加到广播站
       this.addBroadcastMessage(s.name, growthDelta, item.name);
+      const team = (this.groups || []).find(g => (g.members || []).some(m => m.studentId === s.id));
+      if (team && growthDelta > 0) this._updateGroupSeasonTaskProgress(team.id, 'plus', growthDelta);
       if (document.getElementById('studentModal').classList.contains('show')) this.openStudentModal(studentId);
     },
 
@@ -6980,6 +7082,8 @@
       } else {
         this.speak('做得真棒，继续加油');
       }
+      const team = (this.groups || []).find(g => (g.members || []).some(m => m.studentId === s.id));
+      if (team) this._updateGroupSeasonTaskProgress(team.id, 'interact', 1);
 
       this.saveStudents();
       this.renderStudents();

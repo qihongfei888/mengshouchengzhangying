@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=53">
+  <link rel="stylesheet" href="./styles.css?v=54">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -263,6 +263,11 @@
               <div class="tool-card-icon">⏱️</div>
               <div class="tool-card-main">一键课堂模式</div>
               <div class="tool-card-sub">上课启动 / 下课总结</div>
+            </button>
+            <button class="tool-card" onclick="app.openGroupSeasonTaskPanel()">
+              <div class="tool-card-icon">🧩</div>
+              <div class="tool-card-main">小组赛季任务</div>
+              <div class="tool-card-sub">协作任务推进 + 公共皮肤解锁</div>
             </button>
             <button class="tool-card" onclick="app.openWeeklyReportPanel()">
               <div class="tool-card-icon">📊</div>
@@ -1860,6 +1865,20 @@
     </div>
   </div>
 
+  <!-- 小组赛季任务 -->
+  <div id="groupSeasonTaskModal" class="modal">
+    <div class="modal-content" style="max-width:900px;">
+      <button class="modal-close" onclick="app.closeModal('groupSeasonTaskModal')">&times;</button>
+      <h3>🧩 小组赛季任务</h3>
+      <p class="text-muted">每个小组每周推进协作任务，累计完成可解锁班级公共皮肤。</p>
+      <div class="score-btns" style="margin-bottom:8px;">
+        <button class="btn btn-primary" onclick="app.rollGroupSeasonTasks()">重新生成本周任务</button>
+      </div>
+      <div id="groupSeasonTaskList" class="season-preview"></div>
+      <div id="groupSeasonSkinUnlock" class="season-preview" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
   <!-- 自动周报 -->
   <div id="weeklyReportModal" class="modal">
     <div class="modal-content">
@@ -1983,7 +2002,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=98"></script>
+<script src="./app-loader.js?v=99"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
