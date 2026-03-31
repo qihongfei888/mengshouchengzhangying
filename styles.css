@@ -2040,6 +2040,22 @@ body.season-skin-unlocked {
   transform:translate(-50%,0);
 }
 
+.teacher-control-bar {
+  margin:12px 0 16px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  padding:10px;
+  border-radius:14px;
+  border:1px solid rgba(59,130,246,.22);
+  background:linear-gradient(135deg, rgba(239,246,255,.9), rgba(224,231,255,.75));
+}
+.teacher-control-bar .btn {
+  flex:1;
+  min-width:120px;
+  font-weight:800;
+}
+
 .sc3-emotion {
   font-size:.75rem;
   color:#1e293b;

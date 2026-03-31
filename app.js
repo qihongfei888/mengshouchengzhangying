@@ -5133,6 +5133,27 @@
       this.renderClassModeStatus();
     },
 
+    runTeacherQuickFlow(mode) {
+      if (mode === 'preclass') {
+        this.announceClassEvent('🧭 课前流程已启动');
+        this.startClassMode();
+        setTimeout(() => { try { this.openSeatArrangeTool(); } catch (e) {} }, 200);
+        return;
+      }
+      if (mode === 'engage') {
+        this.announceClassEvent('🔥 进入高能互动模式');
+        this.randomRollCall();
+        setTimeout(() => { try { this.openShortcutPanel(); } catch (e) {} }, 260);
+        setTimeout(() => { try { this.openStudentScreen(); } catch (e) {} }, 520);
+        return;
+      }
+      if (mode === 'afterclass') {
+        this.announceClassEvent('📌 下课总结生成中');
+        this.endClassMode();
+        setTimeout(() => { try { this.openWeeklyReportPanel(); } catch (e) {} }, 260);
+      }
+    },
+
     startClassMode() {
       const data = getUserData();
       const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;

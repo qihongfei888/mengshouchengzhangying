@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=54">
+  <link rel="stylesheet" href="./styles.css?v=55">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -169,6 +169,11 @@
           <button class="btn btn-primary btn-cute" onclick="app.showPage('students')">👥 管理学生</button>
           <button class="btn btn-secondary btn-cute" onclick="app.showPage('pets')">🐣 领养宠物</button>
           <button class="btn btn-secondary btn-cute" onclick="app.showPage('honor')">🏆 查看光荣榜</button>
+        </div>
+        <div class="teacher-control-bar">
+          <button class="btn btn-primary" onclick="app.runTeacherQuickFlow('preclass')">🧭 课前流程</button>
+          <button class="btn btn-secondary" onclick="app.runTeacherQuickFlow('engage')">🔥 高能互动</button>
+          <button class="btn btn-danger" onclick="app.runTeacherQuickFlow('afterclass')">📌 下课总结</button>
         </div>
         <!-- 小工具面板 -->
         <div class="tool-grid">
@@ -2002,7 +2007,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=99"></script>
+<script src="./app-loader.js?v=100"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
