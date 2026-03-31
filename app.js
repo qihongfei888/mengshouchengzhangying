@@ -4973,6 +4973,7 @@
 
     openStudentScreen() {
       this.refreshStudentScreenBoard();
+      document.body.classList.add('mode-student-screen');
       const modal = document.getElementById('studentScreenModal');
       if (modal) modal.classList.add('show');
     },
@@ -5003,13 +5004,19 @@
     openSeasonPanel() {
       const data = getUserData();
       const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
-      const cfg = cls && cls.seasonConfig ? cls.seasonConfig : { theme: '青龙冲刺周', desc: '全班累计加分达到300分', target: 300 };
+      const cfg = cls && cls.seasonConfig ? cls.seasonConfig : { theme: '青龙冲刺周', desc: '全班累计加分达到300分', target: 300, rewardPoints: 3, groupTarget: 120, groupRewardPoints: 10 };
       const a = document.getElementById('seasonThemeInput');
       const b = document.getElementById('seasonDescInput');
       const c = document.getElementById('seasonTargetInput');
+      const rp = document.getElementById('seasonRewardPointsInput');
+      const gt = document.getElementById('seasonGroupTargetInput');
+      const gr = document.getElementById('seasonGroupRewardInput');
       if (a) a.value = cfg.theme || '';
       if (b) b.value = cfg.desc || '';
       if (c) c.value = cfg.target || 300;
+      if (rp) rp.value = cfg.rewardPoints ?? 3;
+      if (gt) gt.value = cfg.groupTarget ?? 120;
+      if (gr) gr.value = cfg.groupRewardPoints ?? 10;
       const modal = document.getElementById('seasonModal');
       if (modal) modal.classList.add('show');
       this.renderSeasonPreview();
@@ -5022,7 +5029,10 @@
       cls.seasonConfig = {
         theme: (document.getElementById('seasonThemeInput')?.value || '青龙冲刺周').trim(),
         desc: (document.getElementById('seasonDescInput')?.value || '').trim(),
-        target: Math.max(10, parseInt(document.getElementById('seasonTargetInput')?.value, 10) || 300)
+        target: Math.max(10, parseInt(document.getElementById('seasonTargetInput')?.value, 10) || 300),
+        rewardPoints: Math.max(0, parseInt(document.getElementById('seasonRewardPointsInput')?.value, 10) || 3),
+        groupTarget: Math.max(10, parseInt(document.getElementById('seasonGroupTargetInput')?.value, 10) || 120),
+        groupRewardPoints: Math.max(0, parseInt(document.getElementById('seasonGroupRewardInput')?.value, 10) || 10)
       };
       setUserData(data);
       this.saveData();
@@ -5036,17 +5046,23 @@
       const data = getUserData();
       const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
       if (!cls) return;
-      const cfg = cls.seasonConfig || { theme: '青龙冲刺周', desc: '全班累计加分达到300分', target: 300 };
+      const cfg = cls.seasonConfig || { theme: '青龙冲刺周', desc: '全班累计加分达到300分', target: 300, rewardPoints: 3, groupTarget: 120, groupRewardPoints: 10 };
       const totalPlus = (this.students || []).reduce((sum, s) => {
         const hist = Array.isArray(s.scoreHistory) ? s.scoreHistory : [];
         return sum + hist.reduce((ss, h) => ss + ((h.delta || 0) > 0 ? (h.delta || 0) : 0), 0);
       }, 0);
+      const groupTotal = (this.groups || []).reduce((sum, g) => sum + Math.max(0, g.points || 0), 0);
       const pct = Math.max(0, Math.min(100, Math.round((totalPlus / (cfg.target || 300)) * 100)));
+      const gpct = Math.max(0, Math.min(100, Math.round((groupTotal / (cfg.groupTarget || 120)) * 100)));
+      const groupTitles = this.getGroupSeasonTitles();
       el.innerHTML = `<div class="season-card">
         <div class="season-theme">${this.escape(cfg.theme || '赛季主题')}</div>
         <div class="season-desc">${this.escape(cfg.desc || '')}</div>
         <div class="season-bar"><div class="season-fill" style="width:${pct}%"></div></div>
-        <div class="season-foot">当前 ${totalPlus} / 目标 ${cfg.target}（${pct}%）</div>
+        <div class="season-foot">班级进度 ${totalPlus} / ${cfg.target}（${pct}%）｜达标奖励：每位学生 +${cfg.rewardPoints} 分</div>
+        <div class="season-bar" style="margin-top:10px;"><div class="season-fill" style="width:${gpct}%;background:linear-gradient(90deg,#0ea5e9,#22d3ee,#2dd4bf)"></div></div>
+        <div class="season-foot">小组进度 ${groupTotal} / ${cfg.groupTarget}（${gpct}%）｜达标奖励：每组 +${cfg.groupRewardPoints} 分</div>
+        <div class="season-group-title-list">${groupTitles.length ? groupTitles.map(x => `<span class="season-group-title">${this.escape(x.name)}：${this.escape(x.title)}</span>`).join('') : '<span class="season-group-title">暂无小组称号</span>'}</div>
       </div>`;
     },
 
@@ -5139,6 +5155,13 @@
       if (sel) {
         sel.innerHTML = (this.students || []).map(s => `<option value="${this.escape(s.id)}">${this.escape(s.name)}</option>`).join('');
       }
+      const plus = this.getPlusItems();
+      const minus = this.getMinusItems();
+      const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+      setTxt('shortcutPlus1Btn', `1号加分项 ${plus[0] ? `(+${plus[0].points || 1} ${plus[0].name})` : ''}`);
+      setTxt('shortcutPlus2Btn', `2号加分项 ${plus[1] ? `(+${plus[1].points || 1} ${plus[1].name})` : ''}`);
+      setTxt('shortcutMinus1Btn', `1号减分项 ${minus[0] ? `(-${Math.abs(minus[0].points || 1)} ${minus[0].name})` : ''}`);
+      setTxt('shortcutMinus2Btn', `2号减分项 ${minus[1] ? `(-${Math.abs(minus[1].points || 1)} ${minus[1].name})` : ''}`);
       const modal = document.getElementById('shortcutPanelModal');
       if (modal) modal.classList.add('show');
     },
@@ -5157,6 +5180,11 @@
       if (this._shortcutBound) return;
       this._shortcutBound = true;
       document.addEventListener('keydown', (e) => {
+        const screenModal = document.getElementById('studentScreenModal');
+        if (e.key === 'Escape' && screenModal && screenModal.classList.contains('student-screen-pure')) {
+          this.exitStudentScreenPureMode();
+          return;
+        }
         const modal = document.getElementById('shortcutPanelModal');
         if (!modal || !modal.classList.contains('show')) return;
         if (e.key === 'Escape') {
@@ -5174,6 +5202,24 @@
       const modal = document.getElementById('studentScreenModal');
       if (!modal) return;
       modal.classList.toggle('student-screen-pure');
+      if (modal.classList.contains('student-screen-pure')) {
+        this.showActionToast('已进入纯净模式，按 Esc 可退出');
+      }
+    },
+
+    exitStudentScreenPureMode() {
+      const modal = document.getElementById('studentScreenModal');
+      if (!modal) return;
+      modal.classList.remove('student-screen-pure');
+    },
+
+    showActionToast(text) {
+      const wrap = document.getElementById('effectContainer') || document.body;
+      const node = document.createElement('div');
+      node.className = 'action-toast';
+      node.textContent = text;
+      wrap.appendChild(node);
+      setTimeout(() => node.remove(), 1300);
     },
 
     applyComboBonus(studentId, delta) {
@@ -5199,20 +5245,61 @@
       if (!cls) return;
       const cfg = cls.seasonConfig || null;
       if (!cfg || !cfg.target) return;
-      if (cfg.rewardUnlocked) return;
       const totalPlus = (this.students || []).reduce((sum, s) => {
         const hist = Array.isArray(s.scoreHistory) ? s.scoreHistory : [];
         return sum + hist.reduce((ss, h) => ss + ((h.delta || 0) > 0 ? (h.delta || 0) : 0), 0);
       }, 0);
-      if (totalPlus < cfg.target) return;
-      cfg.rewardUnlocked = true;
-      cfg.rewardUnlockedAt = Date.now();
-      cls.seasonConfig = cfg;
-      setUserData(data);
-      this.saveData();
-      this.showWinBanner('🏆 赛季奖励解锁', `${cfg.theme || '本赛季'}达标，全班获得荣誉称号！`);
-      this.showScoreRain(40);
-      if (window.launchFireworks) window.launchFireworks();
+      const groupTotal = (this.groups || []).reduce((sum, g) => sum + Math.max(0, g.points || 0), 0);
+
+      let changed = false;
+      if (!cfg.rewardUnlocked && totalPlus >= cfg.target) {
+        cfg.rewardUnlocked = true;
+        cfg.rewardUnlockedAt = Date.now();
+        const reward = Math.max(0, parseInt(cfg.rewardPoints, 10) || 0);
+        if (reward > 0) {
+          (this.students || []).forEach(s => {
+            s.points = (s.points || 0) + reward;
+            if (!s.scoreHistory) s.scoreHistory = [];
+            s.scoreHistory.unshift({ time: Date.now(), delta: reward, reason: `赛季达标奖励-${cfg.theme || '赛季'}` });
+          });
+          this.saveStudents();
+        }
+        this.showWinBanner('🏆 赛季奖励解锁', `${cfg.theme || '本赛季'}达标，全班奖励 +${reward} 分`);
+        this.showScoreRain(40);
+        if (window.launchFireworks) window.launchFireworks();
+        changed = true;
+      }
+
+      if (!cfg.groupRewardUnlocked && cfg.groupTarget && groupTotal >= cfg.groupTarget) {
+        cfg.groupRewardUnlocked = true;
+        cfg.groupRewardUnlockedAt = Date.now();
+        const gReward = Math.max(0, parseInt(cfg.groupRewardPoints, 10) || 0);
+        if (gReward > 0) {
+          (this.groups || []).forEach(g => {
+            g.points = (g.points || 0) + gReward;
+            this.groupPointHistory.push({
+              id: 'point_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+              groupId: g.id,
+              groupName: g.name,
+              delta: gReward,
+              reason: `赛季小组达标奖励-${cfg.theme || '赛季'}`,
+              time: new Date().toISOString()
+            });
+          });
+          setStorage(STORAGE_KEYS.groups, this.groups);
+          setStorage(STORAGE_KEYS.groupPointHistory, this.groupPointHistory);
+          this.renderGroups();
+        }
+        this.showWinBanner('🎯 小组赛季奖励解锁', `全组达标，每组奖励 +${gReward} 分`);
+        changed = true;
+      }
+
+      if (changed) {
+        cls.seasonConfig = cfg;
+        setUserData(data);
+        this.saveData();
+        this.renderSeasonPreview();
+      }
     },
 
     getSeasonTitleResult() {
@@ -5224,10 +5311,28 @@
       }, 0);
       const activeCount = (this.students || []).filter(s => (s.scoreHistory || []).some(h => (h.time || 0) >= since)).length;
       const avgPlus = this.students.length ? Math.round(totalPlus / this.students.length) : 0;
+      if (totalPlus >= 800 && activeCount >= Math.max(10, Math.floor(this.students.length * 0.85))) return { title: '天穹神话班', desc: '全班爆发，赛季统治级表现', color: '#be123c' };
+      if (totalPlus >= 650) return { title: '雷霆王者班', desc: '节奏稳定，强势推进', color: '#7c2d12' };
       if (totalPlus >= 500 && activeCount >= Math.max(10, Math.floor(this.students.length * 0.75))) return { title: '龙焰冠军班', desc: '高能投入，全员火力全开', color: '#dc2626' };
+      if (totalPlus >= 380) return { title: '星河冲锋班', desc: '积极上进，士气很高', color: '#7e22ce' };
       if (totalPlus >= 300 && avgPlus >= 8) return { title: '星耀协作班', desc: '稳定进步，协作优秀', color: '#7c3aed' };
+      if (totalPlus >= 220) return { title: '赤焰进击班', desc: '目标明确，持续突破', color: '#ea580c' };
       if (totalPlus >= 180) return { title: '晨光成长班', desc: '持续成长，表现积极', color: '#2563eb' };
       return { title: '萌芽奋进班', desc: '厚积薄发，继续加油', color: '#059669' };
+    },
+
+    getGroupSeasonTitles() {
+      const groups = Array.isArray(this.groups) ? this.groups : [];
+      return groups.map(g => {
+        const pts = g.points || 0;
+        let title = '启航小组';
+        if (pts >= 260) title = '神话战队';
+        else if (pts >= 180) title = '王者战队';
+        else if (pts >= 120) title = '闪耀战队';
+        else if (pts >= 80) title = '冲锋战队';
+        else if (pts >= 40) title = '成长战队';
+        return { id: g.id, name: g.name || '未命名小组', points: pts, title };
+      }).sort((a, b) => b.points - a.points);
     },
 
     openSeasonTitlePanel() {
@@ -5240,9 +5345,13 @@
       const el = document.getElementById('seasonTitleBody');
       if (!el) return;
       const result = this.getSeasonTitleResult();
+      const groupTitles = this.getGroupSeasonTitles();
       el.innerHTML = `<div class="season-title-card" style="border-color:${result.color};">
         <div class="season-title-main" style="color:${result.color};">${result.title}</div>
         <div class="season-title-sub">${result.desc}</div>
+      </div>
+      <div class="season-group-title-list" style="margin-top:10px;">
+        ${groupTitles.length ? groupTitles.slice(0, 8).map(x => `<span class="season-group-title">${this.escape(x.name)}：${this.escape(x.title)}</span>`).join('') : '<span class="season-group-title">暂无小组</span>'}
       </div>`;
     },
 
@@ -5390,6 +5499,28 @@
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 400);
+    },
+
+    exportAllStudentReports() {
+      const list = this.students || [];
+      if (!list.length) { alert('暂无学生'); return; }
+      const selectedEl = document.getElementById('parentReportStudentSelect');
+      const oldValue = selectedEl ? selectedEl.value : '';
+      const pages = [];
+      list.forEach(s => {
+        if (selectedEl) selectedEl.value = s.id;
+        this.renderParentReport();
+        const html = document.getElementById('parentReportContent')?.innerHTML || '';
+        pages.push(`<section class="page">${html}</section>`);
+      });
+      if (selectedEl) selectedEl.value = oldValue;
+      this.renderParentReport();
+      const win = window.open('', '_blank');
+      if (!win) return;
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>全班家长简报</title><style>body{font-family:"Microsoft YaHei",sans-serif;padding:16px;color:#111}.page{page-break-after:always;border:1px solid #ddd;border-radius:12px;padding:14px;margin-bottom:14px}.pr-box{border:1px solid #ddd;border-radius:10px;padding:10px;margin:8px 0}.pr-chart{width:100%;height:auto;} h4{margin:0 0 8px;}</style></head><body>${pages.join('')}</body></html>`);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 280);
     },
 
     getDailyGoalItems() {
@@ -6137,6 +6268,7 @@
       }
       this.applyComboBonus(studentId, delta);
       this.maybeUnlockSeasonReward();
+      this.showActionToast(`${this.escape(s.name)} ${delta > 0 ? '加分成功' : '扣分成功'} ${delta > 0 ? '+' : ''}${delta}`);
       // 添加到广播站
       this.addBroadcastMessage(s.name, delta, item.name);
       if (document.getElementById('studentModal').classList.contains('show')) this.openStudentModal(studentId);
@@ -10242,6 +10374,10 @@
       const modal = document.getElementById(modalId);
       if (modal) {
         modal.classList.remove('show');
+        if (modalId === 'studentScreenModal') {
+          modal.classList.remove('student-screen-pure');
+          document.body.classList.remove('mode-student-screen');
+        }
         modal.style.display = '';
       }
     },

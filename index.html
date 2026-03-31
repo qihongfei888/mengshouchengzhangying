@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=49">
+  <link rel="stylesheet" href="./styles.css?v=50">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -1773,6 +1773,7 @@
   <div id="studentScreenModal" class="modal">
     <div class="modal-content student-screen-modal">
       <button class="modal-close" onclick="app.closeModal('studentScreenModal')">&times;</button>
+      <button class="btn btn-danger ss-exit-pure" onclick="app.exitStudentScreenPureMode()">退出纯净模式</button>
       <h3>🖥️ 学生大屏</h3>
       <div id="studentScreenBoard" class="student-screen-board"></div>
       <div class="score-btns" style="margin-top:10px;">
@@ -1798,6 +1799,18 @@
       <div class="form-group">
         <label>赛季目标总分</label>
         <input id="seasonTargetInput" class="login-input" type="number" min="10" value="300">
+      </div>
+      <div class="form-group">
+        <label>达标奖励积分（每位学生）</label>
+        <input id="seasonRewardPointsInput" class="login-input" type="number" min="0" value="3">
+      </div>
+      <div class="form-group">
+        <label>小组赛季目标总分</label>
+        <input id="seasonGroupTargetInput" class="login-input" type="number" min="10" value="120">
+      </div>
+      <div class="form-group">
+        <label>达标奖励积分（每个小组）</label>
+        <input id="seasonGroupRewardInput" class="login-input" type="number" min="0" value="10">
       </div>
       <div class="score-btns">
         <button class="btn btn-primary" onclick="app.saveSeasonConfig()">保存赛季</button>
@@ -1844,10 +1857,10 @@
         <select id="shortcutStudentSelect" class="login-input"></select>
       </div>
       <div class="score-btns" style="margin-top:8px;">
-        <button class="btn btn-primary" onclick="app.applyQuickShortcut(1)">1号加分项</button>
-        <button class="btn btn-primary" onclick="app.applyQuickShortcut(2)">2号加分项</button>
-        <button class="btn btn-danger" onclick="app.applyQuickShortcut(-1)">1号减分项</button>
-        <button class="btn btn-danger" onclick="app.applyQuickShortcut(-2)">2号减分项</button>
+        <button id="shortcutPlus1Btn" class="btn btn-primary" onclick="app.applyQuickShortcut(1)">1号加分项</button>
+        <button id="shortcutPlus2Btn" class="btn btn-primary" onclick="app.applyQuickShortcut(2)">2号加分项</button>
+        <button id="shortcutMinus1Btn" class="btn btn-danger" onclick="app.applyQuickShortcut(-1)">1号减分项</button>
+        <button id="shortcutMinus2Btn" class="btn btn-danger" onclick="app.applyQuickShortcut(-2)">2号减分项</button>
       </div>
       <div class="season-preview" style="margin-top:10px;">
         <div>快捷键：<strong>1-5</strong> 快速加分；<strong>Shift + 1-5</strong> 快速减分；<strong>Esc</strong> 关闭面板</div>
@@ -1891,6 +1904,7 @@
         <button class="btn btn-primary" onclick="app.renderParentReport()">生成简报</button>
         <button class="btn btn-outline" onclick="app.printParentReport()">打印 / 导出PDF</button>
         <button class="btn btn-secondary" onclick="app.exportParentReportImage()">导出分享图片</button>
+        <button class="btn btn-secondary" onclick="app.exportAllStudentReports()">全班每人一页</button>
       </div>
       <div id="parentReportContent" class="parent-report-card"></div>
     </div>
@@ -1924,7 +1938,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=94"></script>
+<script src="./app-loader.js?v=95"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
