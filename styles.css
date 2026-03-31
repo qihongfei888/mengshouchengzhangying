@@ -1176,6 +1176,13 @@ body::before {
   margin:8px 0;
   background:#f8fafc;
 }
+.pr-chart {
+  width:100%;
+  height:auto;
+  border:1px dashed #cbd5e1;
+  border-radius:8px;
+  background:#fff;
+}
 
 
 /* sc3 卡片交互动效 */

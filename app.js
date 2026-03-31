@@ -5274,13 +5274,81 @@
     openParentReportPanel() {
       const modal = document.getElementById('parentReportModal');
       if (modal) modal.classList.add('show');
+      const sel = document.getElementById('parentReportStudentSelect');
+      if (sel) {
+        sel.innerHTML = '<option value="">全班简报</option>' + (this.students || []).map(s => `<option value="${this.escape(s.id)}">${this.escape(s.name)}</option>`).join('');
+      }
       this.renderParentReport();
+    },
+
+    _getStudentGrowthSeries(student, days = 7) {
+      const arr = [];
+      const now = new Date();
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        const ds = d.toISOString().slice(0, 10);
+        const dayStart = new Date(ds + 'T00:00:00').getTime();
+        const dayEnd = dayStart + 24 * 3600 * 1000;
+        const hs = (student.scoreHistory || []).filter(h => (h.time || 0) >= dayStart && (h.time || 0) < dayEnd);
+        const delta = hs.reduce((sum, h) => sum + (h.delta || 0), 0);
+        arr.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, delta });
+      }
+      return arr;
+    },
+
+    _renderGrowthChart(series) {
+      if (!series || !series.length) return '<div class="pr-box">暂无成长曲线数据</div>';
+      const w = 640, h = 180, p = 24;
+      const maxAbs = Math.max(5, ...series.map(x => Math.abs(x.delta || 0)));
+      const toY = (v) => {
+        const t = (v + maxAbs) / (2 * maxAbs);
+        return h - p - t * (h - p * 2);
+      };
+      const step = (w - p * 2) / Math.max(1, series.length - 1);
+      const pts = series.map((x, i) => `${(p + i * step).toFixed(1)},${toY(x.delta || 0).toFixed(1)}`).join(' ');
+      const dots = series.map((x, i) => `<circle cx="${(p + i * step).toFixed(1)}" cy="${toY(x.delta || 0).toFixed(1)}" r="3.6" fill="#2563eb"/>`).join('');
+      const xlabels = series.map((x, i) => `<text x="${(p + i * step).toFixed(1)}" y="${h - 6}" text-anchor="middle" font-size="10" fill="#64748b">${x.label}</text>`).join('');
+      const baseline = toY(0).toFixed(1);
+      return `<svg viewBox="0 0 ${w} ${h}" class="pr-chart" role="img" aria-label="成长曲线图">
+        <line x1="${p}" y1="${baseline}" x2="${w - p}" y2="${baseline}" stroke="#cbd5e1" stroke-dasharray="4 4"/>
+        <polyline fill="none" stroke="#2563eb" stroke-width="3" points="${pts}"/>
+        ${dots}
+        ${xlabels}
+      </svg>`;
     },
 
     renderParentReport() {
       const el = document.getElementById('parentReportContent');
       if (!el) return;
+      const selectedId = document.getElementById('parentReportStudentSelect')?.value || '';
       const since = Date.now() - 7 * 24 * 3600 * 1000;
+      const title = this.getSeasonTitleResult();
+
+      if (selectedId) {
+        const s = (this.students || []).find(x => String(x.id) === String(selectedId));
+        if (!s) {
+          el.innerHTML = '<div class="pr-box">未找到该学生</div>';
+          return;
+        }
+        const hs = (s.scoreHistory || []).filter(h => (h.time || 0) >= since);
+        const delta = hs.reduce((sum, h) => sum + (h.delta || 0), 0);
+        const plusCount = hs.filter(h => (h.delta || 0) > 0).length;
+        const goalDone = (s.dailyGoal && Array.isArray(s.dailyGoal.done)) ? s.dailyGoal.done.length : 0;
+        const growth = this._getStudentGrowthSeries(s, 7);
+        el.innerHTML = `<div class="pr-header">
+          <h4>萌兽成长营 · 学生家长简报</h4>
+          <div>${new Date().toLocaleDateString('zh-CN')} ｜ 学生：${this.escape(s.name)} ｜ 学号：${this.escape(s.id || '')}</div>
+        </div>
+        <div class="pr-box">本周净积分：<strong>${delta >= 0 ? '+' : ''}${delta}</strong>，积极行为记录：<strong>${plusCount}</strong> 次，今日目标完成：<strong>${goalDone}</strong> 项。</div>
+        <div class="pr-box">本周班级称号：<strong style="color:${title.color}">${title.title}</strong>（${title.desc}）。建议与孩子一起复盘“本周最有成就感的一件事”。</div>
+        <div class="pr-box">
+          <div style="font-weight:700;margin-bottom:6px;">7天成长曲线（每日积分变化）</div>
+          ${this._renderGrowthChart(growth)}
+        </div>`;
+        return;
+      }
+
       const top = [...(this.students || [])]
         .map(s => {
           const hs = (s.scoreHistory || []).filter(h => (h.time || 0) >= since);
@@ -5289,7 +5357,6 @@
         })
         .sort((a, b) => b.delta - a.delta)
         .slice(0, 10);
-      const title = this.getSeasonTitleResult();
       el.innerHTML = `<div class="pr-header">
         <h4>萌兽成长营 · 家长简报</h4>
         <div>${new Date().toLocaleDateString('zh-CN')} ｜ 班级：${this.escape(this.currentClassName || '')}</div>
@@ -5304,10 +5371,25 @@
       if (!content) return;
       const win = window.open('', '_blank');
       if (!win) return;
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>家长简报</title><style>body{font-family:"Microsoft YaHei",sans-serif;padding:20px;color:#111} .pr-box{border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0;} h4{margin:0 0 8px;}</style></head><body>${content.innerHTML}</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>家长简报</title><style>body{font-family:"Microsoft YaHei",sans-serif;padding:20px;color:#111} .pr-box{border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0;} .pr-chart{width:100%;height:auto;} h4{margin:0 0 8px;}</style></head><body>${content.innerHTML}</body></html>`);
       win.document.close();
       win.focus();
       setTimeout(() => win.print(), 220);
+    },
+
+    exportParentReportImage() {
+      const target = document.getElementById('parentReportContent');
+      if (!target) return;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Microsoft YaHei,sans-serif;background:#fff;padding:18px;color:#111;">${target.innerHTML}</div></foreignObject></svg>`;
+      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `家长简报_${new Date().toISOString().slice(0, 10)}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 400);
     },
 
     getDailyGoalItems() {
