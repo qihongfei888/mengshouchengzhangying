@@ -5455,6 +5455,7 @@
         <div class="student-card-v3 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''} ${isHighLevelStage ? 'high-level-card' : ''} ${isMaxLevel ? 'max-level-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" onclick="app.openStudentModal('${safeId}')">
           <div class="sc3-photo">
             ${petHtml}
+            <div class="sc3-particles" aria-hidden="true"></div>
             <div class="sc3-top-bar">
               <span class="sc3-level" style="color:${theme.primary};">Lv.${s.pet ? (s.pet.stage || 0) : 0}</span>
               <div class="sc3-badges">
@@ -5968,7 +5969,7 @@
                         <button class="btn btn-small" onclick="app.toggleAccessory('${studentId}', '${acc.id}')">
                           ${this.isAccessoryEquipped(s, acc.id) ? '卸下' : '装备'}
                         </button>
-                      </div>
+                       </div>
                     `).join('') || '<p class="placeholder-text">暂无装扮</p>'}
                   </div>
                 </div>

@@ -558,6 +558,8 @@ body::before {
   width: 100%;
   height: 100%;
 }
+
+/* 神兽照片动态呼吸 */
 .sc3-pet-img {
   width: 100%;
   height: 100%;
@@ -566,10 +568,75 @@ body::before {
   display: block;
   filter: contrast(1.18) saturate(1.16) brightness(1.05);
   transition: transform 0.35s ease, filter 0.35s ease;
+  animation: beastBreath 4.2s ease-in-out infinite;
+}
+@keyframes beastBreath {
+  0%,100% { transform: scale(1.04) translateY(0); }
+  50% { transform: scale(1.08) translateY(-2px); }
 }
 .student-card-v3:hover .sc3-pet-img {
-  transform: scale(1.06);
+  transform: scale(1.1);
   filter: contrast(1.22) saturate(1.2) brightness(1.08);
+}
+
+/* 粒子特效层 */
+.sc3-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+.sc3-particles::before,
+.sc3-particles::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-size: 140px 140px;
+  mix-blend-mode: screen;
+  opacity: .55;
+  animation: particlesFloat 8s linear infinite;
+}
+.sc3-particles::after {
+  animation-duration: 11s;
+  animation-direction: reverse;
+  opacity: .35;
+}
+@keyframes particlesFloat {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-24px) scale(1.02); }
+}
+
+/* 按等级区分粒子颜色 */
+.student-card-v3.rarity-common .sc3-particles::before,
+.student-card-v3.rarity-common .sc3-particles::after {
+  background-image:
+    radial-gradient(circle at 20% 25%, rgba(255,255,255,.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 55%, rgba(203,213,225,.75) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 40% 80%, rgba(226,232,240,.75) 0 1px, transparent 2px);
+}
+.student-card-v3.rarity-rare .sc3-particles::before,
+.student-card-v3.rarity-rare .sc3-particles::after {
+  background-image:
+    radial-gradient(circle at 22% 22%, rgba(125,211,252,.85) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 72% 58%, rgba(96,165,250,.85) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 38% 82%, rgba(186,230,253,.8) 0 1px, transparent 2px);
+}
+.student-card-v3.rarity-epic .sc3-particles::before,
+.student-card-v3.rarity-epic .sc3-particles::after {
+  background-image:
+    radial-gradient(circle at 18% 28%, rgba(216,180,254,.9) 0 1.3px, transparent 2px),
+    radial-gradient(circle at 76% 52%, rgba(167,139,250,.9) 0 1.3px, transparent 2px),
+    radial-gradient(circle at 42% 84%, rgba(196,181,253,.85) 0 1.1px, transparent 2px);
+}
+.student-card-v3.rarity-legendary .sc3-particles::before,
+.student-card-v3.rarity-legendary .sc3-particles::after,
+.student-card-v3.max-level-card .sc3-particles::before,
+.student-card-v3.max-level-card .sc3-particles::after {
+  background-image:
+    radial-gradient(circle at 20% 24%, rgba(254,240,138,.95) 0 1.4px, transparent 2px),
+    radial-gradient(circle at 74% 50%, rgba(253,186,116,.95) 0 1.4px, transparent 2px),
+    radial-gradient(circle at 45% 82%, rgba(252,211,77,.9) 0 1.2px, transparent 2px);
 }
 
 /* 满级卡专属视觉强化 */
@@ -803,9 +870,12 @@ body::before {
 
 /* ===== 夸夸墙 ===== */
 .pw-modal-content{
-  width:min(94vw, 980px);
-  max-width:980px;
-  min-height:72vh;
+  width:96vw;
+  max-width:none;
+  height:92vh;
+  min-height:92vh;
+  display:flex;
+  flex-direction:column;
 }
 .pw-header {
   background: linear-gradient(135deg, #f43f5e, #ec4899, #f97316);
@@ -833,6 +903,20 @@ body::before {
   animation: pwScroll 30s linear infinite;
   padding-left: 100%;
 }
+.pw-input-area {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  align-items: center;
+  background:#fff;
+}
+.pw-all-wrap {
+  padding: 14px 20px 18px;
+  flex:1;
+  min-height:0;
+  overflow-y: auto;
+}
 @keyframes pwScroll {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -855,6 +939,7 @@ body::before {
   padding: 16px 20px;
   border-bottom: 1px solid #f3f4f6;
   align-items: center;
+  background:#fff;
 }
 .pw-select {
   flex: 0 0 140px;
@@ -874,7 +959,8 @@ body::before {
 }
 .pw-all-wrap {
   padding: 14px 20px 18px;
-  max-height: 300px;
+  flex:1;
+  min-height:0;
   overflow-y: auto;
 }
 .pw-all-list {
