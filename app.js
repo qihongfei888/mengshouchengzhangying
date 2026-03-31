@@ -3560,6 +3560,7 @@
       try { this.bindNav(); } catch (e) { console.error('bindNav失败:', e); }
       try { this.bindSearch(); } catch (e) { console.error('bindSearch失败:', e); }
       try { this.bindStoreTabs(); } catch (e) { console.error('bindStoreTabs失败:', e); }
+      try { this.ensureKeyboardShortcutsBound(); } catch (e) { console.error('快捷键绑定失败:', e); }
 
       // 数据加载
       try {
@@ -5133,6 +5134,87 @@
       if (!fromClassMode) this.showScoreRain(14);
     },
 
+    openShortcutPanel() {
+      const sel = document.getElementById('shortcutStudentSelect');
+      if (sel) {
+        sel.innerHTML = (this.students || []).map(s => `<option value="${this.escape(s.id)}">${this.escape(s.name)}</option>`).join('');
+      }
+      const modal = document.getElementById('shortcutPanelModal');
+      if (modal) modal.classList.add('show');
+    },
+
+    applyQuickShortcut(code) {
+      const sid = document.getElementById('shortcutStudentSelect')?.value;
+      if (!sid) return;
+      if (code > 0) {
+        this.addScoreToStudent(sid, 'plus', Math.max(0, code - 1));
+      } else {
+        this.addScoreToStudent(sid, 'minus', Math.max(0, Math.abs(code) - 1));
+      }
+    },
+
+    ensureKeyboardShortcutsBound() {
+      if (this._shortcutBound) return;
+      this._shortcutBound = true;
+      document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('shortcutPanelModal');
+        if (!modal || !modal.classList.contains('show')) return;
+        if (e.key === 'Escape') {
+          this.closeModal('shortcutPanelModal');
+          return;
+        }
+        const n = parseInt(e.key, 10);
+        if (!Number.isFinite(n) || n < 1 || n > 5) return;
+        e.preventDefault();
+        this.applyQuickShortcut(e.shiftKey ? -n : n);
+      });
+    },
+
+    toggleStudentScreenPureMode() {
+      const modal = document.getElementById('studentScreenModal');
+      if (!modal) return;
+      modal.classList.toggle('student-screen-pure');
+    },
+
+    applyComboBonus(studentId, delta) {
+      if (!(delta > 0)) return;
+      const now = Date.now();
+      if (!this._comboState) this._comboState = Object.create(null);
+      const key = String(studentId || '');
+      const st = this._comboState[key] || { last: 0, count: 0 };
+      if (now - st.last <= 15000) st.count += 1;
+      else st.count = 1;
+      st.last = now;
+      this._comboState[key] = st;
+      const hit = [2, 5, 10].includes(st.count) ? st.count : 0;
+      if (!hit) return;
+      const label = hit === 2 ? '双连击' : (hit === 5 ? '五连击' : '十连击');
+      this.showWinBanner(`⚡ ${label}`, '课堂状态超燃！');
+      this.showScoreRain(hit === 10 ? 36 : (hit === 5 ? 24 : 14));
+    },
+
+    maybeUnlockSeasonReward() {
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!cls) return;
+      const cfg = cls.seasonConfig || null;
+      if (!cfg || !cfg.target) return;
+      if (cfg.rewardUnlocked) return;
+      const totalPlus = (this.students || []).reduce((sum, s) => {
+        const hist = Array.isArray(s.scoreHistory) ? s.scoreHistory : [];
+        return sum + hist.reduce((ss, h) => ss + ((h.delta || 0) > 0 ? (h.delta || 0) : 0), 0);
+      }, 0);
+      if (totalPlus < cfg.target) return;
+      cfg.rewardUnlocked = true;
+      cfg.rewardUnlockedAt = Date.now();
+      cls.seasonConfig = cfg;
+      setUserData(data);
+      this.saveData();
+      this.showWinBanner('🏆 赛季奖励解锁', `${cfg.theme || '本赛季'}达标，全班获得荣誉称号！`);
+      this.showScoreRain(40);
+      if (window.launchFireworks) window.launchFireworks();
+    },
+
     getDailyGoalItems() {
       return [
         { key: 'speak', name: '积极发言1次', reward: 1 },
@@ -5876,6 +5958,8 @@
         this.showScoreRain(Math.min(26, 8 + delta * 3));
         if (delta >= 3) this.showWinBanner(`🎉 ${this.escape(s.name)} 获得 ${delta} 分`, '课堂表现超赞！');
       }
+      this.applyComboBonus(studentId, delta);
+      this.maybeUnlockSeasonReward();
       // 添加到广播站
       this.addBroadcastMessage(s.name, delta, item.name);
       if (document.getElementById('studentModal').classList.contains('show')) this.openStudentModal(studentId);
@@ -9980,6 +10064,7 @@
     closeModal(modalId) {
       const modal = document.getElementById(modalId);
       if (modal) {
+        modal.classList.remove('show');
         modal.style.display = 'none';
       }
     },

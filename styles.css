@@ -1001,6 +1001,25 @@ body::before {
   max-width:1040px;
   min-height:76vh;
 }
+#studentScreenModal.student-screen-pure .modal-content {
+  width:100vw;
+  height:100vh;
+  max-width:none;
+  border-radius:0;
+  margin:0;
+  padding:18px;
+  background:radial-gradient(circle at 30% 10%, #1e293b, #020617 70%);
+  color:#fff;
+}
+#studentScreenModal.student-screen-pure h3,
+#studentScreenModal.student-screen-pure .score-btns,
+#studentScreenModal.student-screen-pure .modal-close {
+  display:none;
+}
+#studentScreenModal.student-screen-pure .student-screen-board {
+  max-height:92vh;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+}
 .student-screen-board {
   margin-top:10px;
   max-height:62vh;
@@ -1088,6 +1107,14 @@ body::before {
 .daily-goal-item.done {
   background:#ecfeff;
   border-color:#67e8f9;
+}
+
+/* 快捷键面板 */
+#shortcutPanelModal .modal-content {
+  max-width:620px;
+}
+#shortcutPanelModal strong {
+  color:#7c2d12;
 }
 
 
