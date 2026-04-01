@@ -5134,7 +5134,6 @@
         bar.classList.add('show');
         setTimeout(() => bar.classList.remove('show'), 3600);
       }
-      if (speakText || text) this.speak((speakText || text).replace(/[🎉🏆✨⚡]/g, ''));
     },
 
     openClassModePanel() {
