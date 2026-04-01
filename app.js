@@ -4997,11 +4997,16 @@
       el.innerHTML = top.map((s, i) => {
         const petStage = s.pet ? (s.pet.stage || 0) : 0;
         const medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '⭐'));
+        const rankTitle = i === 0 ? '冠军领跑' : (i === 1 ? '亚军冲刺' : (i === 2 ? '季军守位' : '上榜中'));
+        const score = s.points || 0;
+        const maxScore = Math.max(1, top[0] ? (top[0].points || 1) : 1);
+        const pct = Math.max(6, Math.min(100, Math.round((score / maxScore) * 100)));
         return `<div class="ss-item rank-${i < 3 ? (i + 1) : 4}">
           <div class="ss-rank">${medal}</div>
           <div class="ss-main">
-            <div class="ss-name">${this.escape(s.name)}</div>
-            <div class="ss-sub">积分 ${s.points || 0} · 神兽 Lv.${petStage}</div>
+            <div class="ss-name-row"><div class="ss-name">${this.escape(s.name)}</div><div class="ss-rank-tag">${rankTitle}</div></div>
+            <div class="ss-sub">成长值 ${score} · 神兽 Lv.${petStage}</div>
+            <div class="ss-bar"><div class="ss-bar-fill" style="width:${pct}%"></div></div>
           </div>
         </div>`;
       }).join('');
