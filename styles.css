@@ -2264,6 +2264,12 @@ body.season-skin-unlocked {
   background: rgba(15,23,42,.3);
   border-color: rgba(255,255,255,.35);
 }
+.sc3-sticker-line {
+  margin-top: 4px;
+  font-size: .76rem;
+  color: #fef3c7;
+  font-weight: 700;
+}
 
 @keyframes heroShine {
   0% { transform: translateX(-120%); }
@@ -2436,7 +2442,11 @@ body.season-skin-unlocked {
   border-radius:12px;
   padding:8px;
   text-align:center;
+  cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease;
 }
+.sticker-card:hover { transform:translateY(-2px); box-shadow:0 8px 16px rgba(245,158,11,.22); }
+.sticker-card.active { border-color:#22c55e; box-shadow:0 0 0 2px rgba(34,197,94,.2) inset; }
 .sticker-card .sticker-icon { font-size:1.7rem; }
 .sticker-card .sticker-name { font-size:.82rem; font-weight:700; }
 .sticker-card .sticker-rare { font-size:.72rem; color:#92400e; }

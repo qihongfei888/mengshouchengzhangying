@@ -5145,9 +5145,9 @@
 
     runTeacherQuickFlow(mode) {
       if (mode === 'preclass') {
-        this.announceClassEvent('🧭 课前流程已启动');
+        this.announceClassEvent('🧭 课前流程已启动：考勤 → 点名 → 快捷加分');
         this.startClassMode();
-        setTimeout(() => { try { this.openSeatArrangeTool(); } catch (e) {} }, 200);
+        setTimeout(() => { try { this.openShortcutPanel(); } catch (e) {} }, 320);
         return;
       }
       if (mode === 'engage') {
@@ -5258,7 +5258,27 @@
     openGroupSeasonTaskPanel() {
       const modal = document.getElementById('groupSeasonTaskModal');
       if (modal) modal.classList.add('show');
+      const ctx = this._getGroupSeasonState();
+      const cfg = (ctx && ctx.cls && ctx.cls.groupSeasonTaskConfig) ? ctx.cls.groupSeasonTaskConfig : { goal: 8, plus: 40, sticker: 5, interact: 20 };
+      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = String(v); };
+      setVal('groupTaskGoalTargetInput', cfg.goal || 8);
+      setVal('groupTaskPlusTargetInput', cfg.plus || 40);
+      setVal('groupTaskStickerTargetInput', cfg.sticker || 5);
+      setVal('groupTaskInteractTargetInput', cfg.interact || 20);
       this.renderGroupSeasonTasks();
+    },
+
+    saveGroupSeasonTaskConfig() {
+      const ctx = this._getGroupSeasonState();
+      if (!ctx) return;
+      ctx.cls.groupSeasonTaskConfig = {
+        goal: Math.max(1, parseInt(document.getElementById('groupTaskGoalTargetInput')?.value, 10) || 8),
+        plus: Math.max(1, parseInt(document.getElementById('groupTaskPlusTargetInput')?.value, 10) || 40),
+        sticker: Math.max(1, parseInt(document.getElementById('groupTaskStickerTargetInput')?.value, 10) || 5),
+        interact: Math.max(1, parseInt(document.getElementById('groupTaskInteractTargetInput')?.value, 10) || 20)
+      };
+      setUserData(ctx.data);
+      this.saveData();
     },
 
     _getGroupSeasonState() {
@@ -5273,11 +5293,12 @@
       const ctx = this._getGroupSeasonState();
       if (!ctx) return;
       const weekId = new Date().toISOString().slice(0, 10);
+      const cfg = (ctx.cls && ctx.cls.groupSeasonTaskConfig) ? ctx.cls.groupSeasonTaskConfig : { goal: 8, plus: 40, sticker: 5, interact: 20 };
       const pool = [
-        { key: 'goal', text: '本周完成成员目标累计 8 次', target: 8 },
-        { key: 'plus', text: '本周小组净加分达到 40 分', target: 40 },
-        { key: 'sticker', text: '本周开箱累计 5 次', target: 5 },
-        { key: 'interact', text: '本周宠物互动累计 20 次', target: 20 }
+        { key: 'goal', text: `本周完成成员目标累计 ${cfg.goal} 次`, target: Math.max(1, cfg.goal || 8) },
+        { key: 'plus', text: `本周小组净加分达到 ${cfg.plus} 分`, target: Math.max(1, cfg.plus || 40) },
+        { key: 'sticker', text: `本周开箱累计 ${cfg.sticker} 次`, target: Math.max(1, cfg.sticker || 5) },
+        { key: 'interact', text: `本周宠物互动累计 ${cfg.interact} 次`, target: Math.max(1, cfg.interact || 20) }
       ];
       ctx.state.weekId = weekId;
       ctx.state.byGroup = {};
@@ -5684,7 +5705,17 @@
         grid.innerHTML = '<p class="placeholder-text">还没有贴纸，快去开箱吧～</p>';
         return;
       }
-      grid.innerHTML = arr.slice().reverse().map(x => `<div class="sticker-card rare-${this.escape(x.rare)}"><div class="sticker-icon">${x.icon}</div><div class="sticker-name">${this.escape(x.name)}</div><div class="sticker-rare">${this.escape(x.rare)}</div></div>`).join('');
+      grid.innerHTML = arr.slice().reverse().map(x => `<div class="sticker-card rare-${this.escape(x.rare)} ${s.activeSticker && s.activeSticker.id === x.id ? 'active' : ''}" onclick="app.setActiveSticker('${this.escape(String(s.id))}', '${this.escape(String(x.id))}', '${this.escape(String(x.name))}', '${this.escape(String(x.icon))}')"><div class="sticker-icon">${x.icon}</div><div class="sticker-name">${this.escape(x.name)}</div><div class="sticker-rare">${this.escape(x.rare)}</div></div>`).join('');
+    },
+
+    setActiveSticker(studentId, stickerId, stickerName, stickerIcon) {
+      const s = (this.students || []).find(x => String(x.id) === String(studentId));
+      if (!s) return;
+      s.activeSticker = { id: stickerId, name: stickerName, icon: stickerIcon };
+      this.saveStudents();
+      this.renderStickerAlbum();
+      this.renderStudents();
+      this.showActionToast(`${this.escape(s.name)} 已佩戴贴纸：${this.escape(stickerName)}`);
     },
 
     openParentReportPanel() {
@@ -5832,7 +5863,8 @@
 
     getDailyGoalItems() {
       return [
-        { key: 'speak', name: '积极发言1次', reward: 1 },
+        { key: 'answer', name: '主动回答问题1次', reward: 1 },
+        { key: 'speak', name: '上台展示/表达1次', reward: 1 },
         { key: 'help', name: '帮助同学1次', reward: 1 },
         { key: 'clean', name: '作业整洁完成', reward: 1 }
       ];
@@ -6398,7 +6430,7 @@
                 <span class="sc3-name">${this.escape(s.name)}</span>
                 <span class="sc3-pet-name">${this.escape(petTypeName)}</span>
             </div>
-              <div class="sc3-progress-bar"><div class="sc3-progress-fill" style="width:${progressPercent}%;background:${theme.primary};"></div></div>
+              ${(s.stickers && s.stickers.length) ? `<div class="sc3-sticker-line">贴纸 ${(s.activeSticker && s.activeSticker.icon) ? this.escape(s.activeSticker.icon) : this.escape((s.stickers[s.stickers.length - 1] || {}).icon || '🎁')} · ${(s.activeSticker && s.activeSticker.name) ? this.escape(s.activeSticker.name) : `共 ${s.stickers.length}`}</div>` : ''}
               <div class="sc3-footer">
                 <span class="sc3-points ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '能量不足或已满级'}">⚡ ${this.getStudentEnergy(s)}</span>
                 <span class="sc3-stage">${progressText}</span>
@@ -6476,6 +6508,17 @@
       return '😪';
     },
 
+    adjustPetMood(studentId, delta = 0) {
+      const s = (this.students || []).find(x => x.id === studentId);
+      if (!s || !s.pet) return;
+      s.pet.mood = Math.max(0, Math.min(100, this.getPetEmotionValue(s) + (delta || 0)));
+      s.pet.lastMoodAt = Date.now();
+      this.applyHappyStreakBonus(s);
+      this.saveStudents();
+      this.renderStudents();
+      this.openStudentModal(studentId);
+    },
+
     updatePetEmotionOnAction(student, delta, source = 'score') {
       if (!student || !student.pet) return;
       const now = Date.now();
@@ -6486,6 +6529,23 @@
       if (student.pet.lastMoodAt && (now - student.pet.lastMoodAt) > 90 * 60 * 1000) mood -= 6;
       student.pet.mood = Math.max(0, Math.min(100, mood));
       student.pet.lastMoodAt = now;
+      this.applyHappyStreakBonus(student);
+    },
+
+    applyHappyStreakBonus(student) {
+      if (!student || !student.pet) return;
+      const mood = this.getPetEmotionValue(student);
+      if (!student.pet.happyStreak) student.pet.happyStreak = 0;
+      if (mood >= 75) student.pet.happyStreak += 1;
+      else student.pet.happyStreak = 0;
+      if (student.pet.happyStreak < 3) return;
+      student.pet.happyStreak = 0;
+      student.points = this.getStudentGrowth(student) + 1;
+      student.energy = this.getStudentEnergy(student) + 1;
+      if (!student.scoreHistory) student.scoreHistory = [];
+      student.scoreHistory.unshift({ time: Date.now(), delta: 1, reason: '神兽连续开心奖励' });
+      this.showActionToast(`${this.escape(student.name)} 神兽连续开心，奖励+1`);
+      this.announceClassEvent(`😊 ${this.escape(student.name)} 神兽连续开心，获得额外加分`);
     },
 
     openStudentModal(studentId) {
@@ -6521,6 +6581,11 @@
             </div>
             ${canFeed ? `<button class="btn feed-btn" onclick="app.feedStudentInModal('${s.id}')">${foodLabel} 喂食（消耗1能量）</button>` : '<p class="text-muted">能量不足或已满级</p>'}
             <button class="btn btn-outline" style="margin-top:8px;" onclick="app.interactWithPet('${s.id}')">💬 抚摸互动</button>
+            <button class="btn btn-outline" style="margin-top:8px;" onclick="app.playPetVoicePack('${s.id}')">🔊 神兽叫声</button>
+            <div class="score-btns" style="margin-top:8px;">
+              <button class="btn btn-small btn-primary" onclick="app.adjustPetMood('${s.id}', 8)">😊 调成开心</button>
+              <button class="btn btn-small btn-secondary" onclick="app.adjustPetMood('${s.id}', -8)">😮‍💨 调整冷静</button>
+            </div>
           </div>`;
       } else {
         petSection = '<p>该学生尚未领养宠物，请到「领养宠物」页操作。</p>';
@@ -7359,6 +7424,21 @@
           fireworksContainer.parentNode.removeChild(fireworksContainer);
         }
       }, 3000);
+    },
+
+    // 语音播报
+    playPetVoicePack(studentId) {
+      const s = (this.students || []).find(x => x.id === studentId);
+      if (!s || !s.pet) return;
+      const mood = this.getPetEmotionValue(s);
+      const lines = mood >= 75
+        ? ['我准备好冲刺啦', '今天状态火热', '继续挑战更高目标']
+        : (mood >= 45
+          ? ['我今天很开心', '一起加油吧', '再来一次互动']
+          : ['我有点困了', '给我一点能量吧', '我想要被鼓励']);
+      const text = `${s.name} 的神兽说：${lines[Math.floor(Math.random() * lines.length)]}`;
+      this.announceClassEvent(`🔊 ${text}`);
+      this.speak(text.replace(/[：]/g, ''));
     },
 
     // 语音播报

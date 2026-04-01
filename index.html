@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>萌兽成长营</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
-  <link rel="stylesheet" href="./styles.css?v=58">
+  <link rel="stylesheet" href="./styles.css?v=59">
   <link rel="stylesheet" href="./features.css?v=2">
   <style>
     @font-face {
@@ -1877,7 +1877,23 @@
       <h3>🧩 小组赛季任务</h3>
       <p class="text-muted">每个小组每周推进协作任务，累计完成可解锁班级公共皮肤。</p>
       <div class="score-btns" style="margin-bottom:8px;">
-        <button class="btn btn-primary" onclick="app.rollGroupSeasonTasks()">重新生成本周任务</button>
+        <button class="btn btn-primary" onclick="app.saveGroupSeasonTaskConfig(); app.rollGroupSeasonTasks()">保存并生成本周任务</button>
+      </div>
+      <div class="form-group">
+        <label>目标任务次数（成员目标）</label>
+        <input id="groupTaskGoalTargetInput" class="login-input" type="number" min="1" value="8">
+      </div>
+      <div class="form-group">
+        <label>目标任务分值（小组净加分）</label>
+        <input id="groupTaskPlusTargetInput" class="login-input" type="number" min="1" value="40">
+      </div>
+      <div class="form-group">
+        <label>贴纸开箱次数</label>
+        <input id="groupTaskStickerTargetInput" class="login-input" type="number" min="1" value="5">
+      </div>
+      <div class="form-group">
+        <label>宠物互动次数</label>
+        <input id="groupTaskInteractTargetInput" class="login-input" type="number" min="1" value="20">
       </div>
       <div id="groupSeasonTaskList" class="season-preview"></div>
       <div id="groupSeasonSkinUnlock" class="season-preview" style="margin-top:10px;"></div>
@@ -2007,7 +2023,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=104"></script>
+<script src="./app-loader.js?v=105"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
