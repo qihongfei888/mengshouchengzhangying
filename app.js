@@ -5249,6 +5249,8 @@
       cls.classMode.startSnapshot = (this.students || []).map(s => ({ id: s.id, points: s.points || 0 }));
       cls.classMode.rhythmEnabled = true;
       cls.classMode.rhythmStage = 0;
+      cls.classMode.sprintActive = false;
+      cls.classMode.sprintStars = {};
       setUserData(data);
       this.saveData();
       this.startRhythmEngine();
@@ -5271,6 +5273,7 @@
       this.stopRhythmEngine();
       this.renderClassModeStatus();
       this.generateWeeklyReport(true);
+      this.showSprintStarSummary();
       this.showWinBanner('⏹️ 课堂模式已结束', '课堂小结已生成');
     },
 
@@ -5279,7 +5282,8 @@
       const checkpoints = [
         { min: 5, text: '📚 5分钟：完成课堂导入，建议快速点名一次', action: () => this.randomRollCall() },
         { min: 20, text: '🔥 20分钟：进入互动高潮，建议开启快捷键面板', action: () => this.openShortcutPanel() },
-        { min: 35, text: '🧾 35分钟：准备收尾，可先预览周报', action: () => this.openWeeklyReportPanel() }
+        { min: 35, text: '🧾 35分钟：准备收尾，可先预览周报', action: () => this.openWeeklyReportPanel() },
+        { min: 42, text: '⚡ 最后3分钟冲刺开启：答题/目标奖励×1.2', action: () => this.activateSprintMode() }
       ];
       this._rhythmTimer = setInterval(() => {
         const data = getUserData();
@@ -5328,6 +5332,32 @@
         <div class="season-theme">课堂状态：${cm.active ? '进行中' : '已结束'}</div>
         <div class="season-desc">时长 ${mins} 分钟 · 本节净增长积分 ${plus}</div>
       </div>`;
+    },
+
+    activateSprintMode() {
+      const { data, cls } = this._getCurrentClassCtx();
+      if (!cls || !cls.classMode || !cls.classMode.active) return;
+      if (cls.classMode.sprintActive) return;
+      cls.classMode.sprintActive = true;
+      cls.classMode.sprintStartedAt = Date.now();
+      cls.classMode.sprintStars = cls.classMode.sprintStars || {};
+      setUserData(data);
+      this.saveData();
+      this.showWinBanner('⚡ 冲刺榜开启', '最后3分钟，答题/目标奖励提升');
+      this.announceClassEvent('⚡ 冲刺榜已开启：答题/目标奖励×1.2');
+    },
+
+    showSprintStarSummary() {
+      const { cls } = this._getCurrentClassCtx();
+      if (!cls || !cls.classMode || !cls.classMode.sprintStars) return;
+      const stars = Object.entries(cls.classMode.sprintStars || {}).map(([sid, score]) => {
+        const s = (this.students || []).find(x => x.id === sid);
+        return { name: s ? s.name : sid, score: Number(score || 0) };
+      }).sort((a, b) => b.score - a.score);
+      if (!stars.length || !(stars[0].score > 0)) return;
+      const top = stars[0];
+      this.showWinBanner('🌟 冲刺之星', `${this.escape(top.name)}（冲刺贡献 +${top.score}）`);
+      this.announceClassEvent(`🌟 冲刺之星：${this.escape(top.name)}（+${top.score}）`);
     },
 
     openGroupSeasonTaskPanel() {
@@ -5959,6 +5989,7 @@
       this.ensureDailyGoals(s);
       if ((s.dailyGoal.done || []).includes(key)) return;
       s.dailyGoal.done.push(key);
+      const goal = this.getDailyGoalItems().find(g => g.key === key);
       let reward = 1;
       let rewardReason = '';
       if ((key === 'answer' || key === 'speak') && s.activeSticker && /学习|专注|star|focus/i.test(String(s.activeSticker.name || ''))) {
@@ -5967,10 +5998,10 @@
           rewardReason = '（贴纸加成触发+1）';
         }
       }
+      reward = this._applySprintBonus(reward, goal ? goal.name : key);
       s.points = (this.getStudentGrowth(s) || 0) + reward;
       s.energy = (this.getStudentEnergy(s) || 0) + reward;
       if (!s.scoreHistory) s.scoreHistory = [];
-      const goal = this.getDailyGoalItems().find(g => g.key === key);
       s.scoreHistory.unshift({ time: Date.now(), delta: reward, reason: `今日目标-${goal ? goal.name : key}${rewardReason}` });
       // 小组协作奖励：成员完成目标时，小组+1
       const team = (this.groups || []).find(g => (g.members || []).some(m => m.studentId === s.id));
@@ -5987,7 +6018,10 @@
         setStorage(STORAGE_KEYS.groups, this.groups);
         setStorage(STORAGE_KEYS.groupPointHistory, this.groupPointHistory);
         this._updateGroupSeasonTaskProgress(team.id, 'goal', 1);
+        this._progressGroupComeback(team.id, 1);
       }
+      this._handleTripleCombo(studentId, goal ? goal.name : key);
+      this._trackSprintStar(studentId, reward);
       this.saveStudents();
       this.showScoreEffect(studentId, reward);
       this.showScoreRain(10);
@@ -6800,6 +6834,109 @@
       return false;
     },
 
+    _getCurrentClassCtx() {
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      return { data, cls };
+    },
+
+    _isSprintActive() {
+      const { cls } = this._getCurrentClassCtx();
+      return !!(cls && cls.classMode && cls.classMode.active && cls.classMode.sprintActive);
+    },
+
+    _applySprintBonus(base, reason = '') {
+      if (!(base > 0)) return base;
+      if (!this._isSprintActive()) return base;
+      if (reason && !/答|回|目标|帮助|展示|发言/.test(String(reason))) return base;
+      return Math.max(base, Math.round(base * 1.2));
+    },
+
+    _trackSprintStar(studentId, addScore = 0) {
+      if (!(addScore > 0) || !this._isSprintActive()) return;
+      const { data, cls } = this._getCurrentClassCtx();
+      if (!cls) return;
+      if (!cls.classMode.sprintStars) cls.classMode.sprintStars = {};
+      cls.classMode.sprintStars[studentId] = (cls.classMode.sprintStars[studentId] || 0) + addScore;
+      setUserData(data);
+      this.saveData();
+    },
+
+    _handleTripleCombo(studentId, source = '课堂表现') {
+      const s = (this.students || []).find(x => x.id === studentId);
+      if (!s) return;
+      const now = Date.now();
+      const win = 10 * 60 * 1000;
+      if (!Array.isArray(s._positiveEventTimes)) s._positiveEventTimes = [];
+      s._positiveEventTimes = s._positiveEventTimes.filter(t => now - t <= win);
+      s._positiveEventTimes.push(now);
+      if (s._positiveEventTimes.length < 3) return;
+      s._positiveEventTimes.splice(0, 3);
+      s.energy = this.getStudentEnergy(s) + 1;
+      this.showActionToast(`${this.escape(s.name)} 达成本节三连击，奖励+1能量`);
+      this.announceClassEvent(`🔥 ${this.escape(s.name)} 三连击达成（${this.escape(source)}），全班鼓掌！`);
+    },
+
+    _ensureGroupComebackState(cls) {
+      if (!cls) return null;
+      const today = new Date().toISOString().slice(0, 10);
+      if (!cls.groupComeback || cls.groupComeback.date !== today) {
+        cls.groupComeback = { date: today, byGroup: {} };
+      }
+      return cls.groupComeback;
+    },
+
+    _isLaggingGroup(groupId) {
+      const arr = (this.groups || []).slice().sort((a, b) => (b.points || 0) - (a.points || 0));
+      if (!arr.length) return false;
+      const idx = arr.findIndex(g => g.id === groupId);
+      return idx >= Math.floor(arr.length / 2);
+    },
+
+    _progressGroupComeback(groupId, add = 1) {
+      if (!groupId || !(add > 0)) return;
+      const { data, cls } = this._getCurrentClassCtx();
+      if (!cls) return;
+      const state = this._ensureGroupComebackState(cls);
+      if (!state.byGroup[groupId]) state.byGroup[groupId] = { used: false, active: false, progress: 0, need: 2, completed: false };
+      const item = state.byGroup[groupId];
+      if (item.used) return;
+      if (!this._isLaggingGroup(groupId)) return;
+      if (!item.active) {
+        item.active = true;
+        item.progress = 0;
+        const g = (this.groups || []).find(x => x.id === groupId);
+        this.announceClassEvent(`🃏 ${this.escape(g ? g.name : '小组')} 获得逆袭卡：完成2次协作目标`);
+      }
+      item.progress += add;
+      if (item.progress < item.need) {
+        setUserData(data);
+        this.saveData();
+        return;
+      }
+      item.active = false;
+      item.used = true;
+      item.completed = true;
+      const g = (this.groups || []).find(x => x.id === groupId);
+      if (g) {
+        g.points = (g.points || 0) + 3;
+        this.groupPointHistory.push({
+          id: 'point_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          groupId: g.id,
+          groupName: g.name,
+          delta: 3,
+          reason: '逆袭卡完成奖励',
+          time: new Date().toISOString()
+        });
+        setStorage(STORAGE_KEYS.groups, this.groups);
+        setStorage(STORAGE_KEYS.groupPointHistory, this.groupPointHistory);
+      }
+      this.showWinBanner('🃏 小组逆袭成功', `${this.escape(g ? g.name : '小组')} 获得 +3 小组积分`);
+      this.announceClassEvent(`🃏 ${this.escape(g ? g.name : '小组')} 逆袭任务完成，奖励 +3`);
+      setUserData(data);
+      this.saveData();
+    },
+
     addScoreToStudent(studentId, type, itemIndex) {
       if (!this.ensureUnlocked('加减分')) return;
       const s = this.students.find(x => x.id === studentId);
@@ -6808,8 +6945,9 @@
       const item = items[itemIndex];
       if (!item) return;
       this.ensureStudentCurrencies(s);
-      const growthDelta = type === 'plus' ? (item.points || 1) : -(Math.abs(item.points) || 1);
-      const energyDelta = type === 'plus' ? Math.max(1, Math.floor((item.points || 1) * 0.8)) : -Math.max(1, Math.floor(Math.abs(item.points || 1) * 0.8));
+      let growthDelta = type === 'plus' ? (item.points || 1) : -(Math.abs(item.points) || 1);
+      if (growthDelta > 0) growthDelta = this._applySprintBonus(growthDelta, item.name || '');
+      const energyDelta = type === 'plus' ? Math.max(1, Math.floor((growthDelta || 1) * 0.8)) : -Math.max(1, Math.floor(Math.abs(growthDelta || 1) * 0.8));
       s.points = this.getStudentGrowth(s) + growthDelta;
       s.energy = Math.max(0, this.getStudentEnergy(s) + energyDelta);
       if (!s.scoreHistory) s.scoreHistory = [];
@@ -6836,7 +6974,14 @@
       // 添加到广播站
       this.addBroadcastMessage(s.name, growthDelta, item.name);
       const team = (this.groups || []).find(g => (g.members || []).some(m => m.studentId === s.id));
-      if (team && growthDelta > 0) this._updateGroupSeasonTaskProgress(team.id, 'plus', growthDelta);
+      if (team && growthDelta > 0) {
+        this._updateGroupSeasonTaskProgress(team.id, 'plus', growthDelta);
+        this._progressGroupComeback(team.id, 1);
+      }
+      if (growthDelta > 0) {
+        this._handleTripleCombo(studentId, item.name || '课堂表现');
+        this._trackSprintStar(studentId, growthDelta);
+      }
       if (document.getElementById('studentModal').classList.contains('show')) this.openStudentModal(studentId);
     },
 
@@ -9070,7 +9215,6 @@
         result.style.cssText = 'font-size:2rem;color:#ffd08a;text-shadow:0 0 14px #ff9f40;';
         result.innerHTML = `${chosen.avatar || '🌟'} ${this.escape(chosen.name)}`;
           overlay.querySelector('.rollcall-spiral').appendChild(result);
-        this.speak(`请${chosen.name}开始挑战`);
       }, 2600);
 
       setTimeout(() => {
