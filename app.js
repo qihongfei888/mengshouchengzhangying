@@ -5142,27 +5142,49 @@
       this.renderClassModeStatus();
     },
 
+    getClassTemplateConfig() {
+      const defaults = {
+        language: { title: '语文课模板', preText: '语文课前：考勤 → 朗读点名 → 快捷加分', engageText: '语文互动：随机点名 + 表达加分', preAction: 'shortcut', engageAction: 'studentScreen' },
+        math: { title: '数学课模板', preText: '数学课前：考勤 → 快问快答点名 → 快捷加分', engageText: '数学互动：冲榜答题 + 快捷加分', preAction: 'shortcut', engageAction: 'quiz' },
+        meeting: { title: '班会模板', preText: '班会课前：考勤 → 主题点名 → 夸夸引导', engageText: '班会互动：夸夸墙 + 小组任务推进', preAction: 'praise', engageAction: 'groupSeason' }
+      };
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      const custom = (cls && cls.classTemplateConfig) ? cls.classTemplateConfig : {};
+      return {
+        language: { ...defaults.language, ...(custom.language || {}) },
+        math: { ...defaults.math, ...(custom.math || {}) },
+        meeting: { ...defaults.meeting, ...(custom.meeting || {}) }
+      };
+    },
+
+    runTemplateAction(actionKey) {
+      if (!actionKey || actionKey === 'none') return;
+      const actions = {
+        shortcut: () => this.openShortcutPanel(),
+        praise: () => this.openPraiseWall(),
+        attendance: () => this.openAttendanceTool(),
+        studentScreen: () => this.openStudentScreen(),
+        quiz: () => this.openCustomQuizPKTool(),
+        groupSeason: () => this.openGroupSeasonTaskPanel()
+      };
+      try { actions[actionKey] && actions[actionKey](); } catch (e) {}
+    },
+
     runTeacherQuickFlow(mode) {
       const key = this._classTemplateKey || 'language';
-      const preMap = {
-        language: '语文课前：考勤 → 朗读点名 → 快捷加分',
-        math: '数学课前：考勤 → 快问快答点名 → 快捷加分',
-        meeting: '班会课前：考勤 → 主题点名 → 夸夸引导'
-      };
+      const cfg = this.getClassTemplateConfig()[key] || this.getClassTemplateConfig().language;
       if (mode === 'preclass') {
-        this.announceClassEvent(`🧭 ${preMap[key] || preMap.language}`);
+        this.announceClassEvent(`🧭 ${cfg.preText || '课前流程已启动'}`);
         this.startClassMode();
-        setTimeout(() => { try { this.openShortcutPanel(); } catch (e) {} }, 320);
-        if (key === 'meeting') setTimeout(() => { try { this.openPraiseWall(); } catch (e) {} }, 520);
+        setTimeout(() => this.runTemplateAction(cfg.preAction), 360);
         return;
       }
       if (mode === 'engage') {
-        this.announceClassEvent('🔥 进入高能互动模式');
+        this.announceClassEvent(`🔥 ${cfg.engageText || '进入高能互动模式'}`);
         this.randomRollCall();
         setTimeout(() => { try { this.openShortcutPanel(); } catch (e) {} }, 260);
-        setTimeout(() => { try { this.openStudentScreen(); } catch (e) {} }, 520);
-        if (key === 'math') setTimeout(() => { try { this.openCustomQuizPKTool(); } catch (e) {} }, 760);
-        if (key === 'meeting') setTimeout(() => { try { this.openGroupSeasonTaskPanel(); } catch (e) {} }, 760);
+        setTimeout(() => this.runTemplateAction(cfg.engageAction), 620);
         return;
       }
       if (mode === 'afterclass') {
@@ -5172,29 +5194,49 @@
       }
     },
 
+    openTemplateConfigModal() {
+      const modal = document.getElementById('templateConfigModal');
+      if (modal) modal.classList.add('show');
+      const type = document.getElementById('templateConfigType');
+      if (type && !type.value) type.value = this._classTemplateKey || 'language';
+      this.renderTemplateConfigForm();
+    },
+
+    renderTemplateConfigForm() {
+      const key = document.getElementById('templateConfigType')?.value || 'language';
+      const cfg = this.getClassTemplateConfig()[key] || this.getClassTemplateConfig().language;
+      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+      setVal('templatePreTextInput', cfg.preText || '');
+      setVal('templateEngageTextInput', cfg.engageText || '');
+      setVal('templatePreActionSelect', cfg.preAction || 'none');
+      setVal('templateEngageActionSelect', cfg.engageAction || 'none');
+    },
+
+    saveTemplateConfig() {
+      const key = document.getElementById('templateConfigType')?.value || 'language';
+      const cfg = {
+        preText: document.getElementById('templatePreTextInput')?.value || '',
+        engageText: document.getElementById('templateEngageTextInput')?.value || '',
+        preAction: document.getElementById('templatePreActionSelect')?.value || 'none',
+        engageAction: document.getElementById('templateEngageActionSelect')?.value || 'none'
+      };
+      const data = getUserData();
+      const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
+      if (!cls) return;
+      cls.classTemplateConfig = cls.classTemplateConfig || {};
+      cls.classTemplateConfig[key] = { ...(cls.classTemplateConfig[key] || {}), ...cfg };
+      setUserData(data);
+      this.saveData();
+      this.showActionToast('模板设置已保存');
+      this.announceClassEvent('🧠 学科模板设置已更新');
+    },
+
     applyClassTemplate() {
       const key = document.getElementById('classTemplateSelect')?.value || 'language';
-      const map = {
-        language: {
-          title: '语文课模板',
-          pre: '语文课启动：考勤 → 朗读抽点 → 关键词奖励',
-          engage: '语文互动：随机点名 + 口头表达加分'
-        },
-        math: {
-          title: '数学课模板',
-          pre: '数学课启动：考勤 → 快问快答点名 → 计算挑战',
-          engage: '数学互动：快捷加分 + 学生大屏冲榜'
-        },
-        meeting: {
-          title: '班会模板',
-          pre: '班会启动：考勤 → 主题发言抽点 → 小组协作',
-          engage: '班会互动：夸夸墙 + 小组任务推进'
-        }
-      };
-      const t = map[key] || map.language;
+      const cfg = this.getClassTemplateConfig()[key] || this.getClassTemplateConfig().language;
       this._classTemplateKey = key;
-      this.showActionToast(`已应用 ${t.title}`);
-      this.announceClassEvent(`📚 ${t.title} 已应用`);
+      this.showActionToast(`已应用 ${cfg.title || '学科模板'}`);
+      this.announceClassEvent(`📚 ${cfg.title || '学科模板'} 已应用`);
     },
 
     startClassMode() {

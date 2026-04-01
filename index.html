@@ -181,6 +181,7 @@
               <option value="meeting">班会模板</option>
             </select>
             <button class="btn btn-outline" onclick="app.applyClassTemplate()">应用模板</button>
+            <button class="btn btn-secondary" onclick="app.openTemplateConfigModal()">模板设置</button>
           </div>
         </div>
         <!-- 小工具面板 -->
@@ -1878,6 +1879,53 @@
     </div>
   </div>
 
+  <div id="templateConfigModal" class="modal">
+    <div class="modal-content" style="max-width:920px;">
+      <button class="modal-close" onclick="app.closeModal('templateConfigModal')">&times;</button>
+      <h3>🧠 学科模板设置（教师可配置）</h3>
+      <p class="text-muted">可自定义各模板的课前/互动提示词和自动打开工具。</p>
+      <div class="form-group">
+        <label>模板类型</label>
+        <select id="templateConfigType" class="login-input" onchange="app.renderTemplateConfigForm()">
+          <option value="language">语文课模板</option>
+          <option value="math">数学课模板</option>
+          <option value="meeting">班会模板</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>课前提示词</label>
+        <input id="templatePreTextInput" class="login-input" placeholder="例如：语文课前：考勤→朗读点名→关键词奖励">
+      </div>
+      <div class="form-group">
+        <label>互动提示词</label>
+        <input id="templateEngageTextInput" class="login-input" placeholder="例如：语文互动：随机点名+表达加分">
+      </div>
+      <div class="form-group">
+        <label>课前自动工具</label>
+        <select id="templatePreActionSelect" class="login-input">
+          <option value="none">无</option>
+          <option value="shortcut">快捷加分面板</option>
+          <option value="praise">夸夸墙</option>
+          <option value="attendance">出勤管理</option>
+          <option value="studentScreen">学生大屏</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>互动自动工具</label>
+        <select id="templateEngageActionSelect" class="login-input">
+          <option value="none">无</option>
+          <option value="quiz">答题PK</option>
+          <option value="groupSeason">小组赛季任务</option>
+          <option value="studentScreen">学生大屏</option>
+          <option value="shortcut">快捷加分面板</option>
+        </select>
+      </div>
+      <div class="score-btns">
+        <button class="btn btn-primary" onclick="app.saveTemplateConfig()">保存模板设置</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 小组赛季任务 -->
   <div id="groupSeasonTaskModal" class="modal">
     <div class="modal-content" style="max-width:900px;">
@@ -2031,7 +2079,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=108"></script>
+<script src="./app-loader.js?v=109"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
