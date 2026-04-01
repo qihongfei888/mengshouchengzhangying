@@ -5144,10 +5144,17 @@
     },
 
     runTeacherQuickFlow(mode) {
+      const key = this._classTemplateKey || 'language';
+      const preMap = {
+        language: '语文课前：考勤 → 朗读点名 → 快捷加分',
+        math: '数学课前：考勤 → 快问快答点名 → 快捷加分',
+        meeting: '班会课前：考勤 → 主题点名 → 夸夸引导'
+      };
       if (mode === 'preclass') {
-        this.announceClassEvent('🧭 课前流程已启动：考勤 → 点名 → 快捷加分');
+        this.announceClassEvent(`🧭 ${preMap[key] || preMap.language}`);
         this.startClassMode();
         setTimeout(() => { try { this.openShortcutPanel(); } catch (e) {} }, 320);
+        if (key === 'meeting') setTimeout(() => { try { this.openPraiseWall(); } catch (e) {} }, 520);
         return;
       }
       if (mode === 'engage') {
@@ -5155,6 +5162,8 @@
         this.randomRollCall();
         setTimeout(() => { try { this.openShortcutPanel(); } catch (e) {} }, 260);
         setTimeout(() => { try { this.openStudentScreen(); } catch (e) {} }, 520);
+        if (key === 'math') setTimeout(() => { try { this.openCustomQuizPKTool(); } catch (e) {} }, 760);
+        if (key === 'meeting') setTimeout(() => { try { this.openGroupSeasonTaskPanel(); } catch (e) {} }, 760);
         return;
       }
       if (mode === 'afterclass') {
@@ -5162,6 +5171,31 @@
         this.endClassMode();
         setTimeout(() => { try { this.openWeeklyReportPanel(); } catch (e) {} }, 260);
       }
+    },
+
+    applyClassTemplate() {
+      const key = document.getElementById('classTemplateSelect')?.value || 'language';
+      const map = {
+        language: {
+          title: '语文课模板',
+          pre: '语文课启动：考勤 → 朗读抽点 → 关键词奖励',
+          engage: '语文互动：随机点名 + 口头表达加分'
+        },
+        math: {
+          title: '数学课模板',
+          pre: '数学课启动：考勤 → 快问快答点名 → 计算挑战',
+          engage: '数学互动：快捷加分 + 学生大屏冲榜'
+        },
+        meeting: {
+          title: '班会模板',
+          pre: '班会启动：考勤 → 主题发言抽点 → 小组协作',
+          engage: '班会互动：夸夸墙 + 小组任务推进'
+        }
+      };
+      const t = map[key] || map.language;
+      this._classTemplateKey = key;
+      this.showActionToast(`已应用 ${t.title}`);
+      this.announceClassEvent(`📚 ${t.title} 已应用`);
     },
 
     startClassMode() {
@@ -5884,11 +5918,19 @@
       this.ensureDailyGoals(s);
       if ((s.dailyGoal.done || []).includes(key)) return;
       s.dailyGoal.done.push(key);
-      s.points = (this.getStudentGrowth(s) || 0) + 1;
-      s.energy = (this.getStudentEnergy(s) || 0) + 1;
+      let reward = 1;
+      let rewardReason = '';
+      if ((key === 'answer' || key === 'speak') && s.activeSticker && /学习|专注|star|focus/i.test(String(s.activeSticker.name || ''))) {
+        if (Math.random() < 0.35) {
+          reward += 1;
+          rewardReason = '（贴纸加成触发+1）';
+        }
+      }
+      s.points = (this.getStudentGrowth(s) || 0) + reward;
+      s.energy = (this.getStudentEnergy(s) || 0) + reward;
       if (!s.scoreHistory) s.scoreHistory = [];
       const goal = this.getDailyGoalItems().find(g => g.key === key);
-      s.scoreHistory.unshift({ time: Date.now(), delta: 1, reason: `今日目标-${goal ? goal.name : key}` });
+      s.scoreHistory.unshift({ time: Date.now(), delta: reward, reason: `今日目标-${goal ? goal.name : key}${rewardReason}` });
       // 小组协作奖励：成员完成目标时，小组+1
       const team = (this.groups || []).find(g => (g.members || []).some(m => m.studentId === s.id));
       if (team) {
@@ -5906,10 +5948,10 @@
         this._updateGroupSeasonTaskProgress(team.id, 'goal', 1);
       }
       this.saveStudents();
-      this.showScoreEffect(studentId, 1);
+      this.showScoreEffect(studentId, reward);
       this.showScoreRain(10);
-      this.announceClassEvent(`🎯 ${this.escape(s.name)} 完成今日目标：${goal ? goal.name : key}${team ? `（${this.escape(team.name)} 小组+1）` : ''}`);
-      this.addBroadcastMessage(s.name, 1, `完成今日目标：${goal ? goal.name : key}`);
+      this.announceClassEvent(`🎯 ${this.escape(s.name)} 完成今日目标：${goal ? goal.name : key}${rewardReason}${team ? `（${this.escape(team.name)} 小组+1）` : ''}`);
+      this.addBroadcastMessage(s.name, reward, `完成今日目标：${goal ? goal.name : key}${rewardReason}`);
       this.renderStudents();
       this.renderDashboard();
       this.openStudentModal(studentId);
@@ -7431,14 +7473,24 @@
       const s = (this.students || []).find(x => x.id === studentId);
       if (!s || !s.pet) return;
       const mood = this.getPetEmotionValue(s);
+      const moodKey = mood >= 75 ? 'happy' : (mood >= 45 ? 'normal' : 'tired');
       const lines = mood >= 75
         ? ['我准备好冲刺啦', '今天状态火热', '继续挑战更高目标']
         : (mood >= 45
           ? ['我今天很开心', '一起加油吧', '再来一次互动']
           : ['我有点困了', '给我一点能量吧', '我想要被鼓励']);
-      const text = `${s.name} 的神兽说：${lines[Math.floor(Math.random() * lines.length)]}`;
-      this.announceClassEvent(`🔊 ${text}`);
-      this.speak(text.replace(/[：]/g, ''));
+      const line = lines[Math.floor(Math.random() * lines.length)];
+      const text = `${s.name} 的神兽说：${line}`;
+      const typeId = String(s.pet.typeId || 'default');
+      const voiceUrl = `./assets/voice-packs/${typeId}/${moodKey}.mp3`;
+      const audio = new Audio(voiceUrl);
+      audio.volume = 0.95;
+      audio.play().then(() => {
+        this.announceClassEvent(`🔊 ${text}`);
+      }).catch(() => {
+        this.announceClassEvent(`🔊 ${text}（语音包未命中，已启用系统语音）`);
+        this.speak(text.replace(/[：]/g, ''));
+      });
     },
 
     // 语音播报

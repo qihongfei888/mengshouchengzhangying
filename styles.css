@@ -2150,6 +2150,16 @@ body.season-skin-unlocked {
   min-width:120px;
   font-weight:800;
 }
+.template-inline {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.template-inline .login-input {
+  flex: 1;
+  min-width: 180px;
+}
 
 /* UI 吸引力强化 */
 .dashboard-welcome {
