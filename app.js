@@ -5465,6 +5465,7 @@
       if (!hit) return;
       const label = hit === 2 ? '双连击' : (hit === 5 ? '五连击' : '十连击');
       this.showWinBanner(`⚡ ${label}`, '课堂状态超燃！');
+      if (hit >= 5) this.showFullScreenCelebration(`⚡ ${label}`, '全班进入高能状态！');
       this.announceClassEvent(`⚡ 连击触发：${label}`);
       this.showScoreRain(hit === 10 ? 36 : (hit === 5 ? 24 : 14));
     },
@@ -5495,6 +5496,7 @@
           this.saveStudents();
         }
         this.showWinBanner('🏆 赛季奖励解锁', `${cfg.theme || '本赛季'}达标，全班奖励 +${reward} 分`);
+        this.showFullScreenCelebration('🏆 赛季达标', `${cfg.theme || '本赛季'} 已完成！`);
         this.announceClassEvent(`🏆 赛季达标！全班每人奖励 +${reward} 分`);
         this.showScoreRain(40);
         if (window.launchFireworks) window.launchFireworks();
@@ -5522,6 +5524,7 @@
           this.renderGroups();
         }
         this.showWinBanner('🎯 小组赛季奖励解锁', `全组达标，每组奖励 +${gReward} 分`);
+        this.showFullScreenCelebration('🎯 小组赛季达标', '协作挑战全线完成！');
         this.announceClassEvent(`🎯 小组赛季达标！每组奖励 +${gReward} 分`);
         changed = true;
       }
@@ -5661,6 +5664,7 @@
         result.innerHTML = `<div class="sticker-drop rare-${st.rare}"><span class="sticker-drop-icon">${st.icon}</span><div class="sticker-drop-name">${st.name}</div><div class="sticker-drop-rare">${st.rare}</div></div>`;
       }
       this.showScoreRain(st.rare === 'SSR' ? 26 : 12);
+      if (st.rare === 'SSR') this.showFullScreenCelebration('🌟 SSR 爆出！', `${st.name} 已收入贴纸册`);
       const team = (this.groups || []).find(g => (g.members || []).some(m => m.studentId === s.id));
       if (team) this._updateGroupSeasonTaskProgress(team.id, 'sticker', 1);
       this.announceClassEvent(`🎁 ${this.escape(s.name)} 开箱获得 ${st.name} (${st.rare})`);
@@ -7261,6 +7265,29 @@
         banner.classList.remove('show');
         setTimeout(() => banner.remove(), 360);
       }, 1800);
+    },
+
+    showFullScreenCelebration(title, subtitle = '') {
+      const old = document.getElementById('fullCelebrationFx');
+      if (old) old.remove();
+      const wrap = document.createElement('div');
+      wrap.id = 'fullCelebrationFx';
+      wrap.className = 'full-celebration';
+      wrap.innerHTML = `
+        <div class="full-celebration-bg"></div>
+        <div class="full-celebration-card">
+          <div class="full-celebration-title">${this.escape(title || '高燃时刻')}</div>
+          ${subtitle ? `<div class="full-celebration-sub">${this.escape(subtitle)}</div>` : ''}
+        </div>
+      `;
+      document.body.appendChild(wrap);
+      this.showScoreRain(26);
+      if (window.launchFireworks) window.launchFireworks();
+      setTimeout(() => wrap.classList.add('show'), 20);
+      setTimeout(() => {
+        wrap.classList.remove('show');
+        setTimeout(() => wrap.remove(), 400);
+      }, 2200);
     },
 
     showScoreRain(count = 20) {
