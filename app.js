@@ -5231,6 +5231,42 @@
       this.announceClassEvent('🧠 学科模板设置已更新');
     },
 
+    getMotivationSwitches() {
+      const { data, cls } = this._getCurrentClassCtx();
+      const defaults = { combo: true, comeback: true, sprint: true };
+      if (!cls) return defaults;
+      cls.motivationSwitches = { ...defaults, ...(cls.motivationSwitches || {}) };
+      setUserData(data);
+      this.saveData();
+      return cls.motivationSwitches;
+    },
+
+    openMotivationSwitchModal() {
+      const modal = document.getElementById('motivationSwitchModal');
+      if (modal) modal.classList.add('show');
+      const sw = this.getMotivationSwitches();
+      const c1 = document.getElementById('motivationComboSwitch');
+      const c2 = document.getElementById('motivationComebackSwitch');
+      const c3 = document.getElementById('motivationSprintSwitch');
+      if (c1) c1.checked = !!sw.combo;
+      if (c2) c2.checked = !!sw.comeback;
+      if (c3) c3.checked = !!sw.sprint;
+    },
+
+    saveMotivationSwitches() {
+      const { data, cls } = this._getCurrentClassCtx();
+      if (!cls) return;
+      cls.motivationSwitches = {
+        combo: !!document.getElementById('motivationComboSwitch')?.checked,
+        comeback: !!document.getElementById('motivationComebackSwitch')?.checked,
+        sprint: !!document.getElementById('motivationSprintSwitch')?.checked
+      };
+      setUserData(data);
+      this.saveData();
+      this.showActionToast('激励开关已保存');
+      this.announceClassEvent('🎛️ 激励开关已更新');
+    },
+
     applyClassTemplate() {
       const key = document.getElementById('classTemplateSelect')?.value || 'language';
       const cfg = this.getClassTemplateConfig()[key] || this.getClassTemplateConfig().language;
@@ -5335,6 +5371,8 @@
     },
 
     activateSprintMode() {
+      const sw = this.getMotivationSwitches();
+      if (!sw.sprint) return;
       const { data, cls } = this._getCurrentClassCtx();
       if (!cls || !cls.classMode || !cls.classMode.active) return;
       if (cls.classMode.sprintActive) return;
@@ -6841,6 +6879,8 @@
     },
 
     _isSprintActive() {
+      const sw = this.getMotivationSwitches();
+      if (!sw.sprint) return false;
       const { cls } = this._getCurrentClassCtx();
       return !!(cls && cls.classMode && cls.classMode.active && cls.classMode.sprintActive);
     },
@@ -6863,6 +6903,8 @@
     },
 
     _handleTripleCombo(studentId, source = '课堂表现') {
+      const sw = this.getMotivationSwitches();
+      if (!sw.combo) return;
       const s = (this.students || []).find(x => x.id === studentId);
       if (!s) return;
       const now = Date.now();
@@ -6894,6 +6936,8 @@
     },
 
     _progressGroupComeback(groupId, add = 1) {
+      const sw = this.getMotivationSwitches();
+      if (!sw.comeback) return;
       if (!groupId || !(add > 0)) return;
       const { data, cls } = this._getCurrentClassCtx();
       if (!cls) return;

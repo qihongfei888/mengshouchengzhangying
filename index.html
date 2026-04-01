@@ -182,6 +182,7 @@
             </select>
             <button class="btn btn-outline" onclick="app.applyClassTemplate()">应用模板</button>
             <button class="btn btn-secondary" onclick="app.openTemplateConfigModal()">模板设置</button>
+            <button class="btn btn-secondary" onclick="app.openMotivationSwitchModal()">激励开关</button>
           </div>
         </div>
         <!-- 小工具面板 -->
@@ -1926,6 +1927,26 @@
     </div>
   </div>
 
+  <div id="motivationSwitchModal" class="modal">
+    <div class="modal-content" style="max-width:760px;">
+      <button class="modal-close" onclick="app.closeModal('motivationSwitchModal')">&times;</button>
+      <h3>🎛️ 激励机制开关</h3>
+      <p class="text-muted">按班级控制三连击、逆袭卡、冲刺榜，随时开关。</p>
+      <div class="form-group">
+        <label><input id="motivationComboSwitch" type="checkbox" checked> 启用本节三连击（10分钟3次正向行为）</label>
+      </div>
+      <div class="form-group">
+        <label><input id="motivationComebackSwitch" type="checkbox" checked> 启用小组逆袭卡（每日一次）</label>
+      </div>
+      <div class="form-group">
+        <label><input id="motivationSprintSwitch" type="checkbox" checked> 启用下课前3分钟冲刺榜</label>
+      </div>
+      <div class="score-btns">
+        <button class="btn btn-primary" onclick="app.saveMotivationSwitches()">保存开关</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 小组赛季任务 -->
   <div id="groupSeasonTaskModal" class="modal">
     <div class="modal-content" style="max-width:900px;">
@@ -2079,7 +2100,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=110"></script>
+<script src="./app-loader.js?v=111"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
