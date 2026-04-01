@@ -5789,7 +5789,58 @@
           return `<option value="${this.escape(s.id)}">${this.escape(s.name)}（能量${this.getStudentEnergy(s)}）</option>`;
         }).join('');
       }
+      this.renderStickerBonusConfig();
       this.renderStickerAlbum();
+    },
+
+    getStickerBonusConfig() {
+      const { data, cls } = this._getCurrentClassCtx();
+      const defaults = {
+        R: { growth: 0, energy: 0, mood: 6 },
+        SR: { growth: 1, energy: 1, mood: 10 },
+        SSR: { growth: 2, energy: 2, mood: 15 }
+      };
+      if (!cls) return defaults;
+      cls.stickerBonusConfig = {
+        R: { ...defaults.R, ...((cls.stickerBonusConfig || {}).R || {}) },
+        SR: { ...defaults.SR, ...((cls.stickerBonusConfig || {}).SR || {}) },
+        SSR: { ...defaults.SSR, ...((cls.stickerBonusConfig || {}).SSR || {}) }
+      };
+      setUserData(data);
+      this.saveData();
+      return cls.stickerBonusConfig;
+    },
+
+    renderStickerBonusConfig() {
+      const cfg = this.getStickerBonusConfig();
+      const setVal = (id, x) => { const el = document.getElementById(id); if (el) el.value = `${x.growth || 0},${x.energy || 0},${x.mood || 0}`; };
+      setVal('stickerBonusRInput', cfg.R || {});
+      setVal('stickerBonusSRInput', cfg.SR || {});
+      setVal('stickerBonusSSRInput', cfg.SSR || {});
+    },
+
+    saveStickerBonusConfig() {
+      const parseLine = (id, dft) => {
+        const txt = (document.getElementById(id)?.value || '').trim();
+        const arr = txt.split(',').map(x => parseInt(x.trim(), 10));
+        return {
+          growth: Number.isFinite(arr[0]) ? arr[0] : dft.growth,
+          energy: Number.isFinite(arr[1]) ? arr[1] : dft.energy,
+          mood: Number.isFinite(arr[2]) ? arr[2] : dft.mood
+        };
+      };
+      const { data, cls } = this._getCurrentClassCtx();
+      if (!cls) return;
+      const d = this.getStickerBonusConfig();
+      cls.stickerBonusConfig = {
+        R: parseLine('stickerBonusRInput', d.R),
+        SR: parseLine('stickerBonusSRInput', d.SR),
+        SSR: parseLine('stickerBonusSSRInput', d.SSR)
+      };
+      setUserData(data);
+      this.saveData();
+      this.showActionToast('贴纸稀有度加成已保存');
+      this.announceClassEvent('🎛️ 贴纸稀有度加成设置已更新');
     },
 
     getStickerPool() {
@@ -5822,16 +5873,37 @@
       const st = this._pickSticker();
       if (!s.stickers) s.stickers = [];
       s.stickers.push({ id: st.id, name: st.name, icon: st.icon, rare: st.rare, time: Date.now() });
+
+      const cfg = this.getStickerBonusConfig();
+      const bonus = (cfg && cfg[st.rare]) ? cfg[st.rare] : { growth: 0, energy: 0, mood: 0 };
+      const addGrowth = Math.max(0, parseInt(bonus.growth, 10) || 0);
+      const addEnergy = Math.max(0, parseInt(bonus.energy, 10) || 0);
+      const addMood = Math.max(0, parseInt(bonus.mood, 10) || 0);
+      if (addGrowth > 0) s.points = this.getStudentGrowth(s) + addGrowth;
+      if (addEnergy > 0) s.energy = this.getStudentEnergy(s) + addEnergy;
+      if (addMood > 0 && s.pet) {
+        s.pet.mood = Math.max(0, Math.min(100, this.getPetEmotionValue(s) + addMood));
+        s.pet.lastMoodAt = Date.now();
+      }
+      if ((addGrowth > 0 || addEnergy > 0) && !s.scoreHistory) s.scoreHistory = [];
+      if (addGrowth > 0 || addEnergy > 0) {
+        s.scoreHistory.unshift({
+          time: Date.now(),
+          delta: addGrowth,
+          reason: `贴纸开箱加成-${st.rare}（成长+${addGrowth} 能量+${addEnergy} 情绪+${addMood}）`
+        });
+      }
+
       this.saveStudents();
       const result = document.getElementById('stickerOpenResult');
       if (result) {
-        result.innerHTML = `<div class="sticker-drop rare-${st.rare}"><span class="sticker-drop-icon">${st.icon}</span><div class="sticker-drop-name">${st.name}</div><div class="sticker-drop-rare">${st.rare}</div></div>`;
+        result.innerHTML = `<div class="sticker-drop rare-${st.rare}"><span class="sticker-drop-icon">${st.icon}</span><div class="sticker-drop-name">${st.name}</div><div class="sticker-drop-rare">${st.rare}</div><div class="sticker-drop-rare">成长+${addGrowth} 能量+${addEnergy} 情绪+${addMood}</div></div>`;
       }
       this.showScoreRain(st.rare === 'SSR' ? 26 : 12);
       if (st.rare === 'SSR') this.showFullScreenCelebration('🌟 SSR 爆出！', `${st.name} 已收入贴纸册`);
       const team = (this.groups || []).find(g => (g.members || []).some(m => m.studentId === s.id));
       if (team) this._updateGroupSeasonTaskProgress(team.id, 'sticker', 1);
-      this.announceClassEvent(`🎁 ${this.escape(s.name)} 开箱获得 ${st.name} (${st.rare})`);
+      this.announceClassEvent(`🎁 ${this.escape(s.name)} 开箱获得 ${st.name} (${st.rare})，成长+${addGrowth} 能量+${addEnergy} 情绪+${addMood}`);
       this.renderStickerAlbum();
       this.renderStudents();
     },
