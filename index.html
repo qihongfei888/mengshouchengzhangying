@@ -2046,11 +2046,22 @@
         <button class="btn btn-primary" onclick="app.openStickerPack()">开箱（消耗1能量）</button>
       </div>
       <div class="season-preview" style="margin-bottom:10px;">
-        <div style="font-weight:700;margin-bottom:6px;">🎛️ 稀有度加成设置（教师可配）</div>
-        <div class="form-group"><label>R：成长值+ / 能量+ / 情绪+</label><input id="stickerBonusRInput" class="login-input" placeholder="示例：0,0,6"></div>
-        <div class="form-group"><label>SR：成长值+ / 能量+ / 情绪+</label><input id="stickerBonusSRInput" class="login-input" placeholder="示例：1,1,10"></div>
-        <div class="form-group"><label>SSR：成长值+ / 能量+ / 情绪+</label><input id="stickerBonusSSRInput" class="login-input" placeholder="示例：2,2,15"></div>
-        <div class="score-btns"><button class="btn btn-outline" onclick="app.saveStickerBonusConfig()">保存贴纸加成设置</button></div>
+        <div class="score-btns" style="justify-content:space-between;gap:8px;align-items:center;">
+          <div style="font-weight:700;">🎛️ 稀有度加成设置（教师可配）</div>
+          <button class="btn btn-small btn-secondary" onclick="app.toggleStickerBonusPanel()">显示/隐藏设置</button>
+        </div>
+        <div id="stickerBonusLockedBox" style="display:none;">
+          <div class="form-group"><label>管理键（用于显示设置）</label><input id="stickerBonusManageKeyInput" class="login-input" placeholder="输入管理键后点击解锁"></div>
+          <div class="score-btns"><button class="btn btn-outline" onclick="app.unlockStickerBonusPanel()">解锁设置面板</button></div>
+        </div>
+        <div id="stickerBonusPanel">
+          <div class="form-group"><label>R：成长值+ / 能量+ / 情绪+</label><input id="stickerBonusRInput" class="login-input" placeholder="示例：0,0,6"></div>
+          <div class="form-group"><label>SR：成长值+ / 能量+ / 情绪+</label><input id="stickerBonusSRInput" class="login-input" placeholder="示例：1,1,10"></div>
+          <div class="form-group"><label>SSR：成长值+ / 能量+ / 情绪+</label><input id="stickerBonusSSRInput" class="login-input" placeholder="示例：2,2,15"></div>
+          <div class="form-group"><label>管理键（仅老师知道，可修改）</label><input id="stickerBonusManageKeySetInput" class="login-input" placeholder="默认：ms2026"></div>
+          <div class="score-btns"><button class="btn btn-outline" onclick="app.saveStickerBonusConfig(true)">保存并隐藏设置</button><button class="btn btn-primary" onclick="app.saveStickerBonusConfig(false)">仅保存</button></div>
+        </div>
+        <div class="text-muted" style="margin-top:6px;font-size:12px;">使用说明：1) 初次设置后可点“保存并隐藏设置”；2) 下次若要修改，在此输入管理键解锁；3) 不影响学生开箱使用。</div>
       </div>
       <div id="stickerOpenResult" class="sticker-open-result"></div>
       <div id="stickerAlbumGrid" class="sticker-album-grid"></div>
@@ -2107,7 +2118,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=112"></script>
+<script src="./app-loader.js?v=113"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}

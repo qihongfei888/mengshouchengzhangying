@@ -5798,17 +5798,55 @@
       const defaults = {
         R: { growth: 0, energy: 0, mood: 6 },
         SR: { growth: 1, energy: 1, mood: 10 },
-        SSR: { growth: 2, energy: 2, mood: 15 }
+        SSR: { growth: 2, energy: 2, mood: 15 },
+        hidden: false,
+        manageKey: 'ms2026'
       };
       if (!cls) return defaults;
       cls.stickerBonusConfig = {
         R: { ...defaults.R, ...((cls.stickerBonusConfig || {}).R || {}) },
         SR: { ...defaults.SR, ...((cls.stickerBonusConfig || {}).SR || {}) },
-        SSR: { ...defaults.SSR, ...((cls.stickerBonusConfig || {}).SSR || {}) }
+        SSR: { ...defaults.SSR, ...((cls.stickerBonusConfig || {}).SSR || {}) },
+        hidden: typeof (cls.stickerBonusConfig || {}).hidden === 'boolean' ? cls.stickerBonusConfig.hidden : defaults.hidden,
+        manageKey: (cls.stickerBonusConfig || {}).manageKey || defaults.manageKey
       };
       setUserData(data);
       this.saveData();
       return cls.stickerBonusConfig;
+    },
+
+    toggleStickerBonusPanel() {
+      const cfg = this.getStickerBonusConfig();
+      const panel = document.getElementById('stickerBonusPanel');
+      const lockBox = document.getElementById('stickerBonusLockedBox');
+      if (!panel || !lockBox) return;
+      const isVisible = panel.style.display !== 'none';
+      if (isVisible) {
+        panel.style.display = 'none';
+        lockBox.style.display = 'block';
+        return;
+      }
+      if (cfg.hidden) {
+        panel.style.display = 'none';
+        lockBox.style.display = 'block';
+      } else {
+        panel.style.display = 'block';
+        lockBox.style.display = 'none';
+      }
+    },
+
+    unlockStickerBonusPanel() {
+      const cfg = this.getStickerBonusConfig();
+      const key = (document.getElementById('stickerBonusManageKeyInput')?.value || '').trim();
+      if (!key || key !== String(cfg.manageKey || 'ms2026')) {
+        alert('管理键不正确');
+        return;
+      }
+      const panel = document.getElementById('stickerBonusPanel');
+      const lockBox = document.getElementById('stickerBonusLockedBox');
+      if (panel) panel.style.display = 'block';
+      if (lockBox) lockBox.style.display = 'none';
+      this.showActionToast('已解锁贴纸设置面板');
     },
 
     renderStickerBonusConfig() {
@@ -5817,9 +5855,20 @@
       setVal('stickerBonusRInput', cfg.R || {});
       setVal('stickerBonusSRInput', cfg.SR || {});
       setVal('stickerBonusSSRInput', cfg.SSR || {});
+      const keyInput = document.getElementById('stickerBonusManageKeySetInput');
+      if (keyInput) keyInput.value = cfg.manageKey || 'ms2026';
+      const panel = document.getElementById('stickerBonusPanel');
+      const lockBox = document.getElementById('stickerBonusLockedBox');
+      if (cfg.hidden) {
+        if (panel) panel.style.display = 'none';
+        if (lockBox) lockBox.style.display = 'block';
+      } else {
+        if (panel) panel.style.display = 'block';
+        if (lockBox) lockBox.style.display = 'none';
+      }
     },
 
-    saveStickerBonusConfig() {
+    saveStickerBonusConfig(hideAfterSave = false) {
       const parseLine = (id, dft) => {
         const txt = (document.getElementById(id)?.value || '').trim();
         const arr = txt.split(',').map(x => parseInt(x.trim(), 10));
@@ -5835,12 +5884,15 @@
       cls.stickerBonusConfig = {
         R: parseLine('stickerBonusRInput', d.R),
         SR: parseLine('stickerBonusSRInput', d.SR),
-        SSR: parseLine('stickerBonusSSRInput', d.SSR)
+        SSR: parseLine('stickerBonusSSRInput', d.SSR),
+        hidden: !!hideAfterSave,
+        manageKey: (document.getElementById('stickerBonusManageKeySetInput')?.value || 'ms2026').trim() || 'ms2026'
       };
       setUserData(data);
       this.saveData();
       this.showActionToast('贴纸稀有度加成已保存');
       this.announceClassEvent('🎛️ 贴纸稀有度加成设置已更新');
+      this.renderStickerBonusConfig();
     },
 
     getStickerPool() {
