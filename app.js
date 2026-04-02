@@ -1422,6 +1422,8 @@
           if (emotionDailyNoAnswerMoodPenaltyEl) emotionDailyNoAnswerMoodPenaltyEl.value = ecfg.dailyNoAnswerMoodPenalty;
           if (emotionDailyAccumNeedEl) emotionDailyAccumNeedEl.value = ecfg.dailyAnswerAccumNeed;
           if (emotionDailyAccumBonusEl) emotionDailyAccumBonusEl.value = ecfg.dailyAnswerAccumBonus;
+          const energyGainRatioEl = document.getElementById('settingEnergyGainRatio');
+          if (energyGainRatioEl) energyGainRatioEl.value = ecfg.energyGainRatio;
         } else {
           // 没有选择班级时的默认值
           this.students = [];
@@ -1482,6 +1484,8 @@
           if (emotionDailyNoAnswerMoodPenaltyEl) emotionDailyNoAnswerMoodPenaltyEl.value = 5;
           if (emotionDailyAccumNeedEl) emotionDailyAccumNeedEl.value = 3;
           if (emotionDailyAccumBonusEl) emotionDailyAccumBonusEl.value = 2;
+          const energyGainRatioEl = document.getElementById('settingEnergyGainRatio');
+          if (energyGainRatioEl) energyGainRatioEl.value = 0.8;
         }
         
         console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
@@ -2645,7 +2649,8 @@
               dailyAnsweredMoodBonus: 6,
               dailyNoAnswerMoodPenalty: 5,
               dailyAnswerAccumNeed: 3,
-              dailyAnswerAccumBonus: 2
+              dailyAnswerAccumBonus: 2,
+              energyGainRatio: 0.8
             },
             awakenPointsThreshold: 100,
             customQuizQuestions: []
@@ -2719,7 +2724,8 @@
             dailyAnsweredMoodBonus: parseInt(document.getElementById('settingEmotionDailyAnsweredMoodBonus')?.value, 10) || 6,
             dailyNoAnswerMoodPenalty: parseInt(document.getElementById('settingEmotionDailyNoAnswerMoodPenalty')?.value, 10) || 5,
             dailyAnswerAccumNeed: parseInt(document.getElementById('settingEmotionDailyAccumNeed')?.value, 10) || 3,
-            dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2
+            dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2,
+            energyGainRatio: parseFloat(document.getElementById('settingEnergyGainRatio')?.value) || 0.8
           };
           currentClass.awakenPointsThreshold = awakenPointsThresholdEl ? Math.max(1, parseInt(awakenPointsThresholdEl.value, 10) || 100) : (parseInt(currentClass.awakenPointsThreshold, 10) || 100);
           currentClass.hospitalProjects = hospitalProjectsEl
@@ -4119,7 +4125,8 @@
           dailyAnsweredMoodBonus: parseInt(document.getElementById('settingEmotionDailyAnsweredMoodBonus')?.value, 10) || 6,
           dailyNoAnswerMoodPenalty: parseInt(document.getElementById('settingEmotionDailyNoAnswerMoodPenalty')?.value, 10) || 5,
           dailyAnswerAccumNeed: parseInt(document.getElementById('settingEmotionDailyAccumNeed')?.value, 10) || 3,
-          dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2
+          dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2,
+          energyGainRatio: parseFloat(document.getElementById('settingEnergyGainRatio')?.value) || 0.8
         },
         customQuizQuestions: [],
         screenLock: { enabled: false, pin: '', locked: false }
@@ -6839,6 +6846,43 @@
       }
     },
 
+    _logEmotionDailyEvent(student, type, text) {
+      if (!student || !student.pet) return;
+      const today = new Date().toISOString().slice(0, 10);
+      if (!student.pet.dailyMoodReport || student.pet.dailyMoodReport.date !== today) {
+        student.pet.dailyMoodReport = { date: today, logs: [] };
+      }
+      student.pet.dailyMoodReport.logs.unshift({ time: Date.now(), type: type || 'info', text: text || '' });
+      if (student.pet.dailyMoodReport.logs.length > 8) {
+        student.pet.dailyMoodReport.logs = student.pet.dailyMoodReport.logs.slice(0, 8);
+      }
+    },
+
+    renderEmotionDailyReport() {
+      const panel = document.getElementById('emotionDailyReportPanel');
+      if (!panel) return;
+      const today = new Date().toISOString().slice(0, 10);
+      const rows = [];
+      (this.students || []).forEach(s => {
+        const logs = (((s || {}).pet || {}).dailyMoodReport || {}).logs || [];
+        logs.forEach(l => {
+          if ((((s || {}).pet || {}).dailyMoodReport || {}).date !== today) return;
+          rows.push({
+            time: l.time || 0,
+            name: s.name || '',
+            type: l.type || 'info',
+            text: l.text || ''
+          });
+        });
+      });
+      rows.sort((a, b) => b.time - a.time);
+      if (!rows.length) {
+        panel.innerHTML = '<p class="placeholder-text">今日暂无情绪日志</p>';
+        return;
+      }
+      panel.innerHTML = rows.slice(0, 30).map(r => `<div class="score-item-row" style="margin-bottom:6px;"><span style="min-width:60px;color:var(--text-muted);">${new Date(r.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</span><span style="font-weight:700;min-width:72px;">${this.escape(r.name)}</span><span style="color:${r.type==='minus'?'#ef4444':(r.type==='bonus'?'#f59e0b':'#10b981')};">${this.escape(r.text)}</span></div>`).join('');
+    },
+
     applyDailyEmotionCycle(student) {
       if (!student || !student.pet) return false;
       const cfg = this.getEmotionConfig();
@@ -6851,6 +6895,7 @@
       const scoreEnough = (this.getStudentGrowth(student) || 0) >= scoreThreshold;
       if (scoreEnough && prevDate) {
         student.pet.moodDailyDate = today;
+        this._logEmotionDailyEvent(student, 'info', `达到成长值阈值(${scoreThreshold})，今日情绪保持不变`);
         return true;
       }
       let moodDelta = hasAnswered ? cfg.dailyAnsweredMoodBonus : -cfg.dailyNoAnswerMoodPenalty;
@@ -6864,6 +6909,7 @@
             student.points = this.getStudentGrowth(student) + addScore;
             if (!student.scoreHistory) student.scoreHistory = [];
             student.scoreHistory.unshift({ time: Date.now(), delta: addScore, reason: `每日回答积累奖励(+${addScore})` });
+            this._logEmotionDailyEvent(student, 'bonus', `触发每日积累奖励 +${addScore}成长值`);
           }
         }
       } else {
@@ -6872,6 +6918,7 @@
       student.pet.mood = Math.max(0, Math.min(100, this.getPetEmotionValue(student) + moodDelta));
       student.pet.lastMoodAt = Date.now();
       student.pet.moodDailyDate = today;
+      this._logEmotionDailyEvent(student, moodDelta >= 0 ? 'plus' : 'minus', moodDelta >= 0 ? `今日有回答，情绪+${Math.abs(moodDelta)}` : `今日未回答，情绪-${Math.abs(moodDelta)}`);
       return true;
     },
 
@@ -6911,6 +6958,7 @@
         const nonEmpty = html.replace(/\s/g, '');
         el.innerHTML = nonEmpty ? html : '<p class="placeholder-text">暂无学生，请导入学生名单</p>';
       }
+      this.renderEmotionDailyReport();
     },
 
     // 根据等级获取卡片颜色主题
@@ -7117,7 +7165,8 @@
         dailyAnsweredMoodBonus: 6,
         dailyNoAnswerMoodPenalty: 5,
         dailyAnswerAccumNeed: 3,
-        dailyAnswerAccumBonus: 2
+        dailyAnswerAccumBonus: 2,
+        energyGainRatio: 0.8
       };
       const raw = (cls && cls.emotionConfig) ? cls.emotionConfig : {};
       const cfg = {
@@ -7134,7 +7183,8 @@
         dailyAnsweredMoodBonus: parseInt(raw.dailyAnsweredMoodBonus, 10),
         dailyNoAnswerMoodPenalty: parseInt(raw.dailyNoAnswerMoodPenalty, 10),
         dailyAnswerAccumNeed: parseInt(raw.dailyAnswerAccumNeed, 10),
-        dailyAnswerAccumBonus: parseInt(raw.dailyAnswerAccumBonus, 10)
+        dailyAnswerAccumBonus: parseInt(raw.dailyAnswerAccumBonus, 10),
+        energyGainRatio: parseFloat(raw.energyGainRatio)
       };
       cfg.normalThreshold = Number.isFinite(cfg.normalThreshold) ? Math.max(0, Math.min(95, cfg.normalThreshold)) : d.normalThreshold;
       cfg.highThreshold = Number.isFinite(cfg.highThreshold) ? Math.max(cfg.normalThreshold + 1, Math.min(98, cfg.highThreshold)) : d.highThreshold;
@@ -7150,6 +7200,7 @@
       cfg.dailyNoAnswerMoodPenalty = Number.isFinite(cfg.dailyNoAnswerMoodPenalty) ? Math.max(0, cfg.dailyNoAnswerMoodPenalty) : d.dailyNoAnswerMoodPenalty;
       cfg.dailyAnswerAccumNeed = Number.isFinite(cfg.dailyAnswerAccumNeed) ? Math.max(1, cfg.dailyAnswerAccumNeed) : d.dailyAnswerAccumNeed;
       cfg.dailyAnswerAccumBonus = Number.isFinite(cfg.dailyAnswerAccumBonus) ? Math.max(0, cfg.dailyAnswerAccumBonus) : d.dailyAnswerAccumBonus;
+      cfg.energyGainRatio = Number.isFinite(cfg.energyGainRatio) ? Math.max(0, cfg.energyGainRatio) : d.energyGainRatio;
       return cfg;
     },
 
@@ -7618,7 +7669,10 @@
       } else {
         s.petAnswerStreak = 0;
       }
-      const energyDelta = type === 'plus' ? Math.max(1, Math.floor((growthDelta || 1) * 0.8)) : -Math.max(1, Math.floor(Math.abs(growthDelta || 1) * 0.8));
+      const energyRatio = Math.max(0, Number(cfg.energyGainRatio || 0));
+      const energyDelta = type === 'plus'
+        ? Math.max(0, Math.floor((growthDelta || 1) * energyRatio))
+        : -Math.max(0, Math.floor(Math.abs(growthDelta || 1) * energyRatio));
       s.points = this.getStudentGrowth(s) + growthDelta;
       s.energy = Math.max(0, this.getStudentEnergy(s) + energyDelta);
       if (!s.scoreHistory) s.scoreHistory = [];
@@ -11918,7 +11972,8 @@
           dailyAnsweredMoodBonus: parseInt(document.getElementById('settingEmotionDailyAnsweredMoodBonus')?.value, 10) || 6,
           dailyNoAnswerMoodPenalty: parseInt(document.getElementById('settingEmotionDailyNoAnswerMoodPenalty')?.value, 10) || 5,
           dailyAnswerAccumNeed: parseInt(document.getElementById('settingEmotionDailyAccumNeed')?.value, 10) || 3,
-          dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2
+          dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2,
+          energyGainRatio: parseFloat(document.getElementById('settingEnergyGainRatio')?.value) || 0.8
         };
         currentClass.awakenPointsThreshold = Math.max(1, parseInt(document.getElementById('settingAwakenPointsThreshold')?.value, 10) || currentClass.awakenPointsThreshold || 100);
         currentClass.hospitalProjects = (document.getElementById('settingHospitalProjects')?.value || '复活针|8|revive\n急救药|3|cure')
