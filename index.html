@@ -415,6 +415,14 @@
             <button class="honor-period-tab" data-period="month">本月</button>
             <button class="honor-period-tab" data-period="semester">本学期</button>
           </div>
+          <div class="form-group" style="margin-top:10px;max-width:280px;">
+            <label>进步榜展示周期</label>
+            <select id="honorProgressPeriodSelect" class="login-input" onchange="app.saveHonorSettings(); app.renderHonor(document.querySelector('.honor-period-tab.active')?.dataset.period || 'all');">
+              <option value="day">今日</option>
+              <option value="week" selected>本周（近7天）</option>
+              <option value="month">本月</option>
+            </select>
+          </div>
           <div id="dailyStarActions" class="daily-star-actions" style="display:none">
             <button class="btn btn-primary btn-small" onclick="window.openDailyStarAward()">🌟 颁发每日之星</button>
             <span class="daily-star-hint">老师手动指定今日之星并加分</span>
@@ -2191,7 +2199,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=120"></script>
+<script src="./app-loader.js?v=121"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}

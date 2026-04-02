@@ -7448,14 +7448,17 @@
     loadHonorSettings() {
       const settings = getStorage(this.getHonorSettingsKey(), {
         progressStarsPeriod: 'week', // day, week, month, semester
-        activeStudentsPeriod: 'week' // day, week, month, semester
+        activeStudentsPeriod: 'week', // day, week, month, semester
+        progressBoardPeriod: 'week' // day, week, month
       });
       
       const progressSelect = document.getElementById('progressStarsPeriod');
       const activeSelect = document.getElementById('activeStudentsPeriod');
+      const boardSelect = document.getElementById('honorProgressPeriodSelect');
       
       if (progressSelect) progressSelect.value = settings.progressStarsPeriod || 'week';
       if (activeSelect) activeSelect.value = settings.activeStudentsPeriod || 'week';
+      if (boardSelect) boardSelect.value = settings.progressBoardPeriod || 'week';
       
       return settings;
     },
@@ -7464,16 +7467,17 @@
     saveHonorSettings() {
       const progressSelect = document.getElementById('progressStarsPeriod');
       const activeSelect = document.getElementById('activeStudentsPeriod');
+      const boardSelect = document.getElementById('honorProgressPeriodSelect');
       
       const settings = {
         progressStarsPeriod: progressSelect ? progressSelect.value : 'week',
-        activeStudentsPeriod: activeSelect ? activeSelect.value : 'week'
+        activeStudentsPeriod: activeSelect ? activeSelect.value : 'week',
+        progressBoardPeriod: boardSelect ? boardSelect.value : 'week'
       };
       
       setStorage(this.getHonorSettingsKey(), settings);
       this.saveData();
       this.renderHonor();
-      alert('荣誉榜设置已保存');
     },
 
     // 更新广播内容（切换班级后调用）
@@ -8354,6 +8358,9 @@
 
     renderHonor(period = 'all') {
       const periodTimestamp = this.getPeriodTimestamp(period);
+      const settings = this.loadHonorSettings();
+      const progressPeriod = (settings && settings.progressBoardPeriod) ? settings.progressBoardPeriod : 'week';
+      const progressTimestamp = this.getPeriodTimestamp(progressPeriod);
       const students = this.students || [];
 
       const powerList = students
@@ -8390,7 +8397,7 @@
 
       const progressList = students
         .map(s => {
-          const records = (s.scoreHistory || []).filter(h => (h.time || 0) >= periodTimestamp);
+          const records = (s.scoreHistory || []).filter(h => (h.time || 0) >= progressTimestamp);
           const gain = records.reduce((sum, h) => sum + (h.delta || 0), 0);
           const positives = records.filter(h => (h.delta || 0) > 0).length;
           return {
@@ -8446,7 +8453,7 @@
       if (el) {
         el.innerHTML = `<div class="honor-dual-board">
           ${renderBoard('🏆 实力榜', powerList, (s) => `${period === 'all' ? (s.totalPoints || 0) : (s.periodPoints || 0)}分`)}
-          ${renderBoard('🚀 进步榜', progressList, (s) => `${(s.progressGain || 0) >= 0 ? '+' : ''}${s.progressGain || 0}`)}
+          ${renderBoard('🚀 进步榜（' + ({ day: '今日', week: '本周', month: '本月' }[progressPeriod] || '本周') + '）', progressList, (s) => `${(s.progressGain || 0) >= 0 ? '+' : ''}${s.progressGain || 0}`)}
         </div>`;
       }
 
