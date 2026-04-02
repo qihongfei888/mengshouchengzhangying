@@ -1371,6 +1371,15 @@
           const monopolyOpportunityTaskEl = document.getElementById('settingMonopolyOpportunityTask');
           const monopolyOpportunityPointsEl = document.getElementById('settingMonopolyOpportunityPoints');
           const monopolyStealPointsEl = document.getElementById('settingMonopolyStealPoints');
+          const emotionNormalThresholdEl = document.getElementById('settingEmotionNormalThreshold');
+          const emotionHighThresholdEl = document.getElementById('settingEmotionHighThreshold');
+          const emotionEcstaticThresholdEl = document.getElementById('settingEmotionEcstaticThreshold');
+          const emotionAnswerStreakNeedEl = document.getElementById('settingEmotionAnswerStreakNeed');
+          const emotionAnswerMoodBoostEl = document.getElementById('settingEmotionAnswerMoodBoost');
+          const emotionHappyAnswerBonusEl = document.getElementById('settingEmotionHappyAnswerBonus');
+          const emotionHappyStreakNeedEl = document.getElementById('settingEmotionHappyStreakNeed');
+          const emotionHappyStreakRewardEl = document.getElementById('settingEmotionHappyStreakReward');
+          const emotionHappyStreakEnergyEl = document.getElementById('settingEmotionHappyStreakEnergy');
           
           if (stagePointsEl) stagePointsEl.value = currentClass.stagePoints || 20;
           if (stagesEl) stagesEl.value = currentClass.totalStages || 10;
@@ -1393,6 +1402,16 @@
           if (monopolyStealPointsEl) monopolyStealPointsEl.value = parseInt(currentClass.monopolyStealPoints, 10) || 2;
           const awakenPointsThresholdEl = document.getElementById('settingAwakenPointsThreshold');
           if (awakenPointsThresholdEl) awakenPointsThresholdEl.value = parseInt(currentClass.awakenPointsThreshold, 10) || 100;
+          const ecfg = this.getEmotionConfig();
+          if (emotionNormalThresholdEl) emotionNormalThresholdEl.value = ecfg.normalThreshold;
+          if (emotionHighThresholdEl) emotionHighThresholdEl.value = ecfg.highThreshold;
+          if (emotionEcstaticThresholdEl) emotionEcstaticThresholdEl.value = ecfg.ecstaticThreshold;
+          if (emotionAnswerStreakNeedEl) emotionAnswerStreakNeedEl.value = ecfg.answerStreakNeed;
+          if (emotionAnswerMoodBoostEl) emotionAnswerMoodBoostEl.value = ecfg.answerMoodBoost;
+          if (emotionHappyAnswerBonusEl) emotionHappyAnswerBonusEl.value = ecfg.happyAnswerBonus;
+          if (emotionHappyStreakNeedEl) emotionHappyStreakNeedEl.value = ecfg.happyStreakNeed;
+          if (emotionHappyStreakRewardEl) emotionHappyStreakRewardEl.value = ecfg.happyStreakReward;
+          if (emotionHappyStreakEnergyEl) emotionHappyStreakEnergyEl.value = ecfg.happyStreakEnergy;
         } else {
           // 没有选择班级时的默认值
           this.students = [];
@@ -1411,6 +1430,15 @@
           const monopolyOpportunityTaskEl = document.getElementById('settingMonopolyOpportunityTask');
           const monopolyOpportunityPointsEl = document.getElementById('settingMonopolyOpportunityPoints');
           const monopolyStealPointsEl = document.getElementById('settingMonopolyStealPoints');
+          const emotionNormalThresholdEl = document.getElementById('settingEmotionNormalThreshold');
+          const emotionHighThresholdEl = document.getElementById('settingEmotionHighThreshold');
+          const emotionEcstaticThresholdEl = document.getElementById('settingEmotionEcstaticThreshold');
+          const emotionAnswerStreakNeedEl = document.getElementById('settingEmotionAnswerStreakNeed');
+          const emotionAnswerMoodBoostEl = document.getElementById('settingEmotionAnswerMoodBoost');
+          const emotionHappyAnswerBonusEl = document.getElementById('settingEmotionHappyAnswerBonus');
+          const emotionHappyStreakNeedEl = document.getElementById('settingEmotionHappyStreakNeed');
+          const emotionHappyStreakRewardEl = document.getElementById('settingEmotionHappyStreakReward');
+          const emotionHappyStreakEnergyEl = document.getElementById('settingEmotionHappyStreakEnergy');
           
           if (stagePointsEl) stagePointsEl.value = 20;
           if (stagesEl) stagesEl.value = 10;
@@ -1425,6 +1453,15 @@
           if (monopolyStealPointsEl) monopolyStealPointsEl.value = 2;
           const awakenPointsThresholdEl = document.getElementById('settingAwakenPointsThreshold');
           if (awakenPointsThresholdEl) awakenPointsThresholdEl.value = 100;
+          if (emotionNormalThresholdEl) emotionNormalThresholdEl.value = 45;
+          if (emotionHighThresholdEl) emotionHighThresholdEl.value = 75;
+          if (emotionEcstaticThresholdEl) emotionEcstaticThresholdEl.value = 90;
+          if (emotionAnswerStreakNeedEl) emotionAnswerStreakNeedEl.value = 3;
+          if (emotionAnswerMoodBoostEl) emotionAnswerMoodBoostEl.value = 10;
+          if (emotionHappyAnswerBonusEl) emotionHappyAnswerBonusEl.value = 1;
+          if (emotionHappyStreakNeedEl) emotionHappyStreakNeedEl.value = 3;
+          if (emotionHappyStreakRewardEl) emotionHappyStreakRewardEl.value = 1;
+          if (emotionHappyStreakEnergyEl) emotionHappyStreakEnergyEl.value = 1;
         }
         
         console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
@@ -2574,6 +2611,17 @@
             monopolyOpportunityTask: '全组30秒内回答3题',
             monopolyOpportunityPoints: 4,
             monopolyStealPoints: 2,
+            emotionConfig: {
+              normalThreshold: 45,
+              highThreshold: 75,
+              ecstaticThreshold: 90,
+              answerStreakNeed: 3,
+              answerMoodBoost: 10,
+              happyAnswerBonus: 1,
+              happyStreakNeed: 3,
+              happyStreakReward: 1,
+              happyStreakEnergy: 1
+            },
             awakenPointsThreshold: 100,
             customQuizQuestions: []
           };
@@ -2605,6 +2653,15 @@
           const monopolyOpportunityPointsEl = document.getElementById('settingMonopolyOpportunityPoints');
           const monopolyStealPointsEl = document.getElementById('settingMonopolyStealPoints');
           const awakenPointsThresholdEl = document.getElementById('settingAwakenPointsThreshold');
+          const emotionNormalThresholdEl = document.getElementById('settingEmotionNormalThreshold');
+          const emotionHighThresholdEl = document.getElementById('settingEmotionHighThreshold');
+          const emotionEcstaticThresholdEl = document.getElementById('settingEmotionEcstaticThreshold');
+          const emotionAnswerStreakNeedEl = document.getElementById('settingEmotionAnswerStreakNeed');
+          const emotionAnswerMoodBoostEl = document.getElementById('settingEmotionAnswerMoodBoost');
+          const emotionHappyAnswerBonusEl = document.getElementById('settingEmotionHappyAnswerBonus');
+          const emotionHappyStreakNeedEl = document.getElementById('settingEmotionHappyStreakNeed');
+          const emotionHappyStreakRewardEl = document.getElementById('settingEmotionHappyStreakReward');
+          const emotionHappyStreakEnergyEl = document.getElementById('settingEmotionHappyStreakEnergy');
           
           currentClass.stagePoints = stagePointsEl ? parseInt(stagePointsEl.value) || 20 : 20;
           currentClass.totalStages = stagesEl ? parseInt(stagesEl.value) || 10 : 10;
@@ -2623,6 +2680,17 @@
           currentClass.monopolyOpportunityTask = monopolyOpportunityTaskEl ? (monopolyOpportunityTaskEl.value || '全组30秒内回答3题') : (currentClass.monopolyOpportunityTask || '全组30秒内回答3题');
           currentClass.monopolyOpportunityPoints = monopolyOpportunityPointsEl ? (parseInt(monopolyOpportunityPointsEl.value, 10) || 4) : (parseInt(currentClass.monopolyOpportunityPoints, 10) || 4);
           currentClass.monopolyStealPoints = monopolyStealPointsEl ? (parseInt(monopolyStealPointsEl.value, 10) || 2) : (parseInt(currentClass.monopolyStealPoints, 10) || 2);
+          currentClass.emotionConfig = {
+            normalThreshold: emotionNormalThresholdEl ? (parseInt(emotionNormalThresholdEl.value, 10) || 45) : 45,
+            highThreshold: emotionHighThresholdEl ? (parseInt(emotionHighThresholdEl.value, 10) || 75) : 75,
+            ecstaticThreshold: emotionEcstaticThresholdEl ? (parseInt(emotionEcstaticThresholdEl.value, 10) || 90) : 90,
+            answerStreakNeed: emotionAnswerStreakNeedEl ? (parseInt(emotionAnswerStreakNeedEl.value, 10) || 3) : 3,
+            answerMoodBoost: emotionAnswerMoodBoostEl ? (parseInt(emotionAnswerMoodBoostEl.value, 10) || 10) : 10,
+            happyAnswerBonus: emotionHappyAnswerBonusEl ? (parseInt(emotionHappyAnswerBonusEl.value, 10) || 1) : 1,
+            happyStreakNeed: emotionHappyStreakNeedEl ? (parseInt(emotionHappyStreakNeedEl.value, 10) || 3) : 3,
+            happyStreakReward: emotionHappyStreakRewardEl ? (parseInt(emotionHappyStreakRewardEl.value, 10) || 1) : 1,
+            happyStreakEnergy: emotionHappyStreakEnergyEl ? (parseInt(emotionHappyStreakEnergyEl.value, 10) || 1) : 1
+          };
           currentClass.awakenPointsThreshold = awakenPointsThresholdEl ? Math.max(1, parseInt(awakenPointsThresholdEl.value, 10) || 100) : (parseInt(currentClass.awakenPointsThreshold, 10) || 100);
           currentClass.hospitalProjects = hospitalProjectsEl
             ? hospitalProjectsEl.value.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
@@ -4007,6 +4075,17 @@
         monopolyOpportunityTask: document.getElementById('settingMonopolyOpportunityTask')?.value || '全组30秒内回答3题',
         monopolyOpportunityPoints: parseInt(document.getElementById('settingMonopolyOpportunityPoints')?.value, 10) || 4,
         monopolyStealPoints: parseInt(document.getElementById('settingMonopolyStealPoints')?.value, 10) || 2,
+        emotionConfig: {
+          normalThreshold: parseInt(document.getElementById('settingEmotionNormalThreshold')?.value, 10) || 45,
+          highThreshold: parseInt(document.getElementById('settingEmotionHighThreshold')?.value, 10) || 75,
+          ecstaticThreshold: parseInt(document.getElementById('settingEmotionEcstaticThreshold')?.value, 10) || 90,
+          answerStreakNeed: parseInt(document.getElementById('settingEmotionAnswerStreakNeed')?.value, 10) || 3,
+          answerMoodBoost: parseInt(document.getElementById('settingEmotionAnswerMoodBoost')?.value, 10) || 10,
+          happyAnswerBonus: parseInt(document.getElementById('settingEmotionHappyAnswerBonus')?.value, 10) || 1,
+          happyStreakNeed: parseInt(document.getElementById('settingEmotionHappyStreakNeed')?.value, 10) || 3,
+          happyStreakReward: parseInt(document.getElementById('settingEmotionHappyStreakReward')?.value, 10) || 1,
+          happyStreakEnergy: parseInt(document.getElementById('settingEmotionHappyStreakEnergy')?.value, 10) || 1
+        },
         customQuizQuestions: [],
         screenLock: { enabled: false, pin: '', locked: false }
       };
@@ -6948,6 +7027,43 @@
         </div>`;
     },
 
+    getEmotionConfig() {
+      const cls = this.getCurrentClassData();
+      const d = {
+        ecstaticThreshold: 90,
+        highThreshold: 75,
+        normalThreshold: 45,
+        answerStreakNeed: 3,
+        answerMoodBoost: 10,
+        happyAnswerBonus: 1,
+        happyStreakNeed: 3,
+        happyStreakReward: 1,
+        happyStreakEnergy: 1
+      };
+      const raw = (cls && cls.emotionConfig) ? cls.emotionConfig : {};
+      const cfg = {
+        ecstaticThreshold: parseInt(raw.ecstaticThreshold, 10),
+        highThreshold: parseInt(raw.highThreshold, 10),
+        normalThreshold: parseInt(raw.normalThreshold, 10),
+        answerStreakNeed: parseInt(raw.answerStreakNeed, 10),
+        answerMoodBoost: parseInt(raw.answerMoodBoost, 10),
+        happyAnswerBonus: parseInt(raw.happyAnswerBonus, 10),
+        happyStreakNeed: parseInt(raw.happyStreakNeed, 10),
+        happyStreakReward: parseInt(raw.happyStreakReward, 10),
+        happyStreakEnergy: parseInt(raw.happyStreakEnergy, 10)
+      };
+      cfg.normalThreshold = Number.isFinite(cfg.normalThreshold) ? Math.max(0, Math.min(95, cfg.normalThreshold)) : d.normalThreshold;
+      cfg.highThreshold = Number.isFinite(cfg.highThreshold) ? Math.max(cfg.normalThreshold + 1, Math.min(98, cfg.highThreshold)) : d.highThreshold;
+      cfg.ecstaticThreshold = Number.isFinite(cfg.ecstaticThreshold) ? Math.max(cfg.highThreshold + 1, Math.min(100, cfg.ecstaticThreshold)) : d.ecstaticThreshold;
+      cfg.answerStreakNeed = Number.isFinite(cfg.answerStreakNeed) ? Math.max(1, cfg.answerStreakNeed) : d.answerStreakNeed;
+      cfg.answerMoodBoost = Number.isFinite(cfg.answerMoodBoost) ? Math.max(0, cfg.answerMoodBoost) : d.answerMoodBoost;
+      cfg.happyAnswerBonus = Number.isFinite(cfg.happyAnswerBonus) ? Math.max(0, cfg.happyAnswerBonus) : d.happyAnswerBonus;
+      cfg.happyStreakNeed = Number.isFinite(cfg.happyStreakNeed) ? Math.max(1, cfg.happyStreakNeed) : d.happyStreakNeed;
+      cfg.happyStreakReward = Number.isFinite(cfg.happyStreakReward) ? Math.max(0, cfg.happyStreakReward) : d.happyStreakReward;
+      cfg.happyStreakEnergy = Number.isFinite(cfg.happyStreakEnergy) ? Math.max(0, cfg.happyStreakEnergy) : d.happyStreakEnergy;
+      return cfg;
+    },
+
     getPetEmotionValue(s) {
       if (!s || !s.pet) return 50;
       if (!Number.isFinite(s.pet.mood)) s.pet.mood = 60;
@@ -6956,17 +7072,19 @@
 
     getPetEmotionTier(s) {
       const v = this.getPetEmotionValue(s);
-      if (v >= 90) return 'ecstatic';
-      if (v >= 75) return 'high';
-      if (v >= 45) return 'normal';
+      const cfg = this.getEmotionConfig();
+      if (v >= cfg.ecstaticThreshold) return 'ecstatic';
+      if (v >= cfg.highThreshold) return 'high';
+      if (v >= cfg.normalThreshold) return 'normal';
       return 'low';
     },
 
     getPetEmotionLabel(s) {
       const v = this.getPetEmotionValue(s);
-      if (v >= 90) return '超燃';
-      if (v >= 75) return '兴奋';
-      if (v >= 45) return '开心';
+      const cfg = this.getEmotionConfig();
+      if (v >= cfg.ecstaticThreshold) return '超燃';
+      if (v >= cfg.highThreshold) return '兴奋';
+      if (v >= cfg.normalThreshold) return '开心';
       return '困倦';
     },
 
@@ -7018,9 +7136,10 @@
 
     getPetEmotionEmoji(s) {
       const v = this.getPetEmotionValue(s);
-      if (v >= 90) return '🤩';
-      if (v >= 75) return '🔥';
-      if (v >= 45) return '😊';
+      const cfg = this.getEmotionConfig();
+      if (v >= cfg.ecstaticThreshold) return '🤩';
+      if (v >= cfg.highThreshold) return '🔥';
+      if (v >= cfg.normalThreshold) return '😊';
       return '😪';
     },
 
@@ -7064,18 +7183,26 @@
 
     applyHappyStreakBonus(student) {
       if (!student || !student.pet) return;
+      const cfg = this.getEmotionConfig();
       const mood = this.getPetEmotionValue(student);
+      const highThreshold = cfg.highThreshold;
       if (!student.pet.happyStreak) student.pet.happyStreak = 0;
-      if (mood >= 75) student.pet.happyStreak += 1;
+      if (mood >= highThreshold) student.pet.happyStreak += 1;
       else student.pet.happyStreak = 0;
-      if (student.pet.happyStreak < 3) return;
+      if (student.pet.happyStreak < cfg.happyStreakNeed) return;
       student.pet.happyStreak = 0;
-      student.points = this.getStudentGrowth(student) + 1;
-      student.energy = this.getStudentEnergy(student) + 1;
-      if (!student.scoreHistory) student.scoreHistory = [];
-      student.scoreHistory.unshift({ time: Date.now(), delta: 1, reason: '神兽连续开心奖励' });
-      this.showActionToast(`${this.escape(student.name)} 神兽连续开心，奖励+1`);
-      this.announceClassEvent(`😊 ${this.escape(student.name)} 神兽连续开心，获得额外加分`);
+      const addScore = Math.max(0, cfg.happyStreakReward);
+      const addEnergy = Math.max(0, cfg.happyStreakEnergy);
+      if (addScore > 0) student.points = this.getStudentGrowth(student) + addScore;
+      if (addEnergy > 0) student.energy = this.getStudentEnergy(student) + addEnergy;
+      if (addScore > 0) {
+        if (!student.scoreHistory) student.scoreHistory = [];
+        student.scoreHistory.unshift({ time: Date.now(), delta: addScore, reason: `神兽连续开心奖励(+${addScore})` });
+      }
+      if (addScore > 0 || addEnergy > 0) {
+        this.showActionToast(`${this.escape(student.name)} 神兽连续开心，奖励成长+${addScore} 能量+${addEnergy}`);
+        this.announceClassEvent(`😊 ${this.escape(student.name)} 神兽连续开心，获得成长+${addScore} 能量+${addEnergy}`);
+      }
     },
 
     openStudentModal(studentId) {
@@ -7373,6 +7500,27 @@
       this.ensureStudentCurrencies(s);
       let growthDelta = type === 'plus' ? (item.points || 1) : -(Math.abs(item.points) || 1);
       if (growthDelta > 0) growthDelta = this._applySprintBonus(growthDelta, item.name || '');
+      const cfg = this.getEmotionConfig();
+      if (type === 'plus') {
+        const reasonText = String(item.name || '');
+        const isAnswerAction = /回答|抢答|发言|提问|问答|quiz|answer|speak/i.test(reasonText);
+        if (isAnswerAction) {
+          if (!s.petAnswerStreak) s.petAnswerStreak = 0;
+          s.petAnswerStreak += 1;
+          if (s.pet && cfg.answerMoodBoost > 0) {
+            s.pet.mood = Math.max(0, Math.min(100, this.getPetEmotionValue(s) + cfg.answerMoodBoost));
+            s.pet.lastMoodAt = Date.now();
+          }
+          if (s.petAnswerStreak >= cfg.answerStreakNeed && s.pet && this.getPetEmotionTier(s) !== 'low' && cfg.happyAnswerBonus > 0) {
+            growthDelta += cfg.happyAnswerBonus;
+            s.petAnswerStreak = 0;
+          }
+        } else {
+          s.petAnswerStreak = 0;
+        }
+      } else {
+        s.petAnswerStreak = 0;
+      }
       const energyDelta = type === 'plus' ? Math.max(1, Math.floor((growthDelta || 1) * 0.8)) : -Math.max(1, Math.floor(Math.abs(growthDelta || 1) * 0.8));
       s.points = this.getStudentGrowth(s) + growthDelta;
       s.energy = Math.max(0, this.getStudentEnergy(s) + energyDelta);
@@ -11659,6 +11807,17 @@
         currentClass.monopolyOpportunityTask = document.getElementById('settingMonopolyOpportunityTask')?.value || currentClass.monopolyOpportunityTask || '全组30秒内回答3题';
         currentClass.monopolyOpportunityPoints = parseInt(document.getElementById('settingMonopolyOpportunityPoints')?.value, 10) || currentClass.monopolyOpportunityPoints || 4;
         currentClass.monopolyStealPoints = parseInt(document.getElementById('settingMonopolyStealPoints')?.value, 10) || currentClass.monopolyStealPoints || 2;
+        currentClass.emotionConfig = {
+          normalThreshold: parseInt(document.getElementById('settingEmotionNormalThreshold')?.value, 10) || 45,
+          highThreshold: parseInt(document.getElementById('settingEmotionHighThreshold')?.value, 10) || 75,
+          ecstaticThreshold: parseInt(document.getElementById('settingEmotionEcstaticThreshold')?.value, 10) || 90,
+          answerStreakNeed: parseInt(document.getElementById('settingEmotionAnswerStreakNeed')?.value, 10) || 3,
+          answerMoodBoost: parseInt(document.getElementById('settingEmotionAnswerMoodBoost')?.value, 10) || 10,
+          happyAnswerBonus: parseInt(document.getElementById('settingEmotionHappyAnswerBonus')?.value, 10) || 1,
+          happyStreakNeed: parseInt(document.getElementById('settingEmotionHappyStreakNeed')?.value, 10) || 3,
+          happyStreakReward: parseInt(document.getElementById('settingEmotionHappyStreakReward')?.value, 10) || 1,
+          happyStreakEnergy: parseInt(document.getElementById('settingEmotionHappyStreakEnergy')?.value, 10) || 1
+        };
         currentClass.awakenPointsThreshold = Math.max(1, parseInt(document.getElementById('settingAwakenPointsThreshold')?.value, 10) || currentClass.awakenPointsThreshold || 100);
         currentClass.hospitalProjects = (document.getElementById('settingHospitalProjects')?.value || '复活针|8|revive\n急救药|3|cure')
           .split('\n')

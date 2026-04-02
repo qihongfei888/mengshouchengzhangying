@@ -615,6 +615,40 @@
             <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存</button>
           </div>
 
+          <div class="settings-card settings-card-cute">
+            <h3>😊 情绪规则（教师可配）</h3>
+            <div class="setting-item">
+              <label>情绪阈值（困倦/开心/兴奋/超燃）</label>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+                <input type="number" id="settingEmotionNormalThreshold" min="0" max="95" value="45" class="login-input" placeholder="开心阈值">
+                <input type="number" id="settingEmotionHighThreshold" min="1" max="98" value="75" class="login-input" placeholder="兴奋阈值">
+                <input type="number" id="settingEmotionEcstaticThreshold" min="2" max="100" value="90" class="login-input" placeholder="超燃阈值">
+              </div>
+              <p class="form-hint">例如：45/75/90 表示 0-44困倦，45-74开心，75-89兴奋，90+超燃。</p>
+            </div>
+            <div class="setting-item">
+              <label>连续回答触发条件</label>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
+                <input type="number" id="settingEmotionAnswerStreakNeed" min="1" value="3" class="login-input" placeholder="连续回答次数">
+                <input type="number" id="settingEmotionAnswerMoodBoost" min="0" value="10" class="login-input" placeholder="每次回答情绪提升">
+              </div>
+            </div>
+            <div class="setting-item">
+              <label>开心积分加成</label>
+              <input type="number" id="settingEmotionHappyAnswerBonus" min="0" value="1" class="login-input" placeholder="触发后额外成长值">
+              <p class="form-hint">达到连续回答次数且神兽非困倦时，加到本次回答加分。</p>
+            </div>
+            <div class="setting-item">
+              <label>连续开心奖励</label>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+                <input type="number" id="settingEmotionHappyStreakNeed" min="1" value="3" class="login-input" placeholder="连续开心次数">
+                <input type="number" id="settingEmotionHappyStreakReward" min="0" value="1" class="login-input" placeholder="奖励成长值">
+                <input type="number" id="settingEmotionHappyStreakEnergy" min="0" value="1" class="login-input" placeholder="奖励能量">
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存情绪规则</button>
+          </div>
+
           <!-- 排名奖励设置 -->
           <div class="settings-card settings-card-cute">
             <h3>🏆 排名自动奖励</h3>
@@ -2199,7 +2233,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=127"></script>
+<script src="./app-loader.js?v=128"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
