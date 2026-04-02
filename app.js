@@ -5758,6 +5758,23 @@
       setTimeout(() => node.remove(), 1300);
     },
 
+    async createDesktopShortcutGuide() {
+      const url = window.location.href;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(url);
+          this.showActionToast('已复制链接，可直接粘贴到浏览器打开');
+        }
+      } catch (e) {}
+      const ua = navigator.userAgent || '';
+      const isEdge = /Edg\//.test(ua);
+      const isChrome = /Chrome\//.test(ua) && !isEdge;
+      const browserName = isEdge ? 'Edge' : (isChrome ? 'Chrome' : '浏览器');
+      alert(
+`已为你复制当前链接。\n\n请按以下步骤生成桌面图标（${browserName}）：\n1）点击右上角“⋯”菜单\n2）选择“更多工具”\n3）点击“创建快捷方式”或“安装应用”\n4）勾选“在桌面创建快捷方式”并确认\n\n完成后桌面会出现图标，下次双击即可进入。`
+      );
+    },
+
     applyComboBonus(studentId, delta) {
       if (!(delta > 0)) return;
       const now = Date.now();
