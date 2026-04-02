@@ -2302,9 +2302,22 @@ body.season-skin-unlocked {
 }
 .sc3-sticker-line {
   margin-top: 4px;
+  min-height: 18px;
   font-size: .76rem;
   color: #fef3c7;
   font-weight: 700;
+  line-height: 18px;
+  text-shadow: 0 1px 6px rgba(245,158,11,.35);
+}
+.sc3-sticker-line:not(.is-empty) {
+  animation: sc3StickerGlow 2.4s ease-in-out infinite;
+}
+.sc3-sticker-line.is-empty {
+  visibility: hidden;
+}
+@keyframes sc3StickerGlow {
+  0%,100% { text-shadow: 0 1px 6px rgba(245,158,11,.28); }
+  50% { text-shadow: 0 1px 12px rgba(250,204,21,.62); }
 }
 
 @keyframes heroShine {
