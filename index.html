@@ -1872,6 +1872,46 @@
       <button class="modal-close" onclick="app.closeModal('classModeModal')">&times;</button>
       <h3>⏱️ 一键课堂模式</h3>
       <p class="text-muted">点击开始后会记录课堂起始时间，结束时自动生成课堂小结。</p>
+      <div class="form-group">
+        <label>开始课堂提示词</label>
+        <input id="classModeStartTextInput" class="login-input" placeholder="例如：课堂流程启动：考勤→点名→课堂计时">
+      </div>
+      <div class="form-group">
+        <label>开始后自动动作1</label>
+        <select id="classModeStartAction1" class="login-input">
+          <option value="none">无</option>
+          <option value="attendance">出勤管理</option>
+          <option value="rollcall">随机点名</option>
+          <option value="shortcut">快捷加分面板</option>
+          <option value="studentScreen">学生大屏</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>开始后自动动作2</label>
+        <select id="classModeStartAction2" class="login-input">
+          <option value="none">无</option>
+          <option value="attendance">出勤管理</option>
+          <option value="rollcall">随机点名</option>
+          <option value="shortcut">快捷加分面板</option>
+          <option value="studentScreen">学生大屏</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>结束课堂提示词</label>
+        <input id="classModeEndTextInput" class="login-input" placeholder="例如：课堂已结束，正在生成总结">
+      </div>
+      <div class="form-group">
+        <label>结束后自动动作</label>
+        <select id="classModeEndAction" class="login-input">
+          <option value="none">无</option>
+          <option value="weeklyReport">自动周报</option>
+          <option value="studentScreen">学生大屏</option>
+          <option value="shortcut">快捷加分面板</option>
+        </select>
+      </div>
+      <div class="score-btns">
+        <button class="btn btn-outline" onclick="app.saveClassModeConfig()">保存触发设置</button>
+      </div>
       <div class="score-btns">
         <button class="btn btn-primary" onclick="app.startClassMode()">▶️ 开始课堂</button>
         <button class="btn btn-danger" onclick="app.endClassMode()">⏹️ 结束课堂</button>
@@ -2150,7 +2190,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=117"></script>
+<script src="./app-loader.js?v=118"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}

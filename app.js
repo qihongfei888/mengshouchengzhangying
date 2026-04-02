@@ -5156,7 +5156,62 @@
     openClassModePanel() {
       const modal = document.getElementById('classModeModal');
       if (modal) modal.classList.add('show');
+      this.renderClassModeConfigForm();
       this.renderClassModeStatus();
+    },
+
+    getClassModeConfig() {
+      const { data, cls } = this._getCurrentClassCtx();
+      const defaults = {
+        startText: '🧭 课堂流程启动：考勤 → 点名 → 课堂计时',
+        startAction1: 'attendance',
+        startAction2: 'rollcall',
+        endText: '📌 下课总结生成中',
+        endAction: 'weeklyReport'
+      };
+      if (!cls) return defaults;
+      cls.classModeConfig = { ...defaults, ...(cls.classModeConfig || {}) };
+      setUserData(data);
+      this.saveData();
+      return cls.classModeConfig;
+    },
+
+    renderClassModeConfigForm() {
+      const cfg = this.getClassModeConfig();
+      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+      setVal('classModeStartTextInput', cfg.startText || '');
+      setVal('classModeStartAction1', cfg.startAction1 || 'none');
+      setVal('classModeStartAction2', cfg.startAction2 || 'none');
+      setVal('classModeEndTextInput', cfg.endText || '');
+      setVal('classModeEndAction', cfg.endAction || 'none');
+    },
+
+    saveClassModeConfig() {
+      const { data, cls } = this._getCurrentClassCtx();
+      if (!cls) return;
+      cls.classModeConfig = {
+        startText: (document.getElementById('classModeStartTextInput')?.value || '').trim() || '🧭 课堂流程启动：考勤 → 点名 → 课堂计时',
+        startAction1: document.getElementById('classModeStartAction1')?.value || 'attendance',
+        startAction2: document.getElementById('classModeStartAction2')?.value || 'rollcall',
+        endText: (document.getElementById('classModeEndTextInput')?.value || '').trim() || '📌 下课总结生成中',
+        endAction: document.getElementById('classModeEndAction')?.value || 'weeklyReport'
+      };
+      setUserData(data);
+      this.saveData();
+      this.showActionToast('一键课堂触发设置已保存');
+      this.announceClassEvent('⏱️ 一键课堂触发设置已更新');
+    },
+
+    runClassModeAction(action) {
+      if (!action || action === 'none') return;
+      const map = {
+        attendance: () => this.openAttendanceTool(),
+        rollcall: () => this.randomRollCall(),
+        shortcut: () => this.openShortcutPanel(),
+        studentScreen: () => this.openStudentScreen(),
+        weeklyReport: () => this.openWeeklyReportPanel()
+      };
+      try { map[action] && map[action](); } catch (e) {}
     },
 
     getClassTemplateConfig() {
@@ -5339,9 +5394,10 @@
       this.startRhythmEngine();
       this.renderClassModeStatus();
       this.showWinBanner('▶️ 课堂模式已开始', '记录课堂成长中');
-      this.announceClassEvent('🧭 课堂流程启动：考勤 → 点名 → 课堂计时');
-      try { this.openAttendanceTool(); } catch (e) {}
-      setTimeout(() => { try { this.randomRollCall(); } catch (e) {} }, 500);
+      const cfg = this.getClassModeConfig();
+      this.announceClassEvent(cfg.startText || '🧭 课堂流程启动：考勤 → 点名 → 课堂计时');
+      setTimeout(() => this.runClassModeAction(cfg.startAction1), 120);
+      setTimeout(() => this.runClassModeAction(cfg.startAction2), 480);
     },
 
     endClassMode() {
@@ -5357,6 +5413,9 @@
       this.renderClassModeStatus();
       this.generateWeeklyReport(true);
       this.showSprintStarSummary();
+      const cfg = this.getClassModeConfig();
+      this.announceClassEvent(cfg.endText || '📌 下课总结生成中');
+      setTimeout(() => this.runClassModeAction(cfg.endAction), 220);
       this.showWinBanner('⏹️ 课堂模式已结束', '课堂小结已生成');
     },
 
