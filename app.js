@@ -3605,6 +3605,7 @@
 
       // 初始化照片存储
       try { this.initPhotoStorage(); } catch (e) { console.error('照片存储初始化失败:', e); }
+      try { this.schedulePetPreheat('first-open-all-pet-photos', () => this.preheatAllPetPhotosOnFirstOpen(), 2200); } catch (e) { console.error('首次神兽图片缓存预热失败:', e); }
 
       // 后台任务仅启动一次
       if (!this._backgroundJobsStarted) {
@@ -3722,6 +3723,43 @@
         this.preloadPetStageImages(typeId, 1);
         this.preloadPetStageImages(typeId, 3);
       });
+    },
+    preheatAllPetPhotosOnFirstOpen() {
+      try {
+        const key = 'pet_photo_cache_warm_v1';
+        if (localStorage.getItem(key) === '1') return;
+        const ids = (typeof PHOTO_TYPE_IDS !== 'undefined' && Array.isArray(PHOTO_TYPE_IDS) && PHOTO_TYPE_IDS.length)
+          ? PHOTO_TYPE_IDS
+          : ((window.PET_TYPES || []).map(t => t.id).filter(Boolean));
+        if (!ids.length) return;
+        const queue = [];
+        ids.forEach(typeId => {
+          for (let st = 1; st <= 5; st++) queue.push(this.getStagePhotoPath(typeId, st));
+        });
+        let idx = 0;
+        const step = () => {
+          const end = Math.min(queue.length, idx + 8);
+          for (; idx < end; idx++) {
+            const src = queue[idx];
+            if (!src) continue;
+            if (!this._petImagePreloadCache) this._petImagePreloadCache = Object.create(null);
+            if (this._petImagePreloadCache[src]) continue;
+            const img = new Image();
+            img.decoding = 'async';
+            img.loading = 'eager';
+            img.src = src;
+            this._petImagePreloadCache[src] = 1;
+          }
+          if (idx < queue.length) {
+            setTimeout(step, 40);
+          } else {
+            localStorage.setItem(key, '1');
+          }
+        };
+        setTimeout(step, 120);
+      } catch (e) {
+        console.warn('首次神兽图片缓存预热失败:', e);
+      }
     },
     getTotalStages() {
       const data = getUserData();
