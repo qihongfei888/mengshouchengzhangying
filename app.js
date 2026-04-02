@@ -7106,7 +7106,6 @@
       const affinityFace = ['🙂','🥰','🤩','👑'][affinityTier] || '🙂';
       const moodFxOn = !!(s.pet && s.pet.moodFxUntil && s.pet.moodFxUntil > Date.now());
       const emotionTier = moodFxOn ? 'ecstatic' : this.getPetEmotionTier(s);
-      const emotionFace = emotionTier === 'ecstatic' ? '😆' : (emotionTier === 'high' ? '😄' : (emotionTier === 'normal' ? '🙂' : '🥱'));
       const rarity = this.getCardRarity(currentStage, totalStages);
       const awakenThreshold = this.getAwakenPointsThreshold();
       const isAwakened = (s.points || 0) >= awakenThreshold;
@@ -7141,7 +7140,7 @@
               <div class="sc3-footer">
                 <span class="sc3-points ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '能量不足或已满级'}">⚡ ${this.getStudentEnergy(s)}</span>
                 <span class="sc3-stage">${progressText}</span>
-                <span class="sc3-emotion mood-${emotionTier}">${emotionFace} ${this.getPetEmotionEmoji(s)} ${this.getPetEmotionLabel(s)}</span>
+                <span class="sc3-emotion mood-${emotionTier}">${this.getPetEmotionEmoji(s)} ${this.getPetEmotionLabel(s)}</span>
                 ${s.pet ? `<button class="sc3-btn" onclick="event.stopPropagation();app.interactWithPet('${s.id.replace(/'/g, "\\'")}')">✨</button>` : ''}
             </div>
             </div>
