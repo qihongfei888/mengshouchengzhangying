@@ -2666,19 +2666,22 @@ body.season-skin-unlocked {
 }
 .honor-board {
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   background: linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.96));
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 10px;
 }
 .honor-board .honor-top3 {
-  gap: 12px;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 20px;
   padding: 12px 8px;
 }
 .honor-board .honor-top3-card {
-  width: 120px;
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
 }
 .honor-board .honor-top3-card.rank-1 {
   transform: scale(1.05) translateY(-16px);
