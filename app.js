@@ -6914,6 +6914,9 @@
       // 重新设计：神兽图片全屏占主角，底部信息浮层
       const safeId = String(s.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
       const petTypeName = s.pet ? (s.pet.isCustom ? (s.pet.customName || '自定义') : (((window.PET_TYPES || []).find(t => t.id === s.pet.typeId) || {}).name || ({qinglong:'青龙',baihu:'白虎',zhuque:'朱雀',xuanwu:'玄武',fenghuang:'凤凰',qinlin:'麒麟',qilin:'麒麟',pixiu:'貔貅',yinglong:'应龙',zhulong:'烛龙',taotie:'饕餮',hundun:'混沌',jiuweihu:'九尾狐',jingwei:'精卫',jinwu:'金乌',yutu:'玉兔',xiezhi:'獬豸',baize:'白泽',tiangou:'天狗',bifang:'毕方',shanxiao:'山魈'})[s.pet.typeId] || '神兽')) : '未领养';
+      const lootBadgeHtml = (s.stickers && s.stickers.length)
+        ? `<div class="sc3-loot-floating"><span class="sc3-loot-pill"><span class="sc3-loot-label">战利品</span><span class="sc3-loot-icon">${(s.activeSticker && s.activeSticker.icon) ? this.escape(s.activeSticker.icon) : this.escape((s.stickers[s.stickers.length - 1] || {}).icon || '🎁')}</span><span class="sc3-loot-name">${(s.activeSticker && s.activeSticker.name) ? this.escape(s.activeSticker.name) : '贴纸收藏'}</span><span class="sc3-loot-count">x${s.stickers.length}</span></span></div>`
+        : '';
       return `
         <div class="student-card-v3 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''} ${isHighLevelStage ? 'high-level-card' : ''} ${isMaxLevel ? 'max-level-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" onclick="app.openStudentModal('${safeId}')">
           <div class="sc3-photo mood-${emotionTier}">
@@ -6928,12 +6931,12 @@
                 ${isMaxLevel ? `<span class="sc3-crown">👑</span>` : ''}
           </div>
             </div>
+            ${lootBadgeHtml}
             <div class="sc3-bottom-info">
               <div class="sc3-name-row">
-                <span class="sc3-name">${this.escape(s.name)}${(s.stickers && s.stickers.length) ? ` <span class="sc3-name-sticker" title="${this.escape((s.activeSticker && s.activeSticker.name) || (s.stickers[s.stickers.length - 1] || {}).name || '贴纸')}">${this.escape((s.activeSticker && s.activeSticker.icon) || (s.stickers[s.stickers.length - 1] || {}).icon || '🎁')}</span>` : ''}</span>
+                <span class="sc3-name">${this.escape(s.name)}</span>
                 <span class="sc3-pet-name">${this.escape(petTypeName)}</span>
             </div>
-              <div class="sc3-sticker-line ${(s.stickers && s.stickers.length) ? '' : 'is-empty'}">${(s.stickers && s.stickers.length) ? `<span class="sc3-loot-pill"><span class="sc3-loot-label">战利品</span><span class="sc3-loot-icon">${(s.activeSticker && s.activeSticker.icon) ? this.escape(s.activeSticker.icon) : this.escape((s.stickers[s.stickers.length - 1] || {}).icon || '🎁')}</span><span class="sc3-loot-name">${(s.activeSticker && s.activeSticker.name) ? this.escape(s.activeSticker.name) : '贴纸收藏'}</span><span class="sc3-loot-count">x${s.stickers.length}</span></span>` : '<span class="sc3-loot-pill ghost">战利品占位</span>'}</div>
               <div class="sc3-footer">
                 <span class="sc3-points ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '能量不足或已满级'}">⚡ ${this.getStudentEnergy(s)}</span>
                 <span class="sc3-stage">${progressText}</span>

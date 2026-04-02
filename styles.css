@@ -383,7 +383,7 @@ body::before {
 .search-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(255,107,107,0.15); }
 
 /* 学生卡片V2 - 按照设计图 */
-.student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+.student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; align-items: stretch; }
 .student-card-v2 {
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   border-radius: 20px;
@@ -428,9 +428,9 @@ body::before {
 
 /* ===== V3 卡片级别动态效果 ===== */
 
-/* 普通级别：轻微浮动 */
+/* 普通级别：静态展示，保持卡片高度整齐 */
 .student-card-v3.rarity-common {
-  animation: sc3Float 4s ease-in-out infinite;
+  animation: none;
 }
 @keyframes sc3Float {
   0%,100%{ transform: translateY(0); }
@@ -524,8 +524,9 @@ body::before {
   66%{ box-shadow: inset 0 0 0 3px rgba(139,92,246,.9), 0 0 28px rgba(139,92,246,.5); }
   100%{ box-shadow: inset 0 0 0 2px rgba(239,68,68,.6), 0 0 16px rgba(239,68,68,.35); }
 }
+/* 觉醒卡取消抖动，避免卡片高低不齐 */
 .student-card-v3.awakened-card {
-  animation: sc3AwakenShake 3.2s ease-in-out infinite;
+  animation: none;
 }
 @keyframes sc3AwakenShake {
   0%,90%,100%{ transform: translateY(0) rotate(0deg); }
@@ -793,18 +794,18 @@ body::before {
   left: 8px;
   right: 8px;
   bottom: 8px;
-  background: linear-gradient(135deg, rgba(15,23,42,.78), rgba(15,23,42,.62));
-  backdrop-filter: blur(1px);
-  border: 1px solid rgba(255,255,255,.18);
+  background: linear-gradient(180deg, rgba(8,12,24,.12), rgba(8,12,24,.46));
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(255,255,255,.14);
   border-radius: 14px;
-  padding: 10px 10px 8px;
+  padding: 8px 10px 8px;
   z-index: 7;
 }
 .sc3-name-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .sc3-name {
   font-size: 1.06rem;
@@ -812,14 +813,6 @@ body::before {
   color: #fff;
   text-shadow: 0 2px 8px rgba(0,0,0,.6);
   letter-spacing: .3px;
-}
-.sc3-name-sticker {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 6px;
-  font-size: .95em;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,.2));
 }
 .sc3-pet-name {
   font-size: .74rem;
@@ -2300,61 +2293,56 @@ body.season-skin-unlocked {
   background: rgba(15,23,42,.3);
   border-color: rgba(255,255,255,.35);
 }
-.sc3-sticker-line {
-  margin-top: 4px;
-  min-height: 22px;
-  font-size: .76rem;
-  color: #fef3c7;
-  font-weight: 700;
-  line-height: 18px;
+.sc3-loot-floating {
+  position: absolute;
+  right: 10px;
+  bottom: 72px;
+  z-index: 6;
+  pointer-events: none;
 }
 .sc3-loot-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  max-width: 100%;
-  padding: 2px 9px;
+  max-width: 170px;
+  padding: 3px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(250,204,21,.55);
-  background: linear-gradient(90deg, rgba(120,53,15,.62), rgba(146,64,14,.45));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 2px 8px rgba(251,191,36,.25);
-}
-.sc3-loot-pill.ghost {
-  visibility: hidden;
+  border: 1px solid rgba(250,204,21,.52);
+  background: linear-gradient(90deg, rgba(120,53,15,.44), rgba(146,64,14,.3));
+  backdrop-filter: blur(2px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 2px 8px rgba(251,191,36,.2);
 }
 .sc3-loot-label {
-  font-size: .66rem;
-  letter-spacing: .3px;
+  font-size: .64rem;
+  letter-spacing: .28px;
   color: #fde68a;
 }
 .sc3-loot-icon {
-  font-size: .86rem;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,.35));
+  font-size: .84rem;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.3));
 }
 .sc3-loot-name {
-  max-width: 84px;
+  max-width: 70px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #fff7ed;
+  font-size: .72rem;
 }
 .sc3-loot-count {
-  font-size: .68rem;
+  font-size: .66rem;
   color: #fef08a;
-  border: 1px solid rgba(250,204,21,.45);
+  border: 1px solid rgba(250,204,21,.4);
   padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(120,53,15,.45);
+  background: rgba(120,53,15,.34);
 }
-.sc3-sticker-line:not(.is-empty) .sc3-loot-pill {
+.sc3-loot-pill {
   animation: sc3LootGlow 2.2s ease-in-out infinite;
 }
-.sc3-sticker-line.is-empty {
-  visibility: visible;
-}
 @keyframes sc3LootGlow {
-  0%,100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 2px 8px rgba(251,191,36,.2); }
-  50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 3px 14px rgba(250,204,21,.45); }
+  0%,100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 2px 8px rgba(251,191,36,.18); }
+  50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 3px 12px rgba(250,204,21,.38); }
 }
 
 @keyframes heroShine {
