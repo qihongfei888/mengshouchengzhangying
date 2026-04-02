@@ -646,6 +646,24 @@
                 <input type="number" id="settingEmotionHappyStreakEnergy" min="0" value="1" class="login-input" placeholder="奖励能量">
               </div>
             </div>
+            <div class="setting-item">
+              <label>情绪冻结条件（达到积分后每日不波动）</label>
+              <input type="number" id="settingEmotionFreezeScoreThreshold" min="0" value="100" class="login-input" placeholder="达到该成长值后每日情绪保持不变">
+            </div>
+            <div class="setting-item">
+              <label>每日回答/未回答情绪变化</label>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
+                <input type="number" id="settingEmotionDailyAnsweredMoodBonus" min="0" value="6" class="login-input" placeholder="回答则情绪+">
+                <input type="number" id="settingEmotionDailyNoAnswerMoodPenalty" min="0" value="5" class="login-input" placeholder="未回答则情绪-">
+              </div>
+            </div>
+            <div class="setting-item">
+              <label>每日回答积累奖励</label>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
+                <input type="number" id="settingEmotionDailyAccumNeed" min="1" value="3" class="login-input" placeholder="累计天数">
+                <input type="number" id="settingEmotionDailyAccumBonus" min="0" value="2" class="login-input" placeholder="触发额外成长值">
+              </div>
+            </div>
             <button class="btn btn-secondary btn-cute" onclick="app.savePetSettings()">💾 保存情绪规则</button>
           </div>
 
@@ -2233,7 +2251,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=128"></script>
+<script src="./app-loader.js?v=129"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}

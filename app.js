@@ -1412,6 +1412,16 @@
           if (emotionHappyStreakNeedEl) emotionHappyStreakNeedEl.value = ecfg.happyStreakNeed;
           if (emotionHappyStreakRewardEl) emotionHappyStreakRewardEl.value = ecfg.happyStreakReward;
           if (emotionHappyStreakEnergyEl) emotionHappyStreakEnergyEl.value = ecfg.happyStreakEnergy;
+          const emotionFreezeScoreThresholdEl = document.getElementById('settingEmotionFreezeScoreThreshold');
+          const emotionDailyAnsweredMoodBonusEl = document.getElementById('settingEmotionDailyAnsweredMoodBonus');
+          const emotionDailyNoAnswerMoodPenaltyEl = document.getElementById('settingEmotionDailyNoAnswerMoodPenalty');
+          const emotionDailyAccumNeedEl = document.getElementById('settingEmotionDailyAccumNeed');
+          const emotionDailyAccumBonusEl = document.getElementById('settingEmotionDailyAccumBonus');
+          if (emotionFreezeScoreThresholdEl) emotionFreezeScoreThresholdEl.value = ecfg.moodFreezeScoreThreshold;
+          if (emotionDailyAnsweredMoodBonusEl) emotionDailyAnsweredMoodBonusEl.value = ecfg.dailyAnsweredMoodBonus;
+          if (emotionDailyNoAnswerMoodPenaltyEl) emotionDailyNoAnswerMoodPenaltyEl.value = ecfg.dailyNoAnswerMoodPenalty;
+          if (emotionDailyAccumNeedEl) emotionDailyAccumNeedEl.value = ecfg.dailyAnswerAccumNeed;
+          if (emotionDailyAccumBonusEl) emotionDailyAccumBonusEl.value = ecfg.dailyAnswerAccumBonus;
         } else {
           // 没有选择班级时的默认值
           this.students = [];
@@ -1462,6 +1472,16 @@
           if (emotionHappyStreakNeedEl) emotionHappyStreakNeedEl.value = 3;
           if (emotionHappyStreakRewardEl) emotionHappyStreakRewardEl.value = 1;
           if (emotionHappyStreakEnergyEl) emotionHappyStreakEnergyEl.value = 1;
+          const emotionFreezeScoreThresholdEl = document.getElementById('settingEmotionFreezeScoreThreshold');
+          const emotionDailyAnsweredMoodBonusEl = document.getElementById('settingEmotionDailyAnsweredMoodBonus');
+          const emotionDailyNoAnswerMoodPenaltyEl = document.getElementById('settingEmotionDailyNoAnswerMoodPenalty');
+          const emotionDailyAccumNeedEl = document.getElementById('settingEmotionDailyAccumNeed');
+          const emotionDailyAccumBonusEl = document.getElementById('settingEmotionDailyAccumBonus');
+          if (emotionFreezeScoreThresholdEl) emotionFreezeScoreThresholdEl.value = 100;
+          if (emotionDailyAnsweredMoodBonusEl) emotionDailyAnsweredMoodBonusEl.value = 6;
+          if (emotionDailyNoAnswerMoodPenaltyEl) emotionDailyNoAnswerMoodPenaltyEl.value = 5;
+          if (emotionDailyAccumNeedEl) emotionDailyAccumNeedEl.value = 3;
+          if (emotionDailyAccumBonusEl) emotionDailyAccumBonusEl.value = 2;
         }
         
         console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
@@ -2620,7 +2640,12 @@
               happyAnswerBonus: 1,
               happyStreakNeed: 3,
               happyStreakReward: 1,
-              happyStreakEnergy: 1
+              happyStreakEnergy: 1,
+              moodFreezeScoreThreshold: 100,
+              dailyAnsweredMoodBonus: 6,
+              dailyNoAnswerMoodPenalty: 5,
+              dailyAnswerAccumNeed: 3,
+              dailyAnswerAccumBonus: 2
             },
             awakenPointsThreshold: 100,
             customQuizQuestions: []
@@ -2689,7 +2714,12 @@
             happyAnswerBonus: emotionHappyAnswerBonusEl ? (parseInt(emotionHappyAnswerBonusEl.value, 10) || 1) : 1,
             happyStreakNeed: emotionHappyStreakNeedEl ? (parseInt(emotionHappyStreakNeedEl.value, 10) || 3) : 3,
             happyStreakReward: emotionHappyStreakRewardEl ? (parseInt(emotionHappyStreakRewardEl.value, 10) || 1) : 1,
-            happyStreakEnergy: emotionHappyStreakEnergyEl ? (parseInt(emotionHappyStreakEnergyEl.value, 10) || 1) : 1
+            happyStreakEnergy: emotionHappyStreakEnergyEl ? (parseInt(emotionHappyStreakEnergyEl.value, 10) || 1) : 1,
+            moodFreezeScoreThreshold: parseInt(document.getElementById('settingEmotionFreezeScoreThreshold')?.value, 10) || 100,
+            dailyAnsweredMoodBonus: parseInt(document.getElementById('settingEmotionDailyAnsweredMoodBonus')?.value, 10) || 6,
+            dailyNoAnswerMoodPenalty: parseInt(document.getElementById('settingEmotionDailyNoAnswerMoodPenalty')?.value, 10) || 5,
+            dailyAnswerAccumNeed: parseInt(document.getElementById('settingEmotionDailyAccumNeed')?.value, 10) || 3,
+            dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2
           };
           currentClass.awakenPointsThreshold = awakenPointsThresholdEl ? Math.max(1, parseInt(awakenPointsThresholdEl.value, 10) || 100) : (parseInt(currentClass.awakenPointsThreshold, 10) || 100);
           currentClass.hospitalProjects = hospitalProjectsEl
@@ -4084,7 +4114,12 @@
           happyAnswerBonus: parseInt(document.getElementById('settingEmotionHappyAnswerBonus')?.value, 10) || 1,
           happyStreakNeed: parseInt(document.getElementById('settingEmotionHappyStreakNeed')?.value, 10) || 3,
           happyStreakReward: parseInt(document.getElementById('settingEmotionHappyStreakReward')?.value, 10) || 1,
-          happyStreakEnergy: parseInt(document.getElementById('settingEmotionHappyStreakEnergy')?.value, 10) || 1
+          happyStreakEnergy: parseInt(document.getElementById('settingEmotionHappyStreakEnergy')?.value, 10) || 1,
+          moodFreezeScoreThreshold: parseInt(document.getElementById('settingEmotionFreezeScoreThreshold')?.value, 10) || 100,
+          dailyAnsweredMoodBonus: parseInt(document.getElementById('settingEmotionDailyAnsweredMoodBonus')?.value, 10) || 6,
+          dailyNoAnswerMoodPenalty: parseInt(document.getElementById('settingEmotionDailyNoAnswerMoodPenalty')?.value, 10) || 5,
+          dailyAnswerAccumNeed: parseInt(document.getElementById('settingEmotionDailyAccumNeed')?.value, 10) || 3,
+          dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2
         },
         customQuizQuestions: [],
         screenLock: { enabled: false, pin: '', locked: false }
@@ -6804,6 +6839,42 @@
       }
     },
 
+    applyDailyEmotionCycle(student) {
+      if (!student || !student.pet) return false;
+      const cfg = this.getEmotionConfig();
+      const today = new Date().toISOString().slice(0, 10);
+      if (student.pet.moodDailyDate === today) return false;
+      const prevDate = student.pet.moodDailyDate || '';
+      const sameDayAnswered = student.pet.answerDailyDate === today;
+      const hasAnswered = !!(sameDayAnswered && (student.pet.answerDailyCount || 0) > 0);
+      const scoreThreshold = Math.max(0, cfg.moodFreezeScoreThreshold || 0);
+      const scoreEnough = (this.getStudentGrowth(student) || 0) >= scoreThreshold;
+      if (scoreEnough && prevDate) {
+        student.pet.moodDailyDate = today;
+        return true;
+      }
+      let moodDelta = hasAnswered ? cfg.dailyAnsweredMoodBonus : -cfg.dailyNoAnswerMoodPenalty;
+      if (hasAnswered) {
+        if (!Number.isFinite(student.pet.answerAccumDays)) student.pet.answerAccumDays = 0;
+        student.pet.answerAccumDays += 1;
+        if (student.pet.answerAccumDays >= cfg.dailyAnswerAccumNeed) {
+          student.pet.answerAccumDays = 0;
+          const addScore = Math.max(0, cfg.dailyAnswerAccumBonus);
+          if (addScore > 0) {
+            student.points = this.getStudentGrowth(student) + addScore;
+            if (!student.scoreHistory) student.scoreHistory = [];
+            student.scoreHistory.unshift({ time: Date.now(), delta: addScore, reason: `每日回答积累奖励(+${addScore})` });
+          }
+        }
+      } else {
+        student.pet.answerAccumDays = 0;
+      }
+      student.pet.mood = Math.max(0, Math.min(100, this.getPetEmotionValue(student) + moodDelta));
+      student.pet.lastMoodAt = Date.now();
+      student.pet.moodDailyDate = today;
+      return true;
+    },
+
     renderStudents() {
       const keyword = (document.getElementById('studentSearch') && document.getElementById('studentSearch').value || '').trim().toLowerCase();
       let rawStudents = this.students;
@@ -6822,8 +6893,10 @@
       if (keyword) {
         list = list.filter(s => (String(s.name || '')).toLowerCase().includes(keyword) || (String(s.id || '')).toLowerCase().includes(keyword));
       }
+      let hasDailyMutation = false;
       const html = list.map((s, idx) => {
         try {
+          if (this.applyDailyEmotionCycle(s)) hasDailyMutation = true;
           this.ensurePetHealthStatus(s);
           return this.studentCardHtml(s, idx);
         } catch (e) {
@@ -6831,6 +6904,7 @@
           return '';
         }
       }).join('');
+      if (hasDailyMutation) this.saveStudents();
       const el = document.getElementById('studentList');
       console.log('[renderStudents] source=' + source.length + ' list=' + list.length + ' html_len=' + html.length);
       if (el) {
@@ -7038,7 +7112,12 @@
         happyAnswerBonus: 1,
         happyStreakNeed: 3,
         happyStreakReward: 1,
-        happyStreakEnergy: 1
+        happyStreakEnergy: 1,
+        moodFreezeScoreThreshold: 100,
+        dailyAnsweredMoodBonus: 6,
+        dailyNoAnswerMoodPenalty: 5,
+        dailyAnswerAccumNeed: 3,
+        dailyAnswerAccumBonus: 2
       };
       const raw = (cls && cls.emotionConfig) ? cls.emotionConfig : {};
       const cfg = {
@@ -7050,7 +7129,12 @@
         happyAnswerBonus: parseInt(raw.happyAnswerBonus, 10),
         happyStreakNeed: parseInt(raw.happyStreakNeed, 10),
         happyStreakReward: parseInt(raw.happyStreakReward, 10),
-        happyStreakEnergy: parseInt(raw.happyStreakEnergy, 10)
+        happyStreakEnergy: parseInt(raw.happyStreakEnergy, 10),
+        moodFreezeScoreThreshold: parseInt(raw.moodFreezeScoreThreshold, 10),
+        dailyAnsweredMoodBonus: parseInt(raw.dailyAnsweredMoodBonus, 10),
+        dailyNoAnswerMoodPenalty: parseInt(raw.dailyNoAnswerMoodPenalty, 10),
+        dailyAnswerAccumNeed: parseInt(raw.dailyAnswerAccumNeed, 10),
+        dailyAnswerAccumBonus: parseInt(raw.dailyAnswerAccumBonus, 10)
       };
       cfg.normalThreshold = Number.isFinite(cfg.normalThreshold) ? Math.max(0, Math.min(95, cfg.normalThreshold)) : d.normalThreshold;
       cfg.highThreshold = Number.isFinite(cfg.highThreshold) ? Math.max(cfg.normalThreshold + 1, Math.min(98, cfg.highThreshold)) : d.highThreshold;
@@ -7061,6 +7145,11 @@
       cfg.happyStreakNeed = Number.isFinite(cfg.happyStreakNeed) ? Math.max(1, cfg.happyStreakNeed) : d.happyStreakNeed;
       cfg.happyStreakReward = Number.isFinite(cfg.happyStreakReward) ? Math.max(0, cfg.happyStreakReward) : d.happyStreakReward;
       cfg.happyStreakEnergy = Number.isFinite(cfg.happyStreakEnergy) ? Math.max(0, cfg.happyStreakEnergy) : d.happyStreakEnergy;
+      cfg.moodFreezeScoreThreshold = Number.isFinite(cfg.moodFreezeScoreThreshold) ? Math.max(0, cfg.moodFreezeScoreThreshold) : d.moodFreezeScoreThreshold;
+      cfg.dailyAnsweredMoodBonus = Number.isFinite(cfg.dailyAnsweredMoodBonus) ? Math.max(0, cfg.dailyAnsweredMoodBonus) : d.dailyAnsweredMoodBonus;
+      cfg.dailyNoAnswerMoodPenalty = Number.isFinite(cfg.dailyNoAnswerMoodPenalty) ? Math.max(0, cfg.dailyNoAnswerMoodPenalty) : d.dailyNoAnswerMoodPenalty;
+      cfg.dailyAnswerAccumNeed = Number.isFinite(cfg.dailyAnswerAccumNeed) ? Math.max(1, cfg.dailyAnswerAccumNeed) : d.dailyAnswerAccumNeed;
+      cfg.dailyAnswerAccumBonus = Number.isFinite(cfg.dailyAnswerAccumBonus) ? Math.max(0, cfg.dailyAnswerAccumBonus) : d.dailyAnswerAccumBonus;
       return cfg;
     },
 
@@ -7507,9 +7596,17 @@
         if (isAnswerAction) {
           if (!s.petAnswerStreak) s.petAnswerStreak = 0;
           s.petAnswerStreak += 1;
-          if (s.pet && cfg.answerMoodBoost > 0) {
-            s.pet.mood = Math.max(0, Math.min(100, this.getPetEmotionValue(s) + cfg.answerMoodBoost));
-            s.pet.lastMoodAt = Date.now();
+          if (s.pet) {
+            const today = new Date().toISOString().slice(0, 10);
+            if (s.pet.answerDailyDate !== today) {
+              s.pet.answerDailyDate = today;
+              s.pet.answerDailyCount = 0;
+            }
+            s.pet.answerDailyCount = (parseInt(s.pet.answerDailyCount, 10) || 0) + 1;
+            if (cfg.answerMoodBoost > 0) {
+              s.pet.mood = Math.max(0, Math.min(100, this.getPetEmotionValue(s) + cfg.answerMoodBoost));
+              s.pet.lastMoodAt = Date.now();
+            }
           }
           if (s.petAnswerStreak >= cfg.answerStreakNeed && s.pet && this.getPetEmotionTier(s) !== 'low' && cfg.happyAnswerBonus > 0) {
             growthDelta += cfg.happyAnswerBonus;
@@ -11816,7 +11913,12 @@
           happyAnswerBonus: parseInt(document.getElementById('settingEmotionHappyAnswerBonus')?.value, 10) || 1,
           happyStreakNeed: parseInt(document.getElementById('settingEmotionHappyStreakNeed')?.value, 10) || 3,
           happyStreakReward: parseInt(document.getElementById('settingEmotionHappyStreakReward')?.value, 10) || 1,
-          happyStreakEnergy: parseInt(document.getElementById('settingEmotionHappyStreakEnergy')?.value, 10) || 1
+          happyStreakEnergy: parseInt(document.getElementById('settingEmotionHappyStreakEnergy')?.value, 10) || 1,
+          moodFreezeScoreThreshold: parseInt(document.getElementById('settingEmotionFreezeScoreThreshold')?.value, 10) || 100,
+          dailyAnsweredMoodBonus: parseInt(document.getElementById('settingEmotionDailyAnsweredMoodBonus')?.value, 10) || 6,
+          dailyNoAnswerMoodPenalty: parseInt(document.getElementById('settingEmotionDailyNoAnswerMoodPenalty')?.value, 10) || 5,
+          dailyAnswerAccumNeed: parseInt(document.getElementById('settingEmotionDailyAccumNeed')?.value, 10) || 3,
+          dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2
         };
         currentClass.awakenPointsThreshold = Math.max(1, parseInt(document.getElementById('settingAwakenPointsThreshold')?.value, 10) || currentClass.awakenPointsThreshold || 100);
         currentClass.hospitalProjects = (document.getElementById('settingHospitalProjects')?.value || '复活针|8|revive\n急救药|3|cure')
