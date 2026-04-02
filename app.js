@@ -7378,7 +7378,6 @@
             </div>
             ${canFeed ? `<button class="btn feed-btn" onclick="app.feedStudentInModal('${s.id}')">${foodLabel} 喂食（消耗1能量）</button>` : '<p class="text-muted">能量不足或已满级</p>'}
             <button class="btn btn-outline" style="margin-top:8px;" onclick="app.interactWithPet('${s.id}')">💬 抚摸互动</button>
-            <button class="btn btn-outline" style="margin-top:8px;" onclick="app.playPetVoicePack('${s.id}')">🔊 神兽叫声</button>
             <div class="score-btns" style="margin-top:8px;">
               <button class="btn btn-small btn-primary" onclick="app.adjustPetMood('${s.id}', 8)">😊 调成开心</button>
               <button class="btn btn-small btn-secondary" onclick="app.adjustPetMood('${s.id}', -8)">😮‍💨 调整冷静</button>
@@ -8381,31 +8380,6 @@
           fireworksContainer.parentNode.removeChild(fireworksContainer);
         }
       }, 3000);
-    },
-
-    // 语音播报
-    playPetVoicePack(studentId) {
-      const s = (this.students || []).find(x => x.id === studentId);
-      if (!s || !s.pet) return;
-      const mood = this.getPetEmotionValue(s);
-      const moodKey = mood >= 75 ? 'happy' : (mood >= 45 ? 'normal' : 'tired');
-      const lines = mood >= 75
-        ? ['我准备好冲刺啦', '今天状态火热', '继续挑战更高目标']
-        : (mood >= 45
-          ? ['我今天很开心', '一起加油吧', '再来一次互动']
-          : ['我有点困了', '给我一点能量吧', '我想要被鼓励']);
-      const line = lines[Math.floor(Math.random() * lines.length)];
-      const text = `${s.name} 的神兽说：${line}`;
-      const typeId = String(s.pet.typeId || 'default');
-      const voiceUrl = `./assets/voice-packs/${typeId}/${moodKey}.mp3`;
-      const audio = new Audio(voiceUrl);
-      audio.volume = 0.95;
-      audio.play().then(() => {
-        this.announceClassEvent(`🔊 ${text}`);
-      }).catch(() => {
-        this.announceClassEvent(`🔊 ${text}（语音包未命中，已启用系统语音）`);
-        this.speak(text.replace(/[：]/g, ''));
-      });
     },
 
     // 语音播报
