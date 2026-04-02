@@ -5233,7 +5233,18 @@
 
     getMotivationSwitches() {
       const { data, cls } = this._getCurrentClassCtx();
-      const defaults = { combo: true, comeback: true, sprint: true };
+      const defaults = {
+        combo: true,
+        comboWindowMin: 10,
+        comboNeed: 3,
+        comboEnergyReward: 1,
+        comeback: true,
+        comebackNeed: 2,
+        comebackReward: 3,
+        sprint: true,
+        sprintStartMin: 42,
+        sprintMultiplier: 1.2
+      };
       if (!cls) return defaults;
       cls.motivationSwitches = { ...defaults, ...(cls.motivationSwitches || {}) };
       setUserData(data);
@@ -5251,20 +5262,39 @@
       if (c1) c1.checked = !!sw.combo;
       if (c2) c2.checked = !!sw.comeback;
       if (c3) c3.checked = !!sw.sprint;
+      const r1 = document.getElementById('motivationComboRuleInput');
+      const r2 = document.getElementById('motivationComebackRuleInput');
+      const r3 = document.getElementById('motivationSprintRuleInput');
+      if (r1) r1.value = `${sw.comboWindowMin || 10},${sw.comboNeed || 3},${sw.comboEnergyReward || 1}`;
+      if (r2) r2.value = `${sw.comebackNeed || 2},${sw.comebackReward || 3}`;
+      if (r3) r3.value = `${sw.sprintStartMin || 42},${sw.sprintMultiplier || 1.2}`;
     },
 
     saveMotivationSwitches() {
       const { data, cls } = this._getCurrentClassCtx();
       if (!cls) return;
+      const parseInts = (id) => (document.getElementById(id)?.value || '').split(',').map(x => Number(String(x).trim()));
+      const c = parseInts('motivationComboRuleInput');
+      const b = parseInts('motivationComebackRuleInput');
+      const s = parseInts('motivationSprintRuleInput');
       cls.motivationSwitches = {
         combo: !!document.getElementById('motivationComboSwitch')?.checked,
+        comboWindowMin: Math.max(1, Math.round(c[0] || 10)),
+        comboNeed: Math.max(2, Math.round(c[1] || 3)),
+        comboEnergyReward: Math.max(1, Math.round(c[2] || 1)),
         comeback: !!document.getElementById('motivationComebackSwitch')?.checked,
-        sprint: !!document.getElementById('motivationSprintSwitch')?.checked
+        comebackNeed: Math.max(1, Math.round(b[0] || 2)),
+        comebackReward: Math.max(1, Math.round(b[1] || 3)),
+        sprint: !!document.getElementById('motivationSprintSwitch')?.checked,
+        sprintStartMin: Math.max(1, Math.round(s[0] || 42)),
+        sprintMultiplier: Math.max(1, Number(s[1] || 1.2))
       };
       setUserData(data);
       this.saveData();
-      this.showActionToast('激励开关已保存');
-      this.announceClassEvent('🎛️ 激励开关已更新');
+      this.showActionToast('激励机制设置已保存');
+      this.announceClassEvent('🎛️ 激励机制设置已更新');
+      const cm = cls.classMode || {};
+      if (cm.active) this.startRhythmEngine();
     },
 
     applyClassTemplate() {
@@ -5315,12 +5345,15 @@
 
     startRhythmEngine() {
       this.stopRhythmEngine();
+      const sw = this.getMotivationSwitches();
       const checkpoints = [
         { min: 5, text: '📚 5分钟：完成课堂导入，建议快速点名一次', action: () => this.randomRollCall() },
         { min: 20, text: '🔥 20分钟：进入互动高潮，建议开启快捷键面板', action: () => this.openShortcutPanel() },
-        { min: 35, text: '🧾 35分钟：准备收尾，可先预览周报', action: () => this.openWeeklyReportPanel() },
-        { min: 42, text: '⚡ 最后3分钟冲刺开启：答题/目标奖励×1.2', action: () => this.activateSprintMode() }
+        { min: 35, text: '🧾 35分钟：准备收尾，可先预览周报', action: () => this.openWeeklyReportPanel() }
       ];
+      if (sw.sprint) {
+        checkpoints.push({ min: Math.max(1, Number(sw.sprintStartMin || 42)), text: `⚡ 第${Math.max(1, Number(sw.sprintStartMin || 42))}分钟：冲刺开启，奖励×${Number(sw.sprintMultiplier || 1.2)}`, action: () => this.activateSprintMode() });
+      }
       this._rhythmTimer = setInterval(() => {
         const data = getUserData();
         const cls = data.classes && this.currentClassId ? data.classes.find(c => c.id === this.currentClassId) : null;
@@ -5381,8 +5414,8 @@
       cls.classMode.sprintStars = cls.classMode.sprintStars || {};
       setUserData(data);
       this.saveData();
-      this.showWinBanner('⚡ 冲刺榜开启', '最后3分钟，答题/目标奖励提升');
-      this.announceClassEvent('⚡ 冲刺榜已开启：答题/目标奖励×1.2');
+      this.showWinBanner('⚡ 冲刺榜开启', `当前奖励倍率 ×${Number(sw.sprintMultiplier || 1.2)}`);
+      this.announceClassEvent(`⚡ 冲刺榜已开启：奖励×${Number(sw.sprintMultiplier || 1.2)}`);
     },
 
     showSprintStarSummary() {
@@ -7013,7 +7046,9 @@
       if (!(base > 0)) return base;
       if (!this._isSprintActive()) return base;
       if (reason && !/答|回|目标|帮助|展示|发言/.test(String(reason))) return base;
-      return Math.max(base, Math.round(base * 1.2));
+      const sw = this.getMotivationSwitches();
+      const ratio = Math.max(1, Number(sw.sprintMultiplier || 1.2));
+      return Math.max(base, Math.round(base * ratio));
     },
 
     _trackSprintStar(studentId, addScore = 0) {
@@ -7032,15 +7067,17 @@
       const s = (this.students || []).find(x => x.id === studentId);
       if (!s) return;
       const now = Date.now();
-      const win = 10 * 60 * 1000;
+      const win = Math.max(1, Number(sw.comboWindowMin || 10)) * 60 * 1000;
+      const need = Math.max(2, Number(sw.comboNeed || 3));
+      const reward = Math.max(1, Number(sw.comboEnergyReward || 1));
       if (!Array.isArray(s._positiveEventTimes)) s._positiveEventTimes = [];
       s._positiveEventTimes = s._positiveEventTimes.filter(t => now - t <= win);
       s._positiveEventTimes.push(now);
-      if (s._positiveEventTimes.length < 3) return;
-      s._positiveEventTimes.splice(0, 3);
-      s.energy = this.getStudentEnergy(s) + 1;
-      this.showActionToast(`${this.escape(s.name)} 达成本节三连击，奖励+1能量`);
-      this.announceClassEvent(`🔥 ${this.escape(s.name)} 三连击达成（${this.escape(source)}），全班鼓掌！`);
+      if (s._positiveEventTimes.length < need) return;
+      s._positiveEventTimes.splice(0, need);
+      s.energy = this.getStudentEnergy(s) + reward;
+      this.showActionToast(`${this.escape(s.name)} 达成连击，奖励+${reward}能量`);
+      this.announceClassEvent(`🔥 ${this.escape(s.name)} 连击达成（${this.escape(source)}），奖励能量+${reward}`);
     },
 
     _ensureGroupComebackState(cls) {
@@ -7065,16 +7102,19 @@
       if (!groupId || !(add > 0)) return;
       const { data, cls } = this._getCurrentClassCtx();
       if (!cls) return;
+      const need = Math.max(1, Number(sw.comebackNeed || 2));
+      const reward = Math.max(1, Number(sw.comebackReward || 3));
       const state = this._ensureGroupComebackState(cls);
-      if (!state.byGroup[groupId]) state.byGroup[groupId] = { used: false, active: false, progress: 0, need: 2, completed: false };
+      if (!state.byGroup[groupId]) state.byGroup[groupId] = { used: false, active: false, progress: 0, need, completed: false };
       const item = state.byGroup[groupId];
       if (item.used) return;
       if (!this._isLaggingGroup(groupId)) return;
       if (!item.active) {
         item.active = true;
         item.progress = 0;
+        item.need = need;
         const g = (this.groups || []).find(x => x.id === groupId);
-        this.announceClassEvent(`🃏 ${this.escape(g ? g.name : '小组')} 获得逆袭卡：完成2次协作目标`);
+        this.announceClassEvent(`🃏 ${this.escape(g ? g.name : '小组')} 获得逆袭卡：完成${need}次协作目标`);
       }
       item.progress += add;
       if (item.progress < item.need) {
@@ -7087,20 +7127,20 @@
       item.completed = true;
       const g = (this.groups || []).find(x => x.id === groupId);
       if (g) {
-        g.points = (g.points || 0) + 3;
+        g.points = (g.points || 0) + reward;
         this.groupPointHistory.push({
           id: 'point_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
           groupId: g.id,
           groupName: g.name,
-          delta: 3,
+          delta: reward,
           reason: '逆袭卡完成奖励',
           time: new Date().toISOString()
         });
         setStorage(STORAGE_KEYS.groups, this.groups);
         setStorage(STORAGE_KEYS.groupPointHistory, this.groupPointHistory);
       }
-      this.showWinBanner('🃏 小组逆袭成功', `${this.escape(g ? g.name : '小组')} 获得 +3 小组积分`);
-      this.announceClassEvent(`🃏 ${this.escape(g ? g.name : '小组')} 逆袭任务完成，奖励 +3`);
+      this.showWinBanner('🃏 小组逆袭成功', `${this.escape(g ? g.name : '小组')} 获得 +${reward} 小组积分`);
+      this.announceClassEvent(`🃏 ${this.escape(g ? g.name : '小组')} 逆袭任务完成，奖励 +${reward}`);
       setUserData(data);
       this.saveData();
     },

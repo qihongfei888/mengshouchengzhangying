@@ -1930,19 +1930,31 @@
   <div id="motivationSwitchModal" class="modal">
     <div class="modal-content" style="max-width:760px;">
       <button class="modal-close" onclick="app.closeModal('motivationSwitchModal')">&times;</button>
-      <h3>🎛️ 激励机制开关</h3>
-      <p class="text-muted">按班级控制三连击、逆袭卡、冲刺榜，随时开关。</p>
+      <h3>🎛️ 激励机制（教师自由设置）</h3>
+      <p class="text-muted">可按班级自由设置规则参数，不仅是开关。</p>
       <div class="form-group">
-        <label><input id="motivationComboSwitch" type="checkbox" checked> 启用本节三连击（10分钟3次正向行为）</label>
+        <label><input id="motivationComboSwitch" type="checkbox" checked> 启用本节三连击</label>
       </div>
       <div class="form-group">
-        <label><input id="motivationComebackSwitch" type="checkbox" checked> 启用小组逆袭卡（每日一次）</label>
+        <label>三连击窗口（分钟）/ 触发次数 / 奖励能量</label>
+        <input id="motivationComboRuleInput" class="login-input" placeholder="示例：10,3,1">
       </div>
       <div class="form-group">
-        <label><input id="motivationSprintSwitch" type="checkbox" checked> 启用下课前3分钟冲刺榜</label>
+        <label><input id="motivationComebackSwitch" type="checkbox" checked> 启用小组逆袭卡</label>
+      </div>
+      <div class="form-group">
+        <label>逆袭任务次数 / 完成奖励小组积分</label>
+        <input id="motivationComebackRuleInput" class="login-input" placeholder="示例：2,3">
+      </div>
+      <div class="form-group">
+        <label><input id="motivationSprintSwitch" type="checkbox" checked> 启用冲刺榜</label>
+      </div>
+      <div class="form-group">
+        <label>冲刺开启时间（第几分钟）/ 奖励倍率</label>
+        <input id="motivationSprintRuleInput" class="login-input" placeholder="示例：42,1.2">
       </div>
       <div class="score-btns">
-        <button class="btn btn-primary" onclick="app.saveMotivationSwitches()">保存开关</button>
+        <button class="btn btn-primary" onclick="app.saveMotivationSwitches()">保存设置</button>
       </div>
     </div>
   </div>
@@ -2118,7 +2130,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=113"></script>
+<script src="./app-loader.js?v=114"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
