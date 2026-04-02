@@ -9474,6 +9474,7 @@
         result.style.cssText = 'font-size:2rem;color:#ffd08a;text-shadow:0 0 14px #ff9f40;';
         result.innerHTML = `${chosen.avatar || '🌟'} ${this.escape(chosen.name)}`;
           overlay.querySelector('.rollcall-spiral').appendChild(result);
+        this.speak(`请${chosen.name}开始挑战`);
       }, 2600);
 
       setTimeout(() => {
