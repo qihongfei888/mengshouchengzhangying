@@ -5452,23 +5452,43 @@
       const modal = document.getElementById('groupSeasonTaskModal');
       if (modal) modal.classList.add('show');
       const ctx = this._getGroupSeasonState();
-      const cfg = (ctx && ctx.cls && ctx.cls.groupSeasonTaskConfig) ? ctx.cls.groupSeasonTaskConfig : { goal: 8, plus: 40, sticker: 5, interact: 20 };
+      const cfg = (ctx && ctx.cls && ctx.cls.groupSeasonTaskConfig)
+        ? ctx.cls.groupSeasonTaskConfig
+        : {
+            goal: 8, plus: 40, sticker: 5, interact: 20,
+            perGroupCount: 2,
+            goalText: '本周完成成员目标累计 {n} 次',
+            plusText: '本周小组净加分达到 {n} 分',
+            stickerText: '本周开箱累计 {n} 次',
+            interactText: '本周宠物互动累计 {n} 次'
+          };
       const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = String(v); };
       setVal('groupTaskGoalTargetInput', cfg.goal || 8);
       setVal('groupTaskPlusTargetInput', cfg.plus || 40);
       setVal('groupTaskStickerTargetInput', cfg.sticker || 5);
       setVal('groupTaskInteractTargetInput', cfg.interact || 20);
+      setVal('groupTaskPerGroupCountInput', cfg.perGroupCount || 2);
+      setVal('groupTaskGoalTextInput', cfg.goalText || '本周完成成员目标累计 {n} 次');
+      setVal('groupTaskPlusTextInput', cfg.plusText || '本周小组净加分达到 {n} 分');
+      setVal('groupTaskStickerTextInput', cfg.stickerText || '本周开箱累计 {n} 次');
+      setVal('groupTaskInteractTextInput', cfg.interactText || '本周宠物互动累计 {n} 次');
       this.renderGroupSeasonTasks();
     },
 
     saveGroupSeasonTaskConfig() {
       const ctx = this._getGroupSeasonState();
       if (!ctx) return;
+      const txt = (id, dft) => ((document.getElementById(id)?.value || '').trim() || dft);
       ctx.cls.groupSeasonTaskConfig = {
         goal: Math.max(1, parseInt(document.getElementById('groupTaskGoalTargetInput')?.value, 10) || 8),
         plus: Math.max(1, parseInt(document.getElementById('groupTaskPlusTargetInput')?.value, 10) || 40),
         sticker: Math.max(1, parseInt(document.getElementById('groupTaskStickerTargetInput')?.value, 10) || 5),
-        interact: Math.max(1, parseInt(document.getElementById('groupTaskInteractTargetInput')?.value, 10) || 20)
+        interact: Math.max(1, parseInt(document.getElementById('groupTaskInteractTargetInput')?.value, 10) || 20),
+        perGroupCount: Math.max(1, Math.min(4, parseInt(document.getElementById('groupTaskPerGroupCountInput')?.value, 10) || 2)),
+        goalText: txt('groupTaskGoalTextInput', '本周完成成员目标累计 {n} 次'),
+        plusText: txt('groupTaskPlusTextInput', '本周小组净加分达到 {n} 分'),
+        stickerText: txt('groupTaskStickerTextInput', '本周开箱累计 {n} 次'),
+        interactText: txt('groupTaskInteractTextInput', '本周宠物互动累计 {n} 次')
       };
       setUserData(ctx.data);
       this.saveData();
@@ -5486,17 +5506,31 @@
       const ctx = this._getGroupSeasonState();
       if (!ctx) return;
       const weekId = new Date().toISOString().slice(0, 10);
-      const cfg = (ctx.cls && ctx.cls.groupSeasonTaskConfig) ? ctx.cls.groupSeasonTaskConfig : { goal: 8, plus: 40, sticker: 5, interact: 20 };
+      const cfg = (ctx.cls && ctx.cls.groupSeasonTaskConfig)
+        ? ctx.cls.groupSeasonTaskConfig
+        : {
+            goal: 8, plus: 40, sticker: 5, interact: 20,
+            perGroupCount: 2,
+            goalText: '本周完成成员目标累计 {n} 次',
+            plusText: '本周小组净加分达到 {n} 分',
+            stickerText: '本周开箱累计 {n} 次',
+            interactText: '本周宠物互动累计 {n} 次'
+          };
+      const fmt = (tpl, n, dft) => {
+        const t = (tpl || dft || '').trim() || dft;
+        return t.includes('{n}') ? t.replace(/\{n\}/g, String(n)) : `${t} ${n}`;
+      };
       const pool = [
-        { key: 'goal', text: `本周完成成员目标累计 ${cfg.goal} 次`, target: Math.max(1, cfg.goal || 8) },
-        { key: 'plus', text: `本周小组净加分达到 ${cfg.plus} 分`, target: Math.max(1, cfg.plus || 40) },
-        { key: 'sticker', text: `本周开箱累计 ${cfg.sticker} 次`, target: Math.max(1, cfg.sticker || 5) },
-        { key: 'interact', text: `本周宠物互动累计 ${cfg.interact} 次`, target: Math.max(1, cfg.interact || 20) }
+        { key: 'goal', text: fmt(cfg.goalText, Math.max(1, cfg.goal || 8), '本周完成成员目标累计 {n} 次'), target: Math.max(1, cfg.goal || 8) },
+        { key: 'plus', text: fmt(cfg.plusText, Math.max(1, cfg.plus || 40), '本周小组净加分达到 {n} 分'), target: Math.max(1, cfg.plus || 40) },
+        { key: 'sticker', text: fmt(cfg.stickerText, Math.max(1, cfg.sticker || 5), '本周开箱累计 {n} 次'), target: Math.max(1, cfg.sticker || 5) },
+        { key: 'interact', text: fmt(cfg.interactText, Math.max(1, cfg.interact || 20), '本周宠物互动累计 {n} 次'), target: Math.max(1, cfg.interact || 20) }
       ];
+      const perGroupCount = Math.max(1, Math.min(4, parseInt(cfg.perGroupCount, 10) || 2));
       ctx.state.weekId = weekId;
       ctx.state.byGroup = {};
       (this.groups || []).forEach(g => {
-        const picked = [...pool].sort(() => Math.random() - 0.5).slice(0, 2);
+        const picked = [...pool].sort(() => Math.random() - 0.5).slice(0, perGroupCount);
         ctx.state.byGroup[g.id] = picked.map(t => ({ ...t, progress: 0, done: false }));
       });
       setUserData(ctx.data);

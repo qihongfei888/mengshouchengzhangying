@@ -1969,6 +1969,26 @@
         <button class="btn btn-primary" onclick="app.saveGroupSeasonTaskConfig(); app.rollGroupSeasonTasks()">保存并生成本周任务</button>
       </div>
       <div class="form-group">
+        <label>每组任务条数</label>
+        <input id="groupTaskPerGroupCountInput" class="login-input" type="number" min="1" max="4" value="2">
+      </div>
+      <div class="form-group">
+        <label>成员目标任务文案（可写 {n}）</label>
+        <input id="groupTaskGoalTextInput" class="login-input" placeholder="示例：本周完成成员目标累计 {n} 次">
+      </div>
+      <div class="form-group">
+        <label>小组净加分任务文案（可写 {n}）</label>
+        <input id="groupTaskPlusTextInput" class="login-input" placeholder="示例：本周小组净加分达到 {n} 分">
+      </div>
+      <div class="form-group">
+        <label>贴纸开箱任务文案（可写 {n}）</label>
+        <input id="groupTaskStickerTextInput" class="login-input" placeholder="示例：本周开箱累计 {n} 次">
+      </div>
+      <div class="form-group">
+        <label>宠物互动任务文案（可写 {n}）</label>
+        <input id="groupTaskInteractTextInput" class="login-input" placeholder="示例：本周宠物互动累计 {n} 次">
+      </div>
+      <div class="form-group">
         <label>目标任务次数（成员目标）</label>
         <input id="groupTaskGoalTargetInput" class="login-input" type="number" min="1" value="8">
       </div>
@@ -2130,7 +2150,7 @@
 <script src="./xlsx.full.min.js?v=3"></script>
 <script src="./data.js?v=3"></script>
 <script src="https://unpkg.com/mammoth@1.7.2/mammoth.browser.min.js"></script>
-<script src="./app-loader.js?v=115"></script>
+<script src="./app-loader.js?v=116"></script>
 <style>
 @keyframes drumShake {0%{transform:scale(1.06) rotate(0deg)}25%{transform:scale(1.09) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1.06) rotate(0deg)}}
 @keyframes drumFlash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
