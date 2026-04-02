@@ -6418,37 +6418,44 @@
       if (state) state.textContent = '等待开始';
       if (current) current.innerHTML = '<div>点击大鼓开始鼓声，再次点击停鼓后随机互动任务。</div>';
       if (btn) btn.textContent = '开始击鼓';
-      if (drumBtn) drumBtn.style.transform = 'scale(1)';
+      if (drumBtn) {
+        drumBtn.style.transform = 'scale(1)';
+        drumBtn.style.filter = 'none';
+      }
       if (log) log.innerHTML = '';
       modal.style.display = 'flex';
     },
 
     closePassingFlowerGame() {
       if (this._passingFlower && this._passingFlower.timer) clearInterval(this._passingFlower.timer);
-      if (this._passingFlower && this._passingFlower.beep) clearInterval(this._passingFlower.beep);
+      if (this._passingFlower && this._passingFlower.beep) clearTimeout(this._passingFlower.beep);
       this._passingFlower = { running: false, timer: null, beep: null };
       this.closeModal('passingFlowerModal');
     },
 
-    _playDrumHit() {
+    _playDrumHit(intensity = 0) {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const p = Math.max(0, Math.min(1, Number(intensity) || 0));
         const hit = (freq, gainV, dur, type = 'triangle') => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = type;
           osc.frequency.setValueAtTime(freq, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(Math.max(30, freq * 0.55), ctx.currentTime + dur);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(30, freq * (0.45 + (1 - p) * 0.2)), ctx.currentTime + dur);
           gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(gainV, ctx.currentTime + 0.008);
+          gain.gain.exponentialRampToValueAtTime(gainV, ctx.currentTime + 0.006);
           gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start();
           osc.stop(ctx.currentTime + dur + 0.02);
         };
-        hit(95, 0.85, 0.32, 'sine');
-        hit(180, 0.35, 0.14, 'triangle');
+        hit(92 + p * 20, 0.9 + p * 0.08, 0.32 - p * 0.05, 'sine');
+        hit(180 + p * 60, 0.34 + p * 0.1, 0.14, 'triangle');
+        if (p > 0.65) {
+          hit(260 + p * 90, 0.2, 0.08, 'square');
+        }
       } catch (e) {
         console.warn('播放鼓声失败:', e);
       }
@@ -6488,9 +6495,24 @@
           drumBtn.style.animation = 'drumShake .36s infinite';
         }
 
-        this._playDrumHit();
-        if (this._passingFlower.beep) clearInterval(this._passingFlower.beep);
-        this._passingFlower.beep = setInterval(() => this._playDrumHit(), 650);
+        this._passingFlower.roundStartAt = Date.now();
+        const runDrumTick = () => {
+          if (!this._passingFlower || !this._passingFlower.running) return;
+          const elapsed = Date.now() - (this._passingFlower.roundStartAt || Date.now());
+          const intensity = Math.min(1, elapsed / 5200);
+          const interval = Math.max(190, 620 - Math.floor(intensity * 430));
+          this._playDrumHit(intensity);
+          if (state) {
+            state.textContent = intensity > 0.78 ? '⚠️ 鼓点狂飙中，马上停鼓！' : (intensity > 0.45 ? '咚咚咚…节奏加速！' : '咚咚咚…鼓声进行中');
+          }
+          if (drumBtn) {
+            drumBtn.style.animationDuration = `${Math.max(0.16, 0.36 - intensity * 0.18)}s`;
+            drumBtn.style.filter = `drop-shadow(0 0 ${8 + Math.floor(intensity * 12)}px rgba(255,77,79,.55))`;
+          }
+          this._passingFlower.beep = setTimeout(runDrumTick, interval);
+        };
+        if (this._passingFlower.beep) clearTimeout(this._passingFlower.beep);
+        runDrumTick();
 
         this._passingFlower.timer = setInterval(() => {
           const s = this.students[Math.floor(Math.random() * this.students.length)];
@@ -6500,7 +6522,7 @@
       } else {
         this._passingFlower.running = false;
         if (this._passingFlower.timer) clearInterval(this._passingFlower.timer);
-        if (this._passingFlower.beep) clearInterval(this._passingFlower.beep);
+        if (this._passingFlower.beep) clearTimeout(this._passingFlower.beep);
         this._passingFlower.timer = null;
         this._passingFlower.beep = null;
         if (btn) btn.textContent = '再次击鼓';
@@ -6508,6 +6530,7 @@
         if (drumBtn) {
           drumBtn.style.transform = 'scale(1)';
           drumBtn.style.animation = 'none';
+          drumBtn.style.filter = 'none';
         }
         this._flashDrumStop();
 

@@ -2627,8 +2627,9 @@ body.season-skin-unlocked {
 /* 光荣榜双榜并列 */
 .honor-dual-board {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+  align-items: start;
 }
 .honor-board-title {
   margin: 0 0 10px;
@@ -2636,10 +2637,26 @@ body.season-skin-unlocked {
   color: var(--primary);
 }
 .honor-board {
+  min-width: 0;
+  overflow: hidden;
   background: linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.96));
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 10px;
+}
+.honor-board .honor-top3 {
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 12px 8px;
+}
+.honor-board .honor-top3-card {
+  width: 120px;
+}
+.honor-board .honor-top3-card.rank-1 {
+  transform: scale(1.05) translateY(-16px);
+}
+.honor-board .honor-top3-card:hover {
+  transform: translateY(-4px) scale(1.04);
 }
 
 /* 宠物情绪阈值特效 */
@@ -3992,6 +4009,28 @@ body.season-skin-unlocked {
 .student-checkbox-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
 .student-checkbox-item label { cursor: pointer; flex: 1; margin: 0; }
 .withdraw-item { padding: 12px; background: var(--bg); border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+
+#passingFlowerDrumBtn {
+  will-change: transform, filter;
+  transform-origin: center;
+}
+#passingFlowerCurrent {
+  box-shadow: inset 0 0 0 1px rgba(255,166,0,.2);
+}
+#passingFlowerState {
+  letter-spacing: .4px;
+}
+@keyframes drumShake {
+  0%,100% { transform: translateY(0) rotate(0deg) scale(1.06); }
+  25% { transform: translateY(-1px) rotate(-1.2deg) scale(1.085); }
+  50% { transform: translateY(1px) rotate(1.2deg) scale(1.09); }
+  75% { transform: translateY(-1px) rotate(-1deg) scale(1.082); }
+}
+@keyframes drumFlash {
+  0% { opacity: 0; }
+  18% { opacity: .96; }
+  100% { opacity: 0; }
+}
 .withdraw-item .btn-small { margin-left: 8px; }
 
 /* 学生弹窗内：加分减分喂食 */
