@@ -813,6 +813,14 @@ body::before {
   text-shadow: 0 2px 8px rgba(0,0,0,.6);
   letter-spacing: .3px;
 }
+.sc3-name-sticker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  font-size: .95em;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.2));
+}
 .sc3-pet-name {
   font-size: .74rem;
   color: #fde68a;

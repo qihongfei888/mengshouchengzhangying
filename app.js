@@ -6869,7 +6869,7 @@
             </div>
             <div class="sc3-bottom-info">
               <div class="sc3-name-row">
-                <span class="sc3-name">${this.escape(s.name)}</span>
+                <span class="sc3-name">${this.escape(s.name)}${(s.stickers && s.stickers.length) ? ` <span class="sc3-name-sticker" title="${this.escape((s.activeSticker && s.activeSticker.name) || (s.stickers[s.stickers.length - 1] || {}).name || '贴纸')}">${this.escape((s.activeSticker && s.activeSticker.icon) || (s.stickers[s.stickers.length - 1] || {}).icon || '🎁')}</span>` : ''}</span>
                 <span class="sc3-pet-name">${this.escape(petTypeName)}</span>
             </div>
               ${(s.stickers && s.stickers.length) ? `<div class="sc3-sticker-line">贴纸 ${(s.activeSticker && s.activeSticker.icon) ? this.escape(s.activeSticker.icon) : this.escape((s.stickers[s.stickers.length - 1] || {}).icon || '🎁')} · ${(s.activeSticker && s.activeSticker.name) ? this.escape(s.activeSticker.name) : `共 ${s.stickers.length}`}</div>` : ''}
