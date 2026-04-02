@@ -5077,14 +5077,31 @@
       const pct = Math.max(0, Math.min(100, Math.round((totalPlus / (cfg.target || 300)) * 100)));
       const gpct = Math.max(0, Math.min(100, Math.round((groupTotal / (cfg.groupTarget || 120)) * 100)));
       const groupTitles = this.getGroupSeasonTitles();
+      const groupTarget = Math.max(1, Number(cfg.groupTarget || 120));
+      const groups = (this.groups || []).slice().sort((a, b) => (b.points || 0) - (a.points || 0));
+      const groupProgressHtml = groups.length
+        ? groups.map((g, i) => {
+            const points = Math.max(0, Number(g.points || 0));
+            const pp = Math.max(0, Math.min(100, Math.round((points / groupTarget) * 100)));
+            return `<div class="season-card" style="margin-top:8px;padding:10px 12px;">
+              <div class="season-theme" style="font-size:14px;display:flex;justify-content:space-between;"><span>${i + 1}. ${this.escape(g.name || '小组')}</span><span>${points}/${groupTarget}</span></div>
+              <div class="season-bar" style="margin-top:6px;"><div class="season-fill" style="width:${pp}%;background:linear-gradient(90deg,#38bdf8,#22c55e,#f59e0b)"></div></div>
+              <div class="season-desc" style="margin-top:4px;">完成度 ${pp}%</div>
+            </div>`;
+          }).join('')
+        : '<div class="season-card" style="margin-top:8px;"><div class="season-theme">暂无小组，无法显示小组进度</div></div>';
       el.innerHTML = `<div class="season-card">
         <div class="season-theme">${this.escape(cfg.theme || '赛季主题')}</div>
         <div class="season-desc">${this.escape(cfg.desc || '')}</div>
         <div class="season-bar"><div class="season-fill" style="width:${pct}%"></div></div>
         <div class="season-foot">班级进度 ${totalPlus} / ${cfg.target}（${pct}%）｜达标奖励：每位学生 +${cfg.rewardPoints} 分</div>
         <div class="season-bar" style="margin-top:10px;"><div class="season-fill" style="width:${gpct}%;background:linear-gradient(90deg,#0ea5e9,#22d3ee,#2dd4bf)"></div></div>
-        <div class="season-foot">小组进度 ${groupTotal} / ${cfg.groupTarget}（${gpct}%）｜达标奖励：每组 +${cfg.groupRewardPoints} 分</div>
+        <div class="season-foot">小组总进度 ${groupTotal} / ${cfg.groupTarget}（${gpct}%）｜达标奖励：每组 +${cfg.groupRewardPoints} 分</div>
         <div class="season-group-title-list">${groupTitles.length ? groupTitles.map(x => `<span class="season-group-title">${this.escape(x.name)}：${this.escape(x.title)}</span>`).join('') : '<span class="season-group-title">暂无小组称号</span>'}</div>
+      </div>
+      <div class="season-card" style="margin-top:10px;">
+        <div class="season-theme">👥 小组进度榜（按小组显示）</div>
+        ${groupProgressHtml}
       </div>`;
     },
 
