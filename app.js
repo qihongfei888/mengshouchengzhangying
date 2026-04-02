@@ -6842,6 +6842,9 @@
       const affinityTier = this.getPetAffinityTier(affinity);
       const affinityTitle = this.getPetAffinityTitle(affinity);
       const affinityFace = ['🙂','🥰','🤩','👑'][affinityTier] || '🙂';
+      const moodFxOn = !!(s.pet && s.pet.moodFxUntil && s.pet.moodFxUntil > Date.now());
+      const emotionTier = moodFxOn ? 'ecstatic' : this.getPetEmotionTier(s);
+      const emotionFace = emotionTier === 'ecstatic' ? '😆' : (emotionTier === 'high' ? '😄' : (emotionTier === 'normal' ? '🙂' : '🥱'));
       const rarity = this.getCardRarity(currentStage, totalStages);
       const awakenThreshold = this.getAwakenPointsThreshold();
       const isAwakened = (s.points || 0) >= awakenThreshold;
@@ -6852,7 +6855,7 @@
       const petTypeName = s.pet ? (s.pet.isCustom ? (s.pet.customName || '自定义') : (((window.PET_TYPES || []).find(t => t.id === s.pet.typeId) || {}).name || ({qinglong:'青龙',baihu:'白虎',zhuque:'朱雀',xuanwu:'玄武',fenghuang:'凤凰',qinlin:'麒麟',qilin:'麒麟',pixiu:'貔貅',yinglong:'应龙',zhulong:'烛龙',taotie:'饕餮',hundun:'混沌',jiuweihu:'九尾狐',jingwei:'精卫',jinwu:'金乌',yutu:'玉兔',xiezhi:'獬豸',baize:'白泽',tiangou:'天狗',bifang:'毕方',shanxiao:'山魈'})[s.pet.typeId] || '神兽')) : '未领养';
       return `
         <div class="student-card-v3 affinity-tier-${affinityTier} rarity-${rarity.key} ${isAwakened ? 'awakened-card' : ''} ${isHighLevelStage ? 'high-level-card' : ''} ${isMaxLevel ? 'max-level-card' : ''}" data-id="${s.id}" data-student-id="${s.id}" onclick="app.openStudentModal('${safeId}')">
-          <div class="sc3-photo">
+          <div class="sc3-photo mood-${emotionTier}">
             ${petHtml}
             <div class="sc3-particles" aria-hidden="true"></div>
             <div class="sc3-top-bar">
@@ -6873,7 +6876,7 @@
               <div class="sc3-footer">
                 <span class="sc3-points ${feedClass}" ${feedAction} title="${canFeed ? '点击喂食' : '能量不足或已满级'}">⚡ ${this.getStudentEnergy(s)}</span>
                 <span class="sc3-stage">${progressText}</span>
-                <span class="sc3-emotion">${this.getPetEmotionEmoji(s)} ${this.getPetEmotionLabel(s)}</span>
+                <span class="sc3-emotion mood-${emotionTier}">${emotionFace} ${this.getPetEmotionEmoji(s)} ${this.getPetEmotionLabel(s)}</span>
                 ${s.pet ? `<button class="sc3-btn" onclick="event.stopPropagation();app.interactWithPet('${s.id.replace(/'/g, "\\'")}')">✨</button>` : ''}
             </div>
             </div>
@@ -6887,9 +6890,18 @@
       return Math.max(0, Math.min(100, s.pet.mood));
     },
 
+    getPetEmotionTier(s) {
+      const v = this.getPetEmotionValue(s);
+      if (v >= 90) return 'ecstatic';
+      if (v >= 75) return 'high';
+      if (v >= 45) return 'normal';
+      return 'low';
+    },
+
     getPetEmotionLabel(s) {
       const v = this.getPetEmotionValue(s);
-      if (v >= 75) return '亢奋';
+      if (v >= 90) return '超燃';
+      if (v >= 75) return '兴奋';
       if (v >= 45) return '开心';
       return '困倦';
     },
@@ -6942,6 +6954,7 @@
 
     getPetEmotionEmoji(s) {
       const v = this.getPetEmotionValue(s);
+      if (v >= 90) return '🤩';
       if (v >= 75) return '🔥';
       if (v >= 45) return '😊';
       return '😪';
@@ -6962,13 +6975,27 @@
       if (!student || !student.pet) return;
       const now = Date.now();
       let mood = this.getPetEmotionValue(student);
+      const beforeTier = this.getPetEmotionTier(student);
       if (source === 'feed') mood += 8;
       else if (source === 'interact') mood += 6;
       else mood += delta > 0 ? Math.min(12, 4 + delta) : -Math.min(10, 3 + Math.abs(delta));
       if (student.pet.lastMoodAt && (now - student.pet.lastMoodAt) > 90 * 60 * 1000) mood -= 6;
       student.pet.mood = Math.max(0, Math.min(100, mood));
       student.pet.lastMoodAt = now;
+      this.triggerPetMoodEffect(student, beforeTier);
       this.applyHappyStreakBonus(student);
+    },
+
+    triggerPetMoodEffect(student, beforeTier = '') {
+      if (!student || !student.pet) return;
+      const tier = this.getPetEmotionTier(student);
+      if (tier === beforeTier) return;
+      if (tier === 'high' || tier === 'ecstatic') {
+        student.pet.moodFxUntil = Date.now() + 3200;
+        this.showActionToast(`${this.escape(student.name)} 的神兽心情高涨 ${tier === 'ecstatic' ? '🤩' : '🔥'}`);
+        this.announceClassEvent(`✨ ${this.escape(student.name)} 神兽进入${tier === 'ecstatic' ? '超燃' : '兴奋'}状态`);
+        this.renderStudents();
+      }
     },
 
     applyHappyStreakBonus(student) {
@@ -8326,99 +8353,104 @@
     },
 
     renderHonor(period = 'all') {
-      const totalStages = this.getTotalStages();
       const periodTimestamp = this.getPeriodTimestamp(period);
-      
-      const list = this.students
+      const students = this.students || [];
+
+      const powerList = students
         .map(s => {
-          // 计算该时间段内的积分变化
           let periodPoints = 0;
           let periodBadges = 0;
-          
           if (s.scoreHistory && s.scoreHistory.length > 0) {
             periodPoints = s.scoreHistory
               .filter(h => h.time >= periodTimestamp)
-              .reduce((sum, h) => sum + h.delta, 0);
+              .reduce((sum, h) => sum + (h.delta || 0), 0);
           }
-          
           if (s.badges && s.badges.length > 0) {
             periodBadges = s.badges
               .filter(b => b.time >= periodTimestamp)
               .length;
           }
-          
           return {
             ...s,
             badgeCount: period === 'all' ? this.getTotalBadgesEarned(s) : periodBadges,
-            periodPoints: periodPoints,
+            periodPoints,
             totalPoints: s.points || 0,
-            available: this.getAvailableBadges(s),
             petStage: s.pet ? (s.pet.stage || 0) : 0
           };
         })
         .sort((a, b) => {
-          // 先按徽章数量排序
           const badgeDiff = (b.badgeCount || 0) - (a.badgeCount || 0);
           if (badgeDiff !== 0) return badgeDiff;
-          // 徽章相同则按时间段积分排序
           const periodPointsDiff = (b.periodPoints || 0) - (a.periodPoints || 0);
           if (periodPointsDiff !== 0) return periodPointsDiff;
-          // 时间段积分相同则按宠物阶段排序
           const stageDiff = (b.petStage || 0) - (a.petStage || 0);
           if (stageDiff !== 0) return stageDiff;
-          // 阶段相同则按总积分排序
           return (b.totalPoints || 0) - (a.totalPoints || 0);
         });
-      const top3 = list.slice(0, 3);
-      const others = list.slice(3);
-      
-      // 重新排序top3：亚军、冠军、季军
-      const orderedTop3 = [];
-      if (top3.length >= 2) orderedTop3.push({...top3[1], rank: 2}); // 亚军
-      if (top3.length >= 1) orderedTop3.push({...top3[0], rank: 1}); // 冠军
-      if (top3.length >= 3) orderedTop3.push({...top3[2], rank: 3}); // 季军
-      
-      const top3Html = orderedTop3.length ? `
-        <div class="honor-top3">
-          ${orderedTop3.map((s) => {
-            const rank = s.rank;
-            const rankText = rank === 1 ? '冠军' : rank === 2 ? '亚军' : '季军';
-            const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
-            return `
-              <div class="honor-top3-card rank-${rank}">
-                <div class="top3-rank">${rankIcon} ${rankText}</div>
-                <div class="top3-avatar">${s.avatar || '👦'}</div>
-                <div class="top3-name">${this.escape(s.name)}</div>
-                <div class="top3-badges">${s.badgeCount > 0 ? '🏆'.repeat(Math.min(s.badgeCount, 5)) : ''} ${s.badgeCount}枚</div>
-                <div class="top3-stats">${period === 'all' ? s.totalPoints : s.periodPoints}分 | 阶段${s.petStage}</div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      ` : '';
-      
-      const othersHtml = others.length ? `
-        <div class="honor-others">
-          ${others.map((s, i) => `
-            <div class="honor-bar-card">
-              <span class="bar-rank">${i + 4}</span>
-              <span class="bar-avatar">${s.avatar || '👦'}</span>
-              <div class="bar-info">
-                <span class="bar-name">${this.escape(s.name)}</span>
-                <span class="bar-badges">${s.badgeCount > 0 ? '🏆'.repeat(Math.min(s.badgeCount, 3)) : ''} ${s.badgeCount}枚</span>
-                <span class="bar-stats">${period === 'all' ? s.totalPoints : s.periodPoints}分 | 阶段${s.petStage}</span>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      ` : '';
-      
-      const html = list.length ? top3Html + othersHtml : '<p class="placeholder-text">暂无学生记录</p>';
+
+      const progressList = students
+        .map(s => {
+          const records = (s.scoreHistory || []).filter(h => (h.time || 0) >= periodTimestamp);
+          const gain = records.reduce((sum, h) => sum + (h.delta || 0), 0);
+          const positives = records.filter(h => (h.delta || 0) > 0).length;
+          return {
+            ...s,
+            progressGain: gain,
+            progressHits: positives,
+            petStage: s.pet ? (s.pet.stage || 0) : 0
+          };
+        })
+        .sort((a, b) => {
+          const gainDiff = (b.progressGain || 0) - (a.progressGain || 0);
+          if (gainDiff !== 0) return gainDiff;
+          const hitDiff = (b.progressHits || 0) - (a.progressHits || 0);
+          if (hitDiff !== 0) return hitDiff;
+          return (b.petStage || 0) - (a.petStage || 0);
+        });
+
+      const renderBoard = (title, list, statText) => {
+        const top3 = list.slice(0, 3);
+        const others = list.slice(3);
+        const orderedTop3 = [];
+        if (top3.length >= 2) orderedTop3.push({ ...top3[1], rank: 2 });
+        if (top3.length >= 1) orderedTop3.push({ ...top3[0], rank: 1 });
+        if (top3.length >= 3) orderedTop3.push({ ...top3[2], rank: 3 });
+
+        const top3Html = orderedTop3.length ? `<div class="honor-top3">${orderedTop3.map((s) => {
+          const rank = s.rank;
+          const rankText = rank === 1 ? '冠军' : rank === 2 ? '亚军' : '季军';
+          const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
+          return `<div class="honor-top3-card rank-${rank}">
+            <div class="top3-rank">${rankIcon} ${rankText}</div>
+            <div class="top3-avatar">${s.avatar || '👦'}</div>
+            <div class="top3-name">${this.escape(s.name)}</div>
+            <div class="top3-badges">${(s.badgeCount || 0) > 0 ? '🏆'.repeat(Math.min((s.badgeCount || 0), 5)) : ''} ${(s.badgeCount || 0)}枚</div>
+            <div class="top3-stats">${statText(s)} | 阶段${s.petStage || 0}</div>
+          </div>`;
+        }).join('')}</div>` : '';
+
+        const othersHtml = others.length ? `<div class="honor-others">${others.map((s, i) => `<div class="honor-bar-card">
+          <span class="bar-rank">${i + 4}</span>
+          <span class="bar-avatar">${s.avatar || '👦'}</span>
+          <div class="bar-info">
+            <span class="bar-name">${this.escape(s.name)}</span>
+            <span class="bar-badges">${(s.badgeCount || 0) > 0 ? '🏆'.repeat(Math.min((s.badgeCount || 0), 3)) : ''} ${(s.badgeCount || 0)}枚</span>
+            <span class="bar-stats">${statText(s)} | 阶段${s.petStage || 0}</span>
+          </div>
+        </div>`).join('')}</div>` : '';
+
+        return `<div class="honor-board"><h3 class="honor-board-title">${title}</h3>${top3Html || '<p class="placeholder-text">暂无数据</p>'}${othersHtml}</div>`;
+      };
+
       const el = document.getElementById('honorList');
-      if (el) el.innerHTML = html;
-      
-      // 渲染右侧3列学生信息
-      this.renderHonorSidebar(list);
+      if (el) {
+        el.innerHTML = `<div class="honor-dual-board">
+          ${renderBoard('🏆 实力榜', powerList, (s) => `${period === 'all' ? (s.totalPoints || 0) : (s.periodPoints || 0)}分`)}
+          ${renderBoard('🚀 进步榜', progressList, (s) => `${(s.progressGain || 0) >= 0 ? '+' : ''}${s.progressGain || 0}`)}
+        </div>`;
+      }
+
+      this.renderHonorSidebar(powerList);
     },
 
     // 获取时间周期的时间戳

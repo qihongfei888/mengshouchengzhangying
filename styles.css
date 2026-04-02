@@ -2603,8 +2603,56 @@ body.season-skin-unlocked {
 .progress-bar-wrap { height: 12px; background: var(--border); border-radius: 10px; overflow: hidden; margin: 12px 0; }
 .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 10px; transition: width 0.3s; }
 
-/* 光荣榜 */
-.honor-grid { display: block; }
+/* 光荣榜双榜并列 */
+.honor-dual-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.honor-board-title {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+.honor-board {
+  background: linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.96));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 10px;
+}
+
+/* 宠物情绪阈值特效 */
+.sc3-photo.mood-high .sc3-pet-img,
+.sc3-photo.mood-ecstatic .sc3-pet-img {
+  animation: petMoodBounce .9s ease-in-out infinite;
+}
+.sc3-photo.mood-high::after,
+.sc3-photo.mood-ecstatic::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  pointer-events: none;
+  box-shadow: inset 0 0 18px rgba(250,204,21,.45);
+}
+.sc3-photo.mood-ecstatic::after {
+  box-shadow: inset 0 0 26px rgba(244,114,182,.55), 0 0 18px rgba(250,204,21,.45);
+}
+.sc3-emotion.mood-high,
+.sc3-emotion.mood-ecstatic {
+  background: rgba(254,240,138,.35);
+  border-color: rgba(250,204,21,.75);
+  color: #fff;
+}
+.sc3-emotion.mood-ecstatic {
+  background: rgba(244,114,182,.34);
+  border-color: rgba(244,114,182,.8);
+}
+@keyframes petMoodBounce {
+  0%,100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.04); }
+}
+
 
 /* 冠亚季三角形布局 */
 .honor-top3 {
@@ -5384,8 +5432,12 @@ body.screen-locked #screenLockOverlay * {
   gap: 8px;
 }
 
-/* 小组管理响应式 */
-@media (max-width: 768px) {
+@media (max-width: 980px) {
+  .honor-dual-board {
+    grid-template-columns: 1fr;
+  }
+}
+
   .groups-layout {
     grid-template-columns: 1fr;
   }
