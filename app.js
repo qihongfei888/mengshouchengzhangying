@@ -3783,7 +3783,7 @@
       if (!typeId) return;
       if (!this._petImagePreloadCache) this._petImagePreloadCache = Object.create(null);
       const s = Math.max(1, Math.min(5, parseInt(stage, 10) || 1));
-      const candidates = [s, Math.min(5, s + 1), Math.min(5, s + 2)];
+      const candidates = [s, Math.min(5, s + 1)];
       candidates.forEach(st => {
         const src = this.getStagePhotoPath(typeId, st);
         if (!src || this._petImagePreloadCache[src]) return;
@@ -3835,29 +3835,33 @@
       const now = Date.now();
       if (this._lastPetAdoptPreheatAt && now - this._lastPetAdoptPreheatAt < 8000) return;
       this._lastPetAdoptPreheatAt = now;
+      const conn = (typeof navigator !== 'undefined' && navigator.connection) ? navigator.connection : null;
+      if (conn && (conn.saveData || /2g/i.test(conn.effectiveType || ''))) return;
       const ids = (typeof PHOTO_TYPE_IDS !== 'undefined' && Array.isArray(PHOTO_TYPE_IDS) && PHOTO_TYPE_IDS.length)
         ? PHOTO_TYPE_IDS
         : ((window.PET_TYPES || []).map(t => t.id).filter(Boolean));
-      ids.slice(0, 24).forEach(typeId => {
+      ids.slice(0, 10).forEach(typeId => {
         this.preloadPetStageImages(typeId, 1);
-        this.preloadPetStageImages(typeId, 3);
       });
     },
     preheatAllPetPhotosOnFirstOpen() {
       try {
-        const key = 'pet_photo_cache_warm_v1';
+        const key = 'pet_photo_cache_warm_v2';
         if (localStorage.getItem(key) === '1') return;
+        const conn = (typeof navigator !== 'undefined' && navigator.connection) ? navigator.connection : null;
+        if (conn && (conn.saveData || /2g/i.test(conn.effectiveType || ''))) return;
         const ids = (typeof PHOTO_TYPE_IDS !== 'undefined' && Array.isArray(PHOTO_TYPE_IDS) && PHOTO_TYPE_IDS.length)
           ? PHOTO_TYPE_IDS
           : ((window.PET_TYPES || []).map(t => t.id).filter(Boolean));
         if (!ids.length) return;
         const queue = [];
-        ids.forEach(typeId => {
-          for (let st = 1; st <= 5; st++) queue.push(this.getStagePhotoPath(typeId, st));
+        ids.slice(0, 8).forEach(typeId => {
+          queue.push(this.getStagePhotoPath(typeId, 1));
+          queue.push(this.getStagePhotoPath(typeId, 2));
         });
         let idx = 0;
         const step = () => {
-          const end = Math.min(queue.length, idx + 8);
+          const end = Math.min(queue.length, idx + 2);
           for (; idx < end; idx++) {
             const src = queue[idx];
             if (!src) continue;
@@ -3865,17 +3869,16 @@
             if (this._petImagePreloadCache[src]) continue;
             const img = new Image();
             img.decoding = 'async';
-            img.loading = 'eager';
             img.src = src;
             this._petImagePreloadCache[src] = 1;
           }
           if (idx < queue.length) {
-            setTimeout(step, 40);
+            setTimeout(step, 160);
           } else {
             localStorage.setItem(key, '1');
           }
         };
-        setTimeout(step, 120);
+        setTimeout(step, 3000);
       } catch (e) {
         console.warn('首次神兽图片缓存预热失败:', e);
       }
