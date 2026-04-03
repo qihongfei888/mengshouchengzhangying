@@ -2493,16 +2493,17 @@
     async syncData() {
       if (!this.currentUserId) {
         console.log('无用户ID，跳过同步');
-        return;
+        return false;
       }
       
       // 防止循环调用
       if (this.isSyncingData) {
         console.log('syncData 正在执行中，跳过重复调用');
-        return;
+        return false;
       }
       
       this.isSyncingData = true;
+      let syncedToCloud = false;
       
       try {
         // 1. 首先保存本地数据（优先本地存储）
@@ -2531,11 +2532,16 @@
           
           while (retryCount < maxRetries) {
             try {
-              await this.syncToCloud();
-              this.dataChanged = false;
-              this.pendingChanges = 0;
-              this.lastSyncTime = new Date().toISOString();
-              console.log('云端同步完成');
+              const cloudOk = await this.syncToCloud();
+              if (cloudOk) {
+                syncedToCloud = true;
+                this.dataChanged = false;
+                this.pendingChanges = 0;
+                this.lastSyncTime = new Date().toISOString();
+                console.log('云端同步完成');
+              } else {
+                console.warn('云端未写入成功，本次仅本地保存');
+              }
               // 同步完成后，尝试从云端拉取最新数据，确保多端数据一致
               try {
                 const pulled = await this.syncFromCloud();
@@ -2568,6 +2574,7 @@
         // 释放同步锁
         this.isSyncingData = false;
       }
+      return syncedToCloud;
     },
     
     // 内部保存方法，不触发同步
@@ -2789,6 +2796,7 @@
       }
       
       this.syncing = true;
+      let syncSuccess = false;
       if (statusEl) statusEl.textContent = '云同步状态：正在上传到 Supabase…';
       if (btnUpload) btnUpload.disabled = true;
       if (btnDownload) btnDownload.disabled = true;
@@ -2860,6 +2868,7 @@
           console.log('云端上传失败或未配置，数据已保存在本地');
           if (statusEl) statusEl.textContent = '云同步状态：上传失败，数据已保存在本地';
         } else {
+          syncSuccess = true;
           if (statusEl) statusEl.textContent = '云同步状态：✅ 上传成功';
           this.lastSyncTime = now;
           this.dataChanged = false;
@@ -2875,7 +2884,7 @@
         if (btnDownload) btnDownload.disabled = false;
       }
       this.updateSyncDigest();
-      return true;
+      return syncSuccess;
     },
 
     async syncAllNow() {
@@ -3562,8 +3571,8 @@
           if (timeSinceLastSync >= 5 * 60 * 1000 || this.pendingChanges >= 10) {
             try {
               this.showSyncStatus('正在同步数据...', 'info');
-              await this.syncData();
-              this.showSyncStatus('数据同步成功', 'success');
+              const ok = await this.syncData();
+              this.showSyncStatus(ok ? '数据同步成功' : '云端未写入成功（仅本地已保存）', ok ? 'success' : 'warning');
             } catch (e) {
               this.showSyncStatus('同步失败，将在网络恢复后重试', 'warning');
             }
