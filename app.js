@@ -1424,6 +1424,8 @@
           if (emotionDailyAccumBonusEl) emotionDailyAccumBonusEl.value = ecfg.dailyAnswerAccumBonus;
           const energyGainRatioEl = document.getElementById('settingEnergyGainRatio');
           if (energyGainRatioEl) energyGainRatioEl.value = ecfg.energyGainRatio;
+          const voiceEnabledEl = document.getElementById('settingVoiceEnabled');
+          if (voiceEnabledEl) voiceEnabledEl.checked = !!currentClass.voiceEnabled;
         } else {
           // 没有选择班级时的默认值
           this.students = [];
@@ -1486,6 +1488,8 @@
           if (emotionDailyAccumBonusEl) emotionDailyAccumBonusEl.value = 2;
           const energyGainRatioEl = document.getElementById('settingEnergyGainRatio');
           if (energyGainRatioEl) energyGainRatioEl.value = 0.8;
+          const voiceEnabledEl = document.getElementById('settingVoiceEnabled');
+          if (voiceEnabledEl) voiceEnabledEl.checked = false;
         }
         
         console.log('用户数据加载完成，班级数:', this.classes.length, '当前班级:', this.currentClassName);
@@ -2659,6 +2663,7 @@
               dailyAnswerAccumBonus: 2,
               energyGainRatio: 0.8
             },
+            voiceEnabled: false,
             awakenPointsThreshold: 100,
             customQuizQuestions: []
           };
@@ -2717,6 +2722,7 @@
           currentClass.monopolyOpportunityTask = monopolyOpportunityTaskEl ? (monopolyOpportunityTaskEl.value || '全组30秒内回答3题') : (currentClass.monopolyOpportunityTask || '全组30秒内回答3题');
           currentClass.monopolyOpportunityPoints = monopolyOpportunityPointsEl ? (parseInt(monopolyOpportunityPointsEl.value, 10) || 4) : (parseInt(currentClass.monopolyOpportunityPoints, 10) || 4);
           currentClass.monopolyStealPoints = monopolyStealPointsEl ? (parseInt(monopolyStealPointsEl.value, 10) || 2) : (parseInt(currentClass.monopolyStealPoints, 10) || 2);
+          currentClass.voiceEnabled = !!document.getElementById('settingVoiceEnabled')?.checked;
           currentClass.emotionConfig = {
             normalThreshold: emotionNormalThresholdEl ? (parseInt(emotionNormalThresholdEl.value, 10) || 45) : 45,
             highThreshold: emotionHighThresholdEl ? (parseInt(emotionHighThresholdEl.value, 10) || 75) : 75,
@@ -4137,6 +4143,7 @@
           dailyAnswerAccumBonus: parseInt(document.getElementById('settingEmotionDailyAccumBonus')?.value, 10) || 2,
           energyGainRatio: parseFloat(document.getElementById('settingEnergyGainRatio')?.value) || 0.8
         },
+        voiceEnabled: !!document.getElementById('settingVoiceEnabled')?.checked,
         customQuizQuestions: [],
         screenLock: { enabled: false, pin: '', locked: false }
       };
@@ -8390,10 +8397,33 @@
       }, 3000);
     },
 
-    // 语音播报（已关闭，避免课堂中突然播报）
+    // 语音播报（默认静音，可在系统设置中开启）
     speak(text) {
-      try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
-      return;
+      const cls = this.getCurrentClassData();
+      const enabled = !!(cls && cls.voiceEnabled);
+      if (!enabled) {
+        try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
+        return;
+      }
+      if (!('speechSynthesis' in window)) return;
+      const speech = new SpeechSynthesisUtterance(text);
+      speech.lang = 'zh-CN';
+      speech.volume = 1;
+      speech.rate = 0.95;
+      speech.pitch = 1.08;
+      const pickVoice = () => {
+        const voices = window.speechSynthesis.getVoices() || [];
+        if (!voices.length) return;
+        const female = voices.find(v => /zh|chinese/i.test(v.lang) && /female|xiaoxiao|xiaoyi|huihui|tingting/i.test((v.name || '').toLowerCase()));
+        const zhAny = voices.find(v => /zh|chinese/i.test(v.lang));
+        speech.voice = female || zhAny || null;
+      };
+      pickVoice();
+      if (!speech.voice) {
+        window.speechSynthesis.onvoiceschanged = () => pickVoice();
+      }
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(speech);
     },
 
     showEatEffect() {
@@ -11923,6 +11953,7 @@
         currentClass.monopolyOpportunityTask = document.getElementById('settingMonopolyOpportunityTask')?.value || currentClass.monopolyOpportunityTask || '全组30秒内回答3题';
         currentClass.monopolyOpportunityPoints = parseInt(document.getElementById('settingMonopolyOpportunityPoints')?.value, 10) || currentClass.monopolyOpportunityPoints || 4;
         currentClass.monopolyStealPoints = parseInt(document.getElementById('settingMonopolyStealPoints')?.value, 10) || currentClass.monopolyStealPoints || 2;
+        currentClass.voiceEnabled = !!document.getElementById('settingVoiceEnabled')?.checked;
         currentClass.emotionConfig = {
           normalThreshold: parseInt(document.getElementById('settingEmotionNormalThreshold')?.value, 10) || 45,
           highThreshold: parseInt(document.getElementById('settingEmotionHighThreshold')?.value, 10) || 75,
