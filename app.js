@@ -8390,27 +8390,10 @@
       }, 3000);
     },
 
-    // 语音播报
+    // 语音播报（已关闭，避免课堂中突然播报）
     speak(text) {
-      if (!('speechSynthesis' in window)) return;
-        const speech = new SpeechSynthesisUtterance(text);
-        speech.lang = 'zh-CN';
-        speech.volume = 1;
-      speech.rate = 0.95;
-      speech.pitch = 1.08;
-      const pickVoice = () => {
-        const voices = window.speechSynthesis.getVoices() || [];
-        if (!voices.length) return;
-        const female = voices.find(v => /zh|chinese/i.test(v.lang) && /female|xiaoxiao|xiaoyi|huihui|tingting/i.test((v.name || '').toLowerCase()));
-        const zhAny = voices.find(v => /zh|chinese/i.test(v.lang));
-        speech.voice = female || zhAny || null;
-      };
-      pickVoice();
-      if (!speech.voice) {
-        window.speechSynthesis.onvoiceschanged = () => pickVoice();
-      }
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(speech);
+      try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
+      return;
     },
 
     showEatEffect() {
